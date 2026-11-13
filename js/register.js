@@ -88,11 +88,20 @@ export async function registerPage(root, slug) {
         const f = $(`#p${n}-photo`, root).files[0];
         return f ? uploadImage('photos', `${t.id}/${uuid()}`, f, 800, 0.8) : null;
       };
+      // The form asks for a Buddhist-era year (พ.ศ.); the database stores the Gregorian year (ค.ศ.).
+      const year = (n) => {
+        const raw = v(`#p${n}-year`);
+        if (!raw) return null;
+        const y = Number(raw);
+        const ce = y > 2400 ? y - 543 : y;
+        if (!Number.isInteger(ce) || ce < 1930 || ce > 2030) throw new Error('ปีเกิดไม่ถูกต้อง กรอกเป็น พ.ศ. 4 หลัก เช่น 2538');
+        return ce;
+      };
       const body = (n) => ({
         name: v(`#p${n}-name`),
         nick: v(`#p${n}-nick`),
         phone: v(`#p${n}-phone`),
-        birth_year: v(`#p${n}-year`) || null,
+        birth_year: year(n),
       });
       const p1 = { ...body(1), photo: await photo(1) };
       const p2 = doubles ? { ...body(2), photo: await photo(2) } : {};
