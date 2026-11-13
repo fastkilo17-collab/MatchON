@@ -32,7 +32,13 @@ async function navigate() {
     const box = document.createElement('div');
     app.replaceChildren(box);
     try {
+      const slow = setTimeout(() => {
+        if (my === token && /กำลังโหลด/.test(box.textContent)) {
+          mount(box, html`<section class="wrap"><p class="err">โหลดข้อมูลนานผิดปกติ ตรวจอินเทอร์เน็ตแล้วรีเฟรชหน้านี้</p></section>`);
+        }
+      }, 15000);
       const c = await view(box, ...m.slice(1));
+      clearTimeout(slow);
       if (my === token) cleanup = typeof c === 'function' ? c : null;
       else if (typeof c === 'function') c();
     } catch (e) {
@@ -60,6 +66,11 @@ async function drawNav() {
 
 window.addEventListener('hashchange', navigate);
 document.addEventListener('courtday:auth', drawNav);
-sb.auth.onAuthStateChange(() => drawNav());
+// Never call other supabase functions directly inside this callback (it can deadlock the auth lock).
+sb.auth.onAuthStateChange(() => {
+  setTimeout(drawNav, 0);
+});
 drawNav();
-navigate();
+navigate().then(() => {
+  app.dataset.ready = '1';
+});

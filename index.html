@@ -20,7 +20,23 @@
     <nav id="nav-right" class="navr"></nav>
   </div>
 </header>
-<main id="app"></main>
-<script type="module" src="js/main.js"></script>
+<main id="app"><p class="wrap skeleton">กำลังโหลด…</p></main>
+<script>
+// Shows the real error on screen if the app fails to start (blocked script, network, bad config).
+function bootFail(msg) {
+  var a = document.getElementById('app');
+  if (!a || a.getAttribute('data-ready') === '1') return;
+  a.innerHTML = '';
+  var s = document.createElement('section'); s.className = 'wrap narrow';
+  var p = document.createElement('p'); p.className = 'err';
+  p.textContent = 'โหลดหน้าเว็บไม่สำเร็จ: ' + msg;
+  var q = document.createElement('p'); q.className = 'muted small';
+  q.textContent = 'ลองรีเฟรชหน้านี้ ถ้ายังไม่ได้ส่งข้อความนี้ให้ผู้พัฒนา';
+  s.appendChild(p); s.appendChild(q); a.appendChild(s);
+}
+window.addEventListener('error', function (e) { bootFail(e.message || 'เกิดข้อผิดพลาดของสคริปต์'); });
+window.addEventListener('unhandledrejection', function (e) { bootFail((e.reason && e.reason.message) || String(e.reason)); });
+</script>
+<script type="module" src="js/main.js" onerror="bootFail('โหลดไฟล์ js/main.js ไม่ได้ (ตรวจชื่อโฟลเดอร์ js ตัวพิมพ์เล็ก)')"></script>
 </body>
 </html>
