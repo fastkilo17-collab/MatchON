@@ -201,3 +201,52 @@ table.regs { min-width: 860px; }
 .toast.err { background: var(--red); }
 
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+/* ---- admin overview (from the design board) */
+.steps { display: flex; gap: 12px; flex-wrap: wrap; padding: 22px 24px; }
+.step { flex: 1 1 150px; min-width: 0; display: flex; flex-direction: column; gap: 2px; color: var(--ink-2); }
+.step b { font-size: 15px; color: var(--ink-2); margin-top: 10px; }
+.step.done b, .step.now b { color: var(--ink); }
+.step-top { display: flex; align-items: center; gap: 10px; }
+.dot { width: 30px; height: 30px; border-radius: 50%; flex: none; display: grid; place-items: center; font: 600 14px 'Prompt', sans-serif; background: #fff; border: 1.5px solid #b8c3d1; color: var(--ink-2); }
+.step.done .dot { background: var(--green); border-color: var(--green); color: #fff; }
+.step.now .dot { background: var(--ink); border-color: var(--ink); color: var(--lime); }
+.step .line { flex: 1; height: 2px; border-radius: 2px; background: var(--line); }
+.step.done .line { background: var(--green); }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; margin-bottom: 16px; }
+.kpi { margin: 0; display: flex; flex-direction: column; gap: 8px; }
+.kpi p { margin: 0; }
+.kpi p b { font: 600 34px 'Prompt', sans-serif; font-variant-numeric: tabular-nums; }
+.kpi.warn p b { color: var(--amber); }
+.bar { height: 8px; border-radius: 99px; background: var(--line); overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--green); }
+.bar.full i { background: var(--red); }
+.ov-cols { display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start; }
+.ov-cols > .card { flex: 999 1 520px; }
+.ov-side { flex: 1 1 300px; min-width: 0; display: flex; flex-direction: column; }
+.card.flush { padding: 0; overflow: hidden; }
+.card-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--line); }
+.card-head h2 { margin: 0; font-size: 18px; }
+.todo { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 12px; margin-top: 12px; border-top: 1px solid #eef1f5; }
+.todo:first-of-type { border-top: 0; margin-top: 0; padding-top: 0; }
+.btn.dark { background: var(--ink); border-color: var(--ink); color: #fff; flex: none; }
+.catbar { margin-bottom: 12px; display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
+.catbar > div:first-child { display: flex; justify-content: space-between; }
+
+/* ---- registration form (from the design board) */
+.reg-hero { background: var(--ink); color: #fff; padding: 22px 20px 26px; border-radius: 0 0 18px 18px; margin: -24px -16px 18px; }
+.reg-hero h1 { color: #fff; margin: 8px 0; font-size: 26px; }
+.reg-hero p { margin: 0; color: #c9d3e0; font-size: 13px; line-height: 1.6; }
+.reg-hero .pill { background: var(--lime); color: var(--ink); }
+.catpick { display: flex; flex-direction: column; gap: 10px; }
+.catopt { display: flex; align-items: center; gap: 12px; padding: 14px; border-radius: 12px; border: 1.5px solid var(--line); background: #fff; cursor: pointer; min-height: 56px; }
+.catopt:has(input:checked) { border-color: var(--green); background: #f1faf6; }
+.catopt input { width: 20px; height: 20px; min-height: 0; margin: 0; accent-color: var(--green); flex: none; }
+.catopt .txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.catopt .txt small { color: var(--ink-2); font-size: 12px; }
+.catopt .fee { font-weight: 600; font-variant-numeric: tabular-nums; }
+.fieldset-card { border: 1px solid var(--line); border-radius: var(--r); background: #fff; padding: 18px; margin: 0; min-width: 0; display: flex; flex-direction: column; gap: 14px; }
+.fieldset-card legend { font: 600 17px 'Prompt', sans-serif; padding: 0 6px; }
+.submitbar { position: sticky; bottom: 0; background: #fff; border-top: 1px solid var(--line); padding: 14px 16px calc(14px + env(safe-area-inset-bottom, 0px)); margin: 0 -16px -56px; display: flex; flex-direction: column; gap: 10px; }
+.submitbar .tot { display: flex; justify-content: space-between; align-items: baseline; font-size: 14px; }
+.submitbar .tot b { font: 600 18px 'Prompt', sans-serif; }

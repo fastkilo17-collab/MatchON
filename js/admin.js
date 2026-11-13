@@ -1,5 +1,5 @@
 import {
-  sb, html, mount, raw, $, $$, toast, errMsg, busy, baht, fmtRange, fmtTime, uuid, go, uploadImage, publicUrl,
+  sb, html, mount, raw, $, $$, toast, errMsg, busy, baht, fmtDate, fmtRange, fmtTime, uuid, go, uploadImage, publicUrl,
   teamName, STATUS_TH, REG_STATUS_TH, PAY_TH,
 } from './lib.js';
 import { buildKnockout, buildRoundRobin, autoSchedule } from './bracket.js';
@@ -150,7 +150,7 @@ export async function adminTournament(root, id) {
   root.appendChild(view);
   mount(view, html`<section class="wrap"><div class="skeleton">กำลังโหลด…</div></section>`);
 
-  const S = { tab: 'settings', t: null, cats: [], regs: [], matches: [], posters: [], fCat: '', fStatus: '' };
+  const S = { tab: 'overview', t: null, cats: [], regs: [], matches: [], posters: [], fCat: '', fStatus: '' };
   const load = async () => {
     const [t, c, r, m, p] = await Promise.all([
       sb.from('tournaments').select('*').eq('id', id).maybeSingle(),
@@ -175,8 +175,8 @@ export async function adminTournament(root, id) {
   const catName = (cid) => S.cats.find((c) => c.id === cid)?.name || '';
   const nameOf = (rid) => (rid ? teamName(S.regs.find((r) => r.id === rid)) : 'รอผลการแข่ง');
   const render = () => {
-    const tabs = [['settings', 'ตั้งค่า'], ['cats', 'ประเภท'], ['regs', `ผู้สมัคร (${S.regs.filter((r) => r.status !== 'cancelled').length})`], ['draw', 'สายและตาราง'], ['posters', 'โปสเตอร์']];
-    const body = { settings: tabSettings, cats: tabCats, regs: tabRegs, draw: tabDraw, posters: tabPosters }[S.tab](S, { catName, nameOf });
+    const tabs = [['overview', 'ภาพรวม'], ['settings', 'ตั้งค่า'], ['cats', 'ประเภท'], ['regs', `ผู้สมัคร (${S.regs.filter((r) => r.status !== 'cancelled').length})`], ['draw', 'สายและตาราง'], ['posters', 'โปสเตอร์']];
+    const body = { overview: tabOverview, settings: tabSettings, cats: tabCats, regs: tabRegs, draw: tabDraw, posters: tabPosters }[S.tab](S, { catName, nameOf });
     mount(
       view,
       html`<section class="wrap">
@@ -203,6 +203,7 @@ export async function adminTournament(root, id) {
     if (!el) return;
     if (el.dataset.tab) {
       S.tab = el.dataset.tab;
+      if (el.dataset.f !== undefined) S.fStatus = el.dataset.f;
       return render();
     }
     const act = el.dataset.act;
@@ -385,6 +386,73 @@ export async function adminTournament(root, id) {
       });
     }
   });
+}
+
+// ---- overview (steps, numbers, to-do, recent applicants)
+function tabOverview(S, { catName }) {
+  const live = S.regs.filter((r) => r.status !== 'cancelled' && r.status !== 'waitlist');
+  const fee = (r) => S.cats.find((c) => c.id === r.category_id)?.fee || 0;
+  const seats = S.cats.reduce((n, c) => n + (c.max_teams || 0), 0);
+  const paidRegs = S.regs.filter((r) => r.pay_status === 'paid');
+  const paidSum = paidRegs.reduce((n, r) => n + fee(r), 0);
+  const slips = S.regs.filter((r) => r.pay_status === 'slip_sent');
+  const waiting = S.regs.filter((r) => r.status === 'waitlist');
+  const t = S.t;
+  const hasDraw = S.matches.length > 0;
+  const idx = t.status === 'draft' ? 0 : t.status === 'open' ? 1 : hasDraw ? 4 : 3;
+  const steps = [
+    ['สร้างรายการ', 'ตั้งค่าเสร็จแล้ว'],
+    ['รับสมัคร', t.reg_deadline ? 'ปิดรับ ' + fmtDate(t.reg_deadline) : 'ปิดรับด้วยมือ'],
+    ['ชำระเงิน', slips.length ? `รอตรวจสลิป ${slips.length} รายการ` : 'ไม่มีสลิปค้าง'],
+    ['จัดสายและตาราง', hasDraw ? `${S.matches.length} แมตช์` : 'ยังไม่ได้สร้างสาย'],
+    ['วันแข่ง', t.start_date ? fmtDate(t.start_date) : '–'],
+  ];
+  const pct = (n, d) => (d ? Math.min(100, Math.round((n / d) * 100)) : 0);
+  const todo = [];
+  if (slips.length) todo.push(['ตรวจสลิปโอนเงิน', `${slips.length} รายการ`, 'ตรวจสลิป', 'regs', 'slip_sent']);
+  if (waiting.length) todo.push(['มีทีมสำรองรออยู่', `${waiting.length} ทีม`, 'ดูรายชื่อสำรอง', 'regs', 'waitlist']);
+  if (!hasDraw && live.length > 1) todo.push(['ยังไม่ได้สร้างสาย', 'พร้อมเมื่อปิดรับสมัคร', 'ไปสร้างสาย', 'draw', '']);
+  if (!todo.length) todo.push(['ไม่มีงานค้าง', 'ทุกอย่างเรียบร้อย', 'ดูผู้สมัคร', 'regs', '']);
+  const recent = [...S.regs].filter((r) => r.status !== 'cancelled').reverse().slice(0, 6);
+  return html`
+    <section class="card steps" aria-label="ขั้นตอนของรายการ">
+      ${steps.map(([l, sub], i) => html`<div class="step ${i < idx ? 'done' : i === idx ? 'now' : ''}">
+        <div class="step-top"><span class="dot">${i < idx ? '✓' : i + 1}</span><span class="line"></span></div>
+        <b>${l}</b><span class="muted small">${sub}</span></div>`)}
+    </section>
+    <section class="kpis" aria-label="สรุปตัวเลข">
+      <div class="card kpi"><span class="muted small">ทีมที่สมัคร</span>
+        <p><b>${live.length}</b> <span class="muted">${seats ? `จาก ${seats} ที่นั่ง` : 'ทีม'}</span></p>
+        <div class="bar"><i style="width:${pct(live.length, seats)}%"></i></div></div>
+      <div class="card kpi"><span class="muted small">ชำระเงินแล้ว</span>
+        <p><b>${paidRegs.length}</b> <span class="muted">รายการ · ${baht(paidSum)}</span></p></div>
+      <div class="card kpi ${slips.length ? 'warn' : ''}"><span class="muted small">รอตรวจสลิป</span>
+        <p><b>${slips.length}</b> <span class="muted">รายการ</span></p></div>
+      <div class="card kpi"><span class="muted small">รายชื่อสำรอง</span>
+        <p><b>${waiting.length}</b> <span class="muted">ทีม</span></p></div>
+    </section>
+    <div class="ov-cols">
+      <section class="card flush">
+        <div class="card-head"><h2>ผู้สมัครล่าสุด</h2><button class="linkbtn" type="button" data-tab="regs" data-f="">ดูทั้งหมด ${S.regs.length} รายการ</button></div>
+        ${recent.length ? html`<div class="tablewrap"><table><thead><tr><th>ผู้สมัคร</th><th>ประเภท</th><th>ชำระเงิน</th></tr></thead>
+          <tbody>${recent.map((r) => html`<tr><td><b>${r.p1_name}${r.p2_name ? ' / ' + r.p2_name : ''}</b><br><span class="muted small">${fmtDate(r.created_at)}</span></td>
+            <td>${catName(r.category_id)}</td><td><span class="pill pay-${r.pay_status}">${PAY_TH[r.pay_status]}</span></td></tr>`)}</tbody></table></div>`
+          : html`<p class="muted pad">ยังไม่มีผู้สมัคร ส่งลิงก์หน้าสมัครให้นักกีฬาได้เลย</p>`}
+      </section>
+      <aside class="ov-side">
+        <section class="card"><h2>ต้องทำวันนี้</h2>
+          ${todo.map(([a, b, cta, tab, f]) => html`<div class="todo"><div><b>${a}</b><br><span class="muted small">${b}</span></div>
+            <button class="btn dark" type="button" data-tab="${tab}" data-f="${f}">${cta}</button></div>`)}
+        </section>
+        <section class="card"><h2>สมัครแต่ละประเภท</h2>
+          ${S.cats.length ? S.cats.map((c) => {
+            const n = live.filter((r) => r.category_id === c.id).length;
+            return html`<div class="catbar"><div><span>${c.name}</span><span class="muted">${n} / ${c.max_teams}</span></div>
+              <div class="bar ${n >= c.max_teams ? 'full' : ''}"><i style="width:${pct(n, c.max_teams)}%"></i></div></div>`;
+          }) : html`<p class="muted">ยังไม่มีประเภท เพิ่มที่แท็บ “ประเภท”</p>`}
+        </section>
+      </aside>
+    </div>`;
 }
 
 // ---- tab renderers

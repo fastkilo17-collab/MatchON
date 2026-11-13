@@ -1,5 +1,5 @@
 import {
-  sb, html, mount, $, raw, toast, errMsg, busy, baht, fmtDate, uuid, go, uploadImage,
+  sb, html, mount, $, raw, toast, errMsg, busy, baht, fmtDate, fmtRange, uuid, go, uploadImage,
   PAY_TH, REG_STATUS_TH,
 } from './lib.js';
 import { promptPayPayload } from './promptpay.js';
@@ -34,7 +34,7 @@ export async function registerPage(root, slug) {
   }
 
   const person = (n, label, required) => html`
-    <fieldset class="card person">
+    <fieldset class="fieldset-card person">
       <legend>${label}</legend>
       <label class="field"><span>ชื่อ-นามสกุล</span><input id="p${n}-name" autocomplete="name" ${required ? raw('required') : ''} maxlength="80"></label>
       <label class="field"><span>ชื่อเล่น (แสดงบนจอ ถ้าไม่ใส่จะใช้ชื่อจริง)</span><input id="p${n}-nick" maxlength="40"></label>
@@ -46,31 +46,46 @@ export async function registerPage(root, slug) {
   mount(
     root,
     html`<section class="wrap narrow">
-      <a class="back" href="#/t/${slug}">← ${t.name}</a>
-      <h1>สมัครแข่งขัน</h1>
+      <div class="reg-hero">
+        <span class="pill">${t.reg_deadline ? 'ปิดรับ ' + fmtDate(t.reg_deadline) : 'กำลังรับสมัคร'}</span>
+        <h1>${t.name}</h1>
+        <p>${fmtRange(t.start_date, t.end_date)}${t.venue ? ' · ' + t.venue : ''}</p>
+      </div>
+      <a class="back" href="#/t/${slug}">← ดูหน้ารายการ</a>
       <form id="reg-form" class="stack" novalidate>
-        <label class="field"><span>ประเภทที่สมัคร</span>
-          <select id="cat">${cats.map((c) => {
+        <fieldset class="fieldset-card"><legend>เลือกประเภทที่จะลง</legend>
+          <div class="catpick">${cats.map((c, i) => {
             const full = (counts[c.id] || 0) >= c.max_teams;
-            return html`<option value="${c.id}" data-kind="${c.kind}" data-fee="${c.fee}">${c.name} · ${c.fee ? baht(c.fee) : 'ฟรี'}${full ? ' (เต็ม ลงสำรองได้)' : ''}</option>`;
-          })}</select></label>
+            return html`<label class="catopt"><input type="radio" name="cat" value="${c.id}" data-kind="${c.kind}" data-fee="${c.fee}" ${i === 0 ? raw('checked') : ''}>
+              <span class="txt"><b>${c.name}</b><small>${c.kind === 'doubles' ? 'ประเภทคู่ · ต้องมีคู่' : 'ประเภทเดี่ยว'}${full ? ' · เต็ม ลงสำรองได้' : ''}</small></span>
+              <span class="fee">${c.fee ? baht(c.fee) : 'ฟรี'}</span></label>`;
+          })}</div>
+        </fieldset>
         ${person(1, 'ข้อมูลนักกีฬา', true)}
         <div id="p2-box">${person(2, 'ข้อมูลคู่ของคุณ', false)}</div>
-        <label class="field"><span>ลิงก์วิดีโอการเล่น (ไม่บังคับ)</span>
-          <input id="video" type="url" inputmode="url" placeholder="https://youtube.com/…" maxlength="300">
-          <small class="muted">ใส่หรือไม่ใส่ก็ได้ ช่วยให้ผู้จัดจัดรุ่นได้ตรงระดับ</small></label>
-        <label class="check"><input id="consent" type="checkbox"> <span>ยินยอมให้ผู้จัดเก็บข้อมูลและแสดงชื่อ รูป และผลการแข่งขันของฉันบนหน้ารายการ</span></label>
-        <button class="btn primary big" type="submit">ส่งใบสมัคร</button>
+        <fieldset class="fieldset-card"><legend>เพิ่มเติม</legend>
+          <label class="field"><span>ลิงก์วิดีโอการเล่น (ไม่บังคับ)</span>
+            <input id="video" type="url" inputmode="url" placeholder="https://youtube.com/…" maxlength="300">
+            <small class="muted">ใส่หรือไม่ใส่ก็ได้ ช่วยให้ผู้จัดจัดรุ่นได้ตรงระดับ</small></label>
+          <label class="check"><input id="consent" type="checkbox"> <span>ยินยอมให้ผู้จัดเก็บข้อมูลและแสดงชื่อ รูป และผลการแข่งขันของฉันบนหน้ารายการ</span></label>
+        </fieldset>
+        <div class="submitbar">
+          <div class="tot"><span class="muted">ค่าสมัคร</span><b id="total"></b></div>
+          <button class="btn primary big" type="submit">ส่งใบสมัคร</button>
+        </div>
       </form>
     </section>`
   );
 
-  const cat = $('#cat', root);
+  // radio cards replace the old <select>; keep the same small API the submit handler uses
+  const picked = () => $('input[name=cat]:checked', root);
+  const cat = { get value() { return picked().value; }, get selectedOptions() { return [{ dataset: picked().dataset }]; } };
   const toggle = () => {
-    const doubles = cat.selectedOptions[0].dataset.kind === 'doubles';
-    $('#p2-box', root).hidden = !doubles;
+    $('#p2-box', root).hidden = picked().dataset.kind !== 'doubles';
+    const fee = Number(picked().dataset.fee);
+    $('#total', root).textContent = fee ? baht(fee) : 'ฟรี';
   };
-  cat.addEventListener('change', toggle);
+  root.querySelectorAll('input[name=cat]').forEach((r) => r.addEventListener('change', toggle));
   toggle();
 
   $('#reg-form', root).addEventListener('submit', async (ev) => {
