@@ -10,6 +10,11 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <script type="module">
+    import * as Live from './js/live.js';
+    window.MatchOnLive = Live;
+    window.dispatchEvent(new Event('matchon:live-ready'));
+  </script>
   <script>
     tailwind.config = {
       darkMode: 'class',
@@ -550,6 +555,7 @@
 
       <!-- Subview 3A: Live 6-Court Scoreboard & Umpire Pad -->
       <div id="rel-subview-courts" class="space-y-5">
+        <p id="liveSyncStatus" class="text-xs text-slate-400 mb-3">Firebase: กำลังเชื่อมต่อ…</p>
         <div id="liveCourtsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           <!-- Populated by JS -->
         </div>
@@ -1233,6 +1239,7 @@
     }
 
     let state = getDefaultState();
+    let stateLoaded = false;
 
     // ==========================================
     // 2. LOCAL STORAGE PERSISTENCE
@@ -1253,6 +1260,7 @@
     function saveStateToStorage() {
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        if (typeof schedulePush === 'function') schedulePush();
         const nowStr = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         updateStorageStatusLabel(`บันทึกลงเครื่องแล้ว (${nowStr})`);
       } catch (e) {
@@ -1842,14 +1850,80 @@
       });
     }
 
+    // ---------- live sync with Firebase (courts + finished matches) ----------
+    function ensureLiveKeys() {
+      const rnd = (n) => Array.from(crypto.getRandomValues(new Uint8Array(n)), b => 'abcdefghijkmnpqrstuvwxyz23456789'[b % 32]).join('');
+      if (!state.liveId) { state.liveId = rnd(16); }
+      if (!state.liveSecret) { state.liveSecret = rnd(28); }
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
+    }
+
+    const liveSync = { on: false, canWrite: false, online: false, lastRemote: '', pushTimer: null };
+    const canonCourts = () => state.courts.map(c => window.MatchOnLive.canon(c));
+
+    function setLiveStatus(text) {
+      const el = document.getElementById('liveSyncStatus');
+      if (el) el.textContent = text;
+    }
+
+    function startLiveSync() {
+      if (liveSync.on || !stateLoaded || !window.MatchOnLive) return;
+      liveSync.on = true;
+      ensureLiveKeys();
+      const L = window.MatchOnLive;
+      L.connect(state.liveId, state.liveSecret).then(r => {
+        liveSync.canWrite = r.canWrite;
+        if (r.error === 'auth') setLiveStatus('Firebase: เปิด Anonymous sign-in ก่อน (' + (r.detail || '') + ')');
+        else if (!r.canWrite) setLiveStatus('Firebase: ไม่มีสิทธิ์เขียน (รหัสไม่ตรง)');
+        schedulePush();
+      }).catch(e => setLiveStatus('Firebase เชื่อมต่อไม่ได้: ' + (e.message || e)));
+      L.watchConnection(on => { liveSync.online = on; setLiveStatus(on ? 'Firebase: ซิงก์สดแล้ว' : 'Firebase: ออฟไลน์'); });
+      L.watchCourts(state.liveId, remote => {
+        if (!remote) { liveSync.lastRemote = ''; schedulePush(); return; }   // first run: push our courts up
+        liveSync.lastRemote = JSON.stringify(remote);
+        let changed = false;
+        remote.forEach(rc => {
+          const lc = state.courts.find(c => c.courtNo === rc.courtNo);
+          if (lc && JSON.stringify(L.canon(lc)) !== JSON.stringify(rc)) { Object.assign(lc, rc); changed = true; }
+        });
+        if (changed) {
+          try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
+          renderLiveCourts();
+        }
+      });
+      L.watchCompleted(state.liveId, list => {
+        let added = false;
+        list.forEach(m => {
+          if (!state.completedMatches.some(x => x.fbId === m.fbId)) { state.completedMatches.unshift(m); added = true; }
+        });
+        if (added) {
+          try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
+          renderAll();
+        }
+      });
+    }
+
+    function schedulePush() {
+      if (!liveSync.on || !liveSync.canWrite) return;
+      clearTimeout(liveSync.pushTimer);
+      liveSync.pushTimer = setTimeout(() => {
+        const mine = canonCourts();
+        if (JSON.stringify(mine) === liveSync.lastRemote) return;
+        window.MatchOnLive.writeCourts(state.liveId, mine).catch(e => setLiveStatus('ส่งขึ้น Firebase ไม่สำเร็จ: ' + (e.code || e.message)));
+      }, 300);
+    }
+
+    window.addEventListener('matchon:live-ready', startLiveSync);
+
     function refereeUrl(courtNo) {
-      return new URL('referee.html?court=' + courtNo, location.href).href;
+      ensureLiveKeys();
+      return new URL('referee.html?court=' + courtNo + '&live=' + state.liveId, location.href).href + '#k=' + state.liveSecret;
     }
 
     function openCourtQr(courtNo) {
       const url = refereeUrl(courtNo);
       document.getElementById('qrCourtTitle').textContent = 'COURT ' + courtNo + ' • หน้ากรรมการ';
-      document.getElementById('qrCourtUrl').textContent = url;
+      document.getElementById('qrCourtUrl').textContent = url.replace(/#k=.*/, '#k=••••••••');
       const cv = document.getElementById('qrCourtCanvas');
       if (window.QRCode) window.QRCode.toCanvas(cv, url, { width: 260, margin: 2 });
       document.getElementById('qrModal').classList.remove('hidden');
@@ -2235,6 +2309,8 @@
     window.addEventListener('DOMContentLoaded', () => {
       // Load persisted state from localStorage first
       loadStateFromStorage();
+      stateLoaded = true;
+      startLiveSync();
 
       // 3-Role Switcher Buttons
       document.querySelectorAll('.role-mode-btn').forEach(btn => {
@@ -2272,7 +2348,8 @@
         try {
           localStorage.removeItem(STORAGE_KEY);
         } catch (e) {}
-        state = getDefaultState();
+        const keep = { liveId: state.liveId, liveSecret: state.liveSecret };
+        state = Object.assign(getDefaultState(), keep);
         saveStateToStorage();
         renderAll();
         showToast('รีเซ็ตข้อมูลในเครื่องกลับเป็นค่าเริ่มต้นเรียบร้อยแล้ว', 'amber');

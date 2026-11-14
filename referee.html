@@ -66,34 +66,52 @@
   </section>
 </main>
 
-<script>
-  // ---- data layer: the only part that changes when Firebase is connected ----
-  const KEY = 'MATCHON_LOCAL_DB_V1';
-  const Store = {
-    load() { try { return JSON.parse(localStorage.getItem(KEY) || 'null'); } catch { return null; } },
-    save(state) { localStorage.setItem(KEY, JSON.stringify(state)); },
-    subscribe(fn) { window.addEventListener('storage', (e) => { if (e.key === KEY) fn(); }); },
-  };
+<script type="module">
+  import * as Live from './js/live.js';
 
   const $ = (id) => document.getElementById(id);
-  const courtNo = Number(new URLSearchParams(location.search).get('court'));
-  let setIdx = 0;
-  let state = null;
+  const q = new URLSearchParams(location.search);
+  const courtNo = Number(q.get('court'));
+  const liveId = q.get('live');
+  const secret = new URLSearchParams(location.hash.slice(1)).get('k');
+  const LOCAL_KEY = 'MATCHON_LOCAL_DB_V1';
 
-  const court = () => state && state.courts && state.courts.find((c) => c.courtNo === courtNo);
+  let court = null;          // last known court (from Firebase or local storage)
+  let canWrite = false;
+  let online = false;
+  let noteText = '';
+  let setIdx = 0;
+
+  // ---- data layer: Firebase when the link has a live id, otherwise this browser's storage ----
+  const local = {
+    read() { try { return JSON.parse(localStorage.getItem(LOCAL_KEY) || 'null'); } catch { return null; } },
+    court() { const st = local.read(); return st && st.courts && st.courts.find((c) => c.courtNo === courtNo) || null; },
+    edit(mutate, extra) {
+      const st = local.read(); const c = st && st.courts.find((x) => x.courtNo === courtNo);
+      if (!c) return;
+      mutate(c); if (extra) extra(st, c);
+      localStorage.setItem(LOCAL_KEY, JSON.stringify(st));
+    },
+  };
+
   const show = (text) => { $('msg').textContent = text; $('msg').classList.remove('hidden'); $('pad').classList.add('hidden'); };
 
+  function currentSet(c) {
+    if (Number.isInteger(c.activeSet) && c.activeSet >= 0) return c.activeSet;
+    let last = 0; c.scores.forEach((s, i) => { if (s[0] || s[1]) last = i; });
+    return last;
+  }
+
   function draw() {
-    state = Store.load();
-    const c = court();
     $('court-badge').textContent = 'COURT ' + (courtNo || '–');
     if (!courtNo) return show('ลิงก์นี้ไม่ระบุคอร์ต ให้สแกน QR จากหน้า "สายแข่ง & คอร์ทสด" ของแต่ละคอร์ต');
-    if (!c) return show('ไม่พบข้อมูลคอร์ตนี้ในเครื่องนี้ ตอนนี้ข้อมูลเก็บในเบราว์เซอร์ของเครื่องที่เปิดหน้าผู้จัด ต้องเปิดหน้านี้บนเครื่อง/เบราว์เซอร์เดียวกันจึงจะเห็นข้อมูล (การสแกนจากมือถือเครื่องอื่นจะใช้ได้เมื่อต่อ Firebase)');
+    const c = court;
+    if (!c) return show(liveId ? 'กำลังเชื่อมต่อ… ถ้านานเกิน 10 วินาทีให้ตรวจอินเทอร์เน็ต หรือผู้จัดยังไม่ได้เปิดข้อมูลคอร์ตนี้' : 'ไม่พบข้อมูลคอร์ตนี้ในเครื่องนี้ ให้สแกน QR ใหม่จากหน้าผู้จัด');
     $('msg').classList.add('hidden'); $('pad').classList.remove('hidden');
-    setIdx = Number.isInteger(c.activeSet) ? c.activeSet : 0;
+    setIdx = currentSet(c);
     const live = c.status === 'LIVE';
     $('round').textContent = c.round;
-    $('status').textContent = live ? '● กำลังแข่งขัน' : 'คอร์ตว่าง รอเรียกคู่ลงสนาม';
+    $('status').textContent = live ? '● กำลังแข่งขัน' : 'คอร์ตว่าง รอผู้จัดเรียกคู่ลงสนาม';
     $('nameA').textContent = c.teamA; $('clubA').textContent = c.clubA;
     $('nameB').textContent = c.teamB; $('clubB').textContent = c.clubB;
     $('scoreA').textContent = c.scores[setIdx][0];
@@ -101,54 +119,76 @@
     $('shuttle').textContent = c.shuttleUsed + ' ลูก';
     $('sets').innerHTML = [0, 1, 2].map((i) =>
       `<button data-set="${i}" class="px-4 py-2 rounded-lg text-sm font-bold ${i === setIdx ? 'bg-emerald-500 text-slate-950' : 'bg-slate-800 text-slate-300'}">${i + 1}</button>`).join('');
-    ['incA', 'decA', 'incB', 'decB', 'shInc', 'shDec', 'finish'].forEach((id) => { $(id).disabled = !live; $(id).classList.toggle('opacity-40', !live); });
+    const enabled = live && canWrite;
+    ['incA', 'decA', 'incB', 'decB', 'shInc', 'shDec', 'finish'].forEach((id) => { $(id).disabled = !enabled; $(id).classList.toggle('opacity-40', !enabled); });
+    $('sets').querySelectorAll('button').forEach((b) => { b.disabled = !canWrite; });
+    const net = !liveId ? 'โหมดในเครื่อง (ไม่ซิงก์ข้ามเครื่อง)' : online ? '● ซิงก์สดกับผู้จัดแล้ว' : '○ ออฟไลน์ ระบบจะส่งเมื่อกลับมาออนไลน์';
+    $('sync').textContent = (noteText ? noteText + ' · ' : '') + net;
+    $('sync').className = 'text-center text-[11px] ' + (liveId && !online ? 'text-amber-400' : 'text-slate-500');
   }
 
-  function commit(mutate) {
-    const fresh = Store.load();
-    if (!fresh) return;
-    state = fresh;
-    const c = court();
-    if (!c) return;
-    mutate(c);
-    Store.save(state);
-    $('sync').textContent = 'บันทึกล่าสุด ' + new Date().toLocaleTimeString('th-TH');
+  async function commit(mutate, extraLocal) {
+    if (!canWrite) return;
+    if (liveId) {
+      try { await Live.updateCourt(liveId, courtNo, mutate); } catch (e) { noteText = 'ส่งไม่สำเร็จ: ' + (e.code || e.message); draw(); return; }
+    } else {
+      local.edit(mutate, extraLocal); court = local.court();
+    }
+    noteText = 'บันทึกล่าสุด ' + new Date().toLocaleTimeString('th-TH');
     draw();
   }
 
-  $('sets').addEventListener('click', (e) => { const b = e.target.closest('[data-set]'); if (b) commit((c) => { c.activeSet = Number(b.dataset.set); }); });
-  $('incA').onclick = () => commit((c) => { c.scores[setIdx][0] += 1; });
-  $('incB').onclick = () => commit((c) => { c.scores[setIdx][1] += 1; });
-  $('decA').onclick = () => commit((c) => { if (c.scores[setIdx][0] > 0) c.scores[setIdx][0] -= 1; });
-  $('decB').onclick = () => commit((c) => { if (c.scores[setIdx][1] > 0) c.scores[setIdx][1] -= 1; });
+  $('sets').addEventListener('click', (e) => { const b = e.target.closest('[data-set]'); if (b) { const i = Number(b.dataset.set); commit((c) => { c.activeSet = i; }); } });
+  $('incA').onclick = () => commit((c) => { c.scores[currentSet(c)][0] += 1; });
+  $('incB').onclick = () => commit((c) => { c.scores[currentSet(c)][1] += 1; });
+  $('decA').onclick = () => commit((c) => { const s = c.scores[currentSet(c)]; if (s[0] > 0) s[0] -= 1; });
+  $('decB').onclick = () => commit((c) => { const s = c.scores[currentSet(c)]; if (s[1] > 0) s[1] -= 1; });
   $('shInc').onclick = () => commit((c) => { c.shuttleUsed += 1; });
   $('shDec').onclick = () => commit((c) => { if (c.shuttleUsed > 0) c.shuttleUsed -= 1; });
 
-  $('finish').onclick = () => {
-    const c = court();
-    if (!c || !confirm('จบแมตช์นี้และบันทึกผล?')) return;
-    commit((c) => {
-      const s0 = c.scores[0];
-      const aWin = s0[0] >= s0[1];
-      const scoreText = c.scores.filter((s, i) => i === 0 || s[0] > 0 || s[1] > 0).map((s) => s[0] + '-' + s[1]).join(', ');
-      state.completedMatches = state.completedMatches || [];
-      state.completedMatches.unshift({
-        code: 'M-' + Math.floor(105 + Math.random() * 80),
-        round: c.round,
-        winner: aWin ? `${c.teamA} (${c.clubA})` : `${c.teamB} (${c.clubB})`,
-        loser: aWin ? `${c.teamB} (${c.clubB})` : `${c.teamA} (${c.clubA})`,
-        scoreText, shuttleUsed: c.shuttleUsed,
-        time: new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' น.',
-      });
-      c.status = 'READY'; c.round = 'คอร์ทว่าง (พร้อมเรียกคู่ถัดไป)';
-      c.teamA = 'รอเรียกคู่แข่งขัน'; c.clubA = '-'; c.teamB = 'รอเรียกคู่แข่งขัน'; c.clubB = '-';
-      c.scores = [[0, 0], [0, 0], [0, 0]]; c.shuttleUsed = 0;
-      c.activeSet = 0;
-    });
+  $('finish').onclick = async () => {
+    if (!court || !confirm('จบแมตช์นี้และบันทึกผล?')) return;
+    const c = court;
+    const aWin = c.scores[0][0] >= c.scores[0][1];
+    const done = {
+      code: c.matchCode || ('M-' + Math.floor(105 + Math.random() * 80)),
+      round: c.round,
+      winner: aWin ? `${c.teamA} (${c.clubA})` : `${c.teamB} (${c.clubB})`,
+      loser: aWin ? `${c.teamB} (${c.clubB})` : `${c.teamA} (${c.clubA})`,
+      scoreText: c.scores.filter((s, i) => i === 0 || s[0] > 0 || s[1] > 0).map((s) => s[0] + '-' + s[1]).join(', '),
+      shuttleUsed: c.shuttleUsed,
+      time: new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' น.',
+    };
+    const reset = (x) => {
+      x.status = 'READY'; x.matchCode = ''; x.round = 'คอร์ทว่าง (พร้อมเรียกคู่ถัดไป)';
+      x.teamA = 'รอเรียกคู่แข่งขัน'; x.clubA = '-'; x.teamB = 'รอเรียกคู่แข่งขัน'; x.clubB = '-';
+      x.scores = [[0, 0], [0, 0], [0, 0]]; x.shuttleUsed = 0; x.activeSet = -1;
+    };
+    if (liveId) {
+      try { await Live.addCompleted(liveId, done); } catch (e) { noteText = 'บันทึกผลไม่สำเร็จ: ' + (e.code || e.message); return draw(); }
+      await commit(reset);
+    } else {
+      await commit(reset, (st) => { (st.completedMatches = st.completedMatches || []).unshift(done); });
+    }
   };
 
-  Store.subscribe(draw);
+  // ---- start ----
   draw();
+  if (liveId) {
+    Live.connect(liveId, secret).then((r) => {
+      canWrite = r.canWrite;
+      if (r.error === 'auth') noteText = 'เปิดใช้ Anonymous sign-in ใน Firebase ก่อน (' + (r.detail || '') + ')';
+      else if (r.error === 'nokey' || r.error === 'badkey') noteText = 'ลิงก์ไม่มีรหัสกรรมการ ดูอย่างเดียว ให้สแกน QR ใหม่';
+      draw();
+    });
+    Live.watchConnection((on) => { online = on; draw(); });
+    Live.watchCourt(liveId, courtNo, (c) => { court = c; draw(); });
+  } else {
+    canWrite = true;
+    court = local.court();
+    window.addEventListener('storage', (e) => { if (e.key === LOCAL_KEY) { court = local.court(); draw(); } });
+    draw();
+  }
 </script>
 </body>
 </html>

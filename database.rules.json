@@ -1,0 +1,45 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "secrets": {
+      "$liveId": {
+        ".write": "!data.exists()",
+        ".validate": "newData.isString() && newData.val().length >= 16 && newData.val().length <= 64"
+      }
+    },
+
+    "refs": {
+      "$liveId": {
+        "$uid": {
+          ".write": "auth != null && auth.uid === $uid && newData.val() === root.child('secrets').child($liveId).val()",
+          ".validate": "newData.isString()"
+        }
+      }
+    },
+
+    "live": {
+      "$liveId": {
+        ".read": true,
+        "courts": {
+          ".write": "auth != null && root.child('refs').child($liveId).child(auth.uid).exists()",
+          "$n": {
+            ".validate": "newData.hasChildren(['courtNo', 'status', 'scores'])",
+            "scores": {
+              "$set": {
+                "$team": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 99" }
+              }
+            },
+            "shuttleUsed": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 999" }
+          }
+        },
+        "completed": {
+          "$id": {
+            ".write": "auth != null && root.child('refs').child($liveId).child(auth.uid).exists() && !data.exists()"
+          }
+        }
+      }
+    }
+  }
+}
