@@ -1,199 +1,471 @@
 <!DOCTYPE html>
-<html lang="th" class="dark">
+<html lang="th">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MatchON กรรมการ</title>
-  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Noto+Sans+Thai:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <style>
-    body { font-family: 'Noto Sans Thai','Inter',sans-serif; background:#090d16; color:#f1f5f9; -webkit-tap-highlight-color: transparent; }
-    .score { font-variant-numeric: tabular-nums; }
-    button { touch-action: manipulation; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#070d1f">
+<title>MatchON กรรมการ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700;800&family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#070d1f; --panel:#0e1730; --panel2:#142040; --line:#26345c; --ink:#f3f6ff; --mute:#93a2c8;
+  --a:#2563eb; --a2:#1d4ed8; --a-glow:#3b82f6; --b:#e11d48; --b2:#be123c; --b-glow:#fb7185;
+  --go:#16a34a; --go2:#15803d; --amber:#f59e0b; --lime:#d6f23d;
+  --hdr:clamp(38px,8vh,58px); --brd:clamp(58px,14vh,100px); --bar:clamp(66px,18vh,124px);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--bg);color:var(--ink);font-family:'Noto Sans Thai','Prompt',sans-serif;overflow:hidden}
+button{font:inherit;color:inherit;border:0;cursor:pointer;touch-action:manipulation;user-select:none}
+button:disabled{opacity:.38;cursor:not-allowed}
+.num{font-family:'Prompt',sans-serif;font-variant-numeric:tabular-nums}
+#app{height:100dvh;display:grid;grid-template-rows:var(--hdr) var(--brd) 1fr var(--bar);gap:6px;padding:max(6px,env(safe-area-inset-top)) max(8px,env(safe-area-inset-right)) max(6px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left));
+  background:radial-gradient(1200px 500px at 50% -10%,#16275a 0,transparent 60%),var(--bg)}
+
+/* top bar */
+.top{display:flex;align-items:center;gap:12px;background:linear-gradient(180deg,#0f1a3a,#0a1230);border:1px solid var(--line);border-radius:12px;padding:0 12px;min-width:0}
+.brand{display:flex;align-items:center;gap:8px;font:800 clamp(15px,3.4vh,22px) 'Prompt';white-space:nowrap}
+.brand i{width:clamp(22px,5vh,32px);aspect-ratio:1;border-radius:9px;background:linear-gradient(135deg,#34d399,#0d9488);display:grid;place-items:center;font-style:normal;font-size:clamp(12px,3vh,18px)}
+.brand b{color:#34d399}
+.title{flex:1;min-width:0;text-align:center;line-height:1.2}
+.title strong{display:block;font:700 clamp(12px,2.6vh,17px) 'Noto Sans Thai';white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.title span{font-size:clamp(10px,2.1vh,13px);color:var(--mute)}
+.pill{display:flex;align-items:center;gap:7px;padding:0 12px;height:70%;border-radius:99px;background:#0a1230;border:1px solid var(--line);font:700 clamp(11px,2.4vh,15px) 'Prompt';white-space:nowrap}
+.dot{width:.8em;height:.8em;border-radius:50%;background:#64748b}
+.live .dot{background:#ef4444;box-shadow:0 0 10px #ef4444;animation:blink 1.2s infinite}
+@keyframes blink{50%{opacity:.35}}
+.gear{width:clamp(30px,6.5vh,42px);aspect-ratio:1;border-radius:50%;background:transparent;font-size:clamp(16px,3.6vh,24px)}
+
+/* scoreboard */
+.board{display:grid;grid-template-columns:1fr auto 1fr;align-items:stretch;gap:8px;min-height:0}
+.team{display:flex;align-items:center;gap:10px;padding:0 12px;border-radius:12px;background:linear-gradient(180deg,#0f1a3a,#0a1230);border:1px solid var(--line);min-width:0;position:relative;overflow:hidden}
+.team::before{content:"";position:absolute;inset:0 auto 0 0;width:5px;background:var(--c)}
+.team.r{flex-direction:row-reverse;text-align:right}
+.team.r::before{inset:0 0 0 auto}
+.team[data-t="A"]{--c:var(--a)} .team[data-t="B"]{--c:var(--b)}
+.avs{display:flex;flex:none}
+.av{width:clamp(28px,7.5vh,52px);aspect-ratio:1;border-radius:50%;display:grid;place-items:center;font:700 clamp(12px,3vh,20px) 'Prompt';background:#1c2b57;border:2px solid var(--c);margin-left:-8px}
+.av:first-child{margin-left:0}
+.team.r .av{margin-left:0;margin-right:-8px}.team.r .av:first-child{margin-right:0}
+.who{min-width:0;line-height:1.15}
+.who strong{display:block;font:700 clamp(12px,2.8vh,19px) 'Noto Sans Thai';overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.who span{font-size:clamp(10px,2.1vh,13px);color:var(--mute);display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.srv{font-size:clamp(14px,3.4vh,22px);color:var(--lime);visibility:hidden;flex:none}
+.srv.on{visibility:visible;animation:blink 1.2s infinite}
+.mid{display:grid;grid-template-columns:auto auto auto;align-items:center;gap:clamp(6px,1.5vw,16px);padding:0 clamp(8px,1.6vw,18px);border-radius:14px;background:#0a1230;border:1px solid var(--line)}
+.big{width:clamp(44px,12vh,86px);aspect-ratio:1;border-radius:50%;display:grid;place-items:center;font:800 clamp(24px,7.5vh,52px) 'Prompt';color:#fff}
+.big.a{background:radial-gradient(circle at 30% 25%,var(--a-glow),var(--a2));box-shadow:0 0 18px #2563eb88}
+.big.b{background:radial-gradient(circle at 30% 25%,var(--b-glow),var(--b2));box-shadow:0 0 18px #e11d4888}
+.setinfo{text-align:center;line-height:1.1}
+.setinfo small{display:block;font-size:clamp(10px,2.2vh,14px);color:var(--mute)}
+.setinfo b{font:700 clamp(15px,4vh,28px) 'Prompt'}
+.chip{display:inline-block;margin-top:2px;padding:1px 8px;border-radius:99px;background:var(--amber);color:#111;font:700 clamp(9px,1.9vh,12px) 'Prompt'}
+.chip:empty{display:none}
+
+/* stage */
+.stage{display:grid;grid-template-columns:clamp(104px,17vw,190px) 1fr clamp(104px,17vw,190px);gap:8px;min-height:0}
+.side{display:flex;flex-direction:column;gap:6px;padding:6px;border-radius:14px;background:var(--panel);border:1px solid var(--line);min-height:0}
+.side button{border-radius:12px;font:700 clamp(11px,2.5vh,16px) 'Noto Sans Thai';min-height:0;display:flex;align-items:center;justify-content:center;gap:6px;flex-direction:column;line-height:1.1;text-align:center;padding:4px}
+.side .plus{flex:3.2;font:800 clamp(24px,7vh,46px) 'Prompt';color:#fff}
+.side .plus small{font:700 clamp(10px,2.4vh,15px) 'Noto Sans Thai';opacity:.95}
+.side .plus .sh{font-size:clamp(16px,4.4vh,30px)}
+.side .sm{flex:1;background:var(--panel2);border:1px solid var(--line)}
+.side .sm.red{background:#3a1220;border-color:#6b1d36;color:#ffd5df}
+.side[data-t="A"] .plus{background:linear-gradient(180deg,#3b82f6,#1d4ed8);box-shadow:0 6px 0 #1e3a8a}
+.side[data-t="B"] .plus{background:linear-gradient(180deg,#fb4f72,#be123c);box-shadow:0 6px 0 #881337}
+.side .plus:active{transform:translateY(4px);box-shadow:none!important}
+.side[data-t="A"] .sm.mine{background:#122a63;border-color:#2b59c6}
+.side[data-t="B"] .sm.mine{background:#4a1328;border-color:#b3315a}
+
+.court{position:relative;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:#0b6b3a;min-height:0}
+.court svg{width:100%;height:100%;display:block}
+.tag{position:absolute;padding:2px 10px;border-radius:6px;font:700 clamp(10px,2.3vh,15px) 'Noto Sans Thai';color:#fff;white-space:nowrap}
+.tag.a{background:var(--a);left:6%;top:8%}.tag.b{background:var(--b);right:6%;bottom:8%}
+.hint{position:absolute;inset:auto 0 6px 0;text-align:center;font-size:clamp(10px,2.2vh,14px);color:#d1fae5}
+
+/* bottom bar */
+.bar{display:grid;grid-template-columns:1fr 1fr 1.15fr 1.35fr repeat(3,minmax(0,.62fr));gap:6px;min-height:0}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:6px 10px;display:flex;flex-direction:column;justify-content:center;gap:4px;min-width:0;min-height:0}
+.box h4{font:600 clamp(10px,2.2vh,14px) 'Noto Sans Thai';color:var(--mute);display:flex;gap:6px;align-items:center}
+.box .val{font:700 clamp(14px,3.6vh,26px) 'Prompt'}
+.step{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.step button{width:clamp(30px,7.5vh,48px);aspect-ratio:1;border-radius:50%;background:var(--amber);color:#1a1200;font:800 clamp(16px,4vh,26px) 'Prompt';display:grid;place-items:center}
+.swap{background:#1d3f9e;border:1px solid #3466e0;border-radius:10px;padding:clamp(4px,1.2vh,9px);font:700 clamp(10px,2.3vh,15px) 'Noto Sans Thai'}
+.start{background:linear-gradient(180deg,#22c55e,#15803d);box-shadow:0 6px 0 #14532d;border-radius:16px;font:800 clamp(14px,3.8vh,26px) 'Prompt';display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.start:active{transform:translateY(4px);box-shadow:none}
+.start span{font-size:clamp(18px,5vh,34px);line-height:1}
+.statusv{background:#06101f;border-radius:10px;text-align:center;padding:4px;font:700 clamp(12px,3vh,20px) 'Prompt';color:#4ade80}
+.statusv.warn{color:var(--amber)} .statusv.idle{color:var(--mute)}
+.box small{font-size:clamp(9px,2vh,13px);color:var(--mute);text-align:center}
+.act{border-radius:14px;font:700 clamp(10px,2.3vh,15px) 'Noto Sans Thai';display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:4px;line-height:1.1;text-align:center}
+.act span{font-size:clamp(16px,4.2vh,28px)}
+.act.pause{background:linear-gradient(180deg,#3b82f6,#1d4ed8)}
+.act.set{background:linear-gradient(180deg,#fb923c,#c2410c)}
+.act.end{background:linear-gradient(180deg,#f43f5e,#be123c)}
+
+/* messages / modal */
+.msg{position:fixed;inset:0;display:none;place-items:center;background:var(--bg);padding:24px;z-index:5;text-align:center;line-height:1.7}
+.msg.on{display:grid}.msg div{max-width:520px;color:#fde68a}
+.toast{position:fixed;left:50%;bottom:calc(var(--bar) + 18px);transform:translateX(-50%);background:#0b1226ee;border:1px solid var(--line);padding:8px 16px;border-radius:99px;font-size:14px;z-index:9;display:none}
+.toast.on{display:block}
+.modal{position:fixed;inset:0;background:#000a;display:none;place-items:center;z-index:8;padding:16px}
+.modal.on{display:grid}
+.sheet{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px;width:min(420px,100%);display:flex;flex-direction:column;gap:12px}
+.sheet h3{font:700 18px 'Prompt'}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--panel2);border-radius:12px;padding:12px 14px}
+.row small{color:var(--mute);display:block}
+.sw{width:48px;height:28px;border-radius:99px;background:#334155;position:relative;flex:none}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:.15s}
+.sw.on{background:var(--go)}.sw.on::after{left:23px}
+.close{background:#1e293b;border-radius:12px;padding:12px;font-weight:700}
+
+/* short landscape screens (phones): drop decoration so the buttons keep their size */
+@media (max-height:480px) and (orientation:landscape){
+  .side .plus .sh, .side .plus small{display:none}
+  .side .plus{font-size:clamp(26px,9vh,40px)}
+  .side{gap:4px;padding:4px}
+  .hint{display:none}
+}
+
+/* portrait phones: stack */
+@media (orientation:portrait){
+  :root{--hdr:44px;--brd:auto;--bar:auto}
+  #app{height:auto;min-height:100dvh;grid-template-rows:var(--hdr) auto auto auto}
+  html,body{overflow:auto}
+  .who strong{white-space:normal}
+  .who{flex:1}
+  .avs{display:none}
+  .team.r{text-align:right}
+  .side{min-height:0}
+  .board{grid-template-columns:1fr 1fr;grid-template-rows:auto auto}
+  .mid{grid-column:1/-1;order:3;justify-content:center;padding:8px}
+  .big{width:64px;font-size:34px}
+  .team{padding:8px 10px;min-height:52px}
+  .stage{grid-template-columns:1fr 1fr}
+  .court{display:none}
+  .side{height:330px}
+  .side .plus{min-height:120px;font-size:44px}.side .sm{min-height:44px;font-size:14px}
+  .bar{grid-template-columns:1fr 1fr 1fr}
+  .bar .box{grid-column:span 3}.bar .start{grid-column:span 3;min-height:84px}
+  .act{min-height:68px}
+  .title span{display:none}
+  .toast{bottom:20px}
+}
+</style>
 </head>
-<body class="min-h-screen">
-<main class="max-w-lg mx-auto p-4 space-y-4" style="padding-bottom:max(1rem, env(safe-area-inset-bottom))">
-  <header class="flex items-center justify-between">
-    <div class="flex items-center gap-2">
-      <span class="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center text-lg">🏸</span>
-      <span class="font-extrabold text-lg">Match<span class="text-emerald-400">ON</span></span>
-    </div>
-    <span id="court-badge" class="text-xs font-extrabold px-2.5 py-1 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30">COURT –</span>
+<body>
+<div id="app">
+  <header class="top">
+    <div class="brand"><i>🏸</i><span>Match<b>ON</b></span></div>
+    <div class="title"><strong id="tname">การแข่งขัน</strong><span id="tsub">สนาม –</span></div>
+    <div class="pill" id="livepill"><span class="dot"></span><span id="livetxt">OFFLINE</span></div>
+    <div class="pill"><span>🕒</span><span id="clock" class="num">--:--:--</span></div>
+    <button class="gear" id="gear" aria-label="ตั้งค่า">⚙️</button>
   </header>
 
-  <div id="msg" class="hidden rounded-2xl border border-amber-500/40 bg-amber-500/10 text-amber-200 p-4 text-sm leading-relaxed"></div>
-
-  <section id="pad" class="hidden space-y-4">
-    <div>
-      <h1 id="round" class="font-bold text-base"></h1>
-      <p id="status" class="text-xs text-slate-400"></p>
+  <section class="board">
+    <div class="team" id="teamL"><div class="avs" id="avL"></div><div class="who"><strong id="nL"></strong><span id="cL"></span></div><span class="srv" id="srvL">🏸</span></div>
+    <div class="mid">
+      <div class="big" id="bigL">0</div>
+      <div class="setinfo"><small id="setlab">เซตที่ 1</small><b class="num" id="setsWon">0 - 0</b><div class="chip" id="chip"></div></div>
+      <div class="big" id="bigR">0</div>
     </div>
-
-    <div class="flex items-center justify-between bg-slate-900 p-2 rounded-xl border border-slate-800">
-      <span class="text-xs font-semibold text-slate-400 pl-2">เซตที่</span>
-      <div class="flex gap-1.5" id="sets"></div>
-    </div>
-
-    <div class="grid grid-cols-2 gap-3">
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 text-center space-y-3">
-        <p id="nameA" class="text-sm font-bold truncate"></p>
-        <p id="clubA" class="text-[11px] text-slate-400 truncate"></p>
-        <div id="scoreA" class="score text-7xl font-extrabold text-emerald-400 py-2">0</div>
-        <button id="incA" class="w-full h-16 rounded-2xl bg-emerald-500 active:bg-emerald-400 text-slate-950 font-extrabold text-lg">+1</button>
-        <button id="decA" class="w-full h-11 rounded-xl bg-slate-800 active:bg-slate-700 font-bold">− แก้แต้ม</button>
-      </div>
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 text-center space-y-3">
-        <p id="nameB" class="text-sm font-bold truncate"></p>
-        <p id="clubB" class="text-[11px] text-slate-400 truncate"></p>
-        <div id="scoreB" class="score text-7xl font-extrabold text-cyan-400 py-2">0</div>
-        <button id="incB" class="w-full h-16 rounded-2xl bg-cyan-400 active:bg-cyan-300 text-slate-950 font-extrabold text-lg">+1</button>
-        <button id="decB" class="w-full h-11 rounded-xl bg-slate-800 active:bg-slate-700 font-bold">− แก้แต้ม</button>
-      </div>
-    </div>
-
-    <div class="flex items-center justify-between bg-slate-900 px-4 py-3 rounded-xl border border-slate-800 text-sm">
-      <span class="text-slate-300">ลูกแบดที่ใช้</span>
-      <div class="flex items-center gap-3">
-        <button id="shDec" class="w-10 h-10 rounded-lg bg-slate-800 font-bold">−</button>
-        <span id="shuttle" class="font-extrabold text-amber-400 text-lg w-14 text-center">0 ลูก</span>
-        <button id="shInc" class="w-10 h-10 rounded-lg bg-slate-800 font-bold">+</button>
-      </div>
-    </div>
-
-    <button id="finish" class="w-full py-4 rounded-2xl bg-amber-500 active:bg-amber-400 text-slate-950 font-extrabold">🏁 จบแมตช์ และส่งผลเข้าระบบ</button>
-    <p id="sync" class="text-center text-[11px] text-slate-500"></p>
+    <div class="team r" id="teamR"><div class="avs" id="avR"></div><div class="who"><strong id="nR"></strong><span id="cR"></span></div><span class="srv" id="srvR">🏸</span></div>
   </section>
-</main>
+
+  <main class="stage">
+    <aside class="side" id="sideL">
+      <button class="plus" id="plusL"><span class="sh">🏸</span><span>+1</span><small id="plusLn"></small></button>
+      <button class="sm" id="minL">−1</button>
+      <button class="sm mine" id="srvBtnL">🏸 ให้เสิร์ฟ</button>
+      <button class="sm red" id="undoL">✕ ยกเลิกแต้ม</button>
+    </aside>
+    <div class="court">
+      <svg viewBox="0 0 440 200" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <defs><linearGradient id="g" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#0f7a43"/><stop offset="1" stop-color="#0a5a31"/></linearGradient></defs>
+        <rect width="440" height="200" fill="url(#g)"/>
+        <g fill="none" stroke="#fff" stroke-width="2" opacity=".9">
+          <rect x="30" y="20" width="380" height="160"/><line x1="30" y1="34" x2="410" y2="34"/><line x1="30" y1="166" x2="410" y2="166"/>
+          <line x1="104" y1="20" x2="104" y2="180"/><line x1="336" y1="20" x2="336" y2="180"/><line x1="104" y1="100" x2="220" y2="100"/><line x1="220" y1="100" x2="336" y2="100"/>
+        </g>
+        <line x1="220" y1="14" x2="220" y2="186" stroke="#e2e8f0" stroke-width="4"/>
+        <circle id="srvDot" cx="150" cy="70" r="7" fill="#d6f23d" stroke="#365314" stroke-width="2"/>
+      </svg>
+      <div class="tag a" id="tagL"></div><div class="tag b" id="tagR"></div>
+      <div class="hint" id="hint"></div>
+    </div>
+    <aside class="side" id="sideR">
+      <button class="plus" id="plusR"><span class="sh">🏸</span><span>+1</span><small id="plusRn"></small></button>
+      <button class="sm" id="minR">−1</button>
+      <button class="sm mine" id="srvBtnR">🏸 ให้เสิร์ฟ</button>
+      <button class="sm red" id="undoR">✕ ยกเลิกแต้ม</button>
+    </aside>
+  </main>
+
+  <footer class="bar">
+    <div class="box"><h4>🏸 ลูกขนไก่ที่ใช้</h4>
+      <div class="step"><button id="shDec">−</button><span class="val num" id="shuttle">0</span><button id="shInc">+</button></div></div>
+    <div class="box"><h4>🙋 ผู้เสิร์ฟ</h4><div class="val" id="server" style="font-size:clamp(12px,3vh,20px)">–</div><button class="swap" id="swapServe">⇄ เปลี่ยนผู้เสิร์ฟ</button></div>
+    <button class="start" id="start"><span>▶</span><b id="startTxt">เริ่มเกม</b></button>
+    <div class="box"><h4>🏆 สถานะการแข่งขัน</h4><div class="statusv" id="state">–</div><small id="since"></small></div>
+    <button class="act pause" id="pause"><span>⏸</span>พักการแข่งขัน</button>
+    <button class="act set" id="endSet"><span>🏁</span>จบเซต</button>
+    <button class="act end" id="endMatch"><span>🏆</span>จบการแข่งขัน</button>
+  </footer>
+</div>
+
+<div class="msg" id="msg"><div id="msgTxt"></div></div>
+<div class="toast" id="toast"></div>
+<div class="modal" id="modal"><div class="sheet">
+  <h3>ตั้งค่า</h3>
+  <button class="row" id="optFlip" style="width:100%;text-align:left"><div>สลับฝั่งซ้าย-ขวา<small>ให้ตรงกับที่กรรมการนั่งดูสนาม</small></div><span class="sw" id="swFlip"></span></button>
+  <button class="row" id="optWake" style="width:100%;text-align:left"><div>เปิดหน้าจอค้างไว้<small>กันจอดับระหว่างแมตช์</small></div><span class="sw" id="swWake"></span></button>
+  <button class="close" id="closeModal">ปิด</button>
+</div></div>
 
 <script type="module">
-  import * as Live from './js/live.js';
+import * as Live from './js/live.js';
 
-  const $ = (id) => document.getElementById(id);
-  const q = new URLSearchParams(location.search);
-  const courtNo = Number(q.get('court'));
-  const liveId = q.get('live');
-  const secret = new URLSearchParams(location.hash.slice(1)).get('k');
-  const LOCAL_KEY = 'MATCHON_LOCAL_DB_V1';
+const $ = (id) => document.getElementById(id);
+const q = new URLSearchParams(location.search);
+const courtNo = Number(q.get('court'));
+const liveId = q.get('live');
+const secret = new URLSearchParams(location.hash.slice(1)).get('k');
+const LOCAL_KEY = 'MATCHON_LOCAL_DB_V1';
+const PREF = 'matchon.referee.prefs';
 
-  let court = null;          // last known court (from Firebase or local storage)
-  let canWrite = false;
-  let online = false;
-  let noteText = '';
-  let setIdx = 0;
+let court = null, canWrite = false, online = false, note = '';
+let prefs = { flip: false, wake: false };
+try { Object.assign(prefs, JSON.parse(localStorage.getItem(PREF) || '{}')); } catch {}
+const savePrefs = () => { try { localStorage.setItem(PREF, JSON.stringify(prefs)); } catch {} };
 
-  // ---- data layer: Firebase when the link has a live id, otherwise this browser's storage ----
-  const local = {
-    read() { try { return JSON.parse(localStorage.getItem(LOCAL_KEY) || 'null'); } catch { return null; } },
-    court() { const st = local.read(); return st && st.courts && st.courts.find((c) => c.courtNo === courtNo) || null; },
-    edit(mutate, extra) {
-      const st = local.read(); const c = st && st.courts.find((x) => x.courtNo === courtNo);
-      if (!c) return;
-      mutate(c); if (extra) extra(st, c);
-      localStorage.setItem(LOCAL_KEY, JSON.stringify(st));
-    },
-  };
+/* ---------------- data layer ---------------- */
+const local = {
+  read() { try { return JSON.parse(localStorage.getItem(LOCAL_KEY) || 'null'); } catch { return null; } },
+  court() { const st = local.read(); return (st && st.courts && st.courts.find((c) => c.courtNo === courtNo)) || null; },
+  edit(mutate, extra) {
+    const st = local.read(); const c = st && st.courts.find((x) => x.courtNo === courtNo);
+    if (!c) return;
+    mutate(c); if (extra) extra(st, c);
+    localStorage.setItem(LOCAL_KEY, JSON.stringify(st));
+  },
+};
+const ensure = (c) => {
+  c.log = Array.isArray(c.log) ? c.log : [];
+  c.scores = c.scores || [[0, 0], [0, 0], [0, 0]];
+  if (!Number.isInteger(c.activeSet) || c.activeSet < 0) { let l = 0; c.scores.forEach((s, i) => { if (s[0] || s[1]) l = i; }); c.activeSet = l; }
+  return c;
+};
 
-  const show = (text) => { $('msg').textContent = text; $('msg').classList.remove('hidden'); $('pad').classList.add('hidden'); };
-
-  function currentSet(c) {
-    if (Number.isInteger(c.activeSet) && c.activeSet >= 0) return c.activeSet;
-    let last = 0; c.scores.forEach((s, i) => { if (s[0] || s[1]) last = i; });
-    return last;
+/* ---------------- game logic ---------------- */
+const MAXSET = 3;
+const idx = (c) => ensure(c).activeSet;
+const T = (t) => (t === 'A' ? 0 : 1);
+const started = (c) => !!c.startedAt || c.scores.some((s) => s[0] || s[1]);
+const setWinner = (s) => {
+  const [a, b] = s, hi = Math.max(a, b), lead = Math.abs(a - b);
+  if ((hi >= 21 && lead >= 2) || hi >= 30) return a > b ? 'A' : 'B';
+  return '';
+};
+function setsWon(c, includeCurrent) {
+  const cur = idx(c); let a = 0, b = 0;
+  c.scores.forEach((s, i) => {
+    if (i < cur || (includeCurrent && i === cur && (s[0] || s[1]))) { if (s[0] > s[1]) a++; else if (s[1] > s[0]) b++; }
+  });
+  return [a, b];
+}
+function setPointChip(c) {
+  const s = c.scores[idx(c)], [a, b] = s;
+  if (setWinner(s)) return 'ครบแต้ม กดจบเซต';
+  const hi = Math.max(a, b);
+  if (hi >= 20 && Math.abs(a - b) >= 1) return 'เซตพอยท์ ' + (a > b ? 'ฝั่ง ' + 'A' : 'ฝั่ง B');
+  return '';
+}
+const addPoint = (t) => (c) => {
+  ensure(c); const i = idx(c);
+  if (!c.startedAt) c.startedAt = Date.now();
+  c.paused = false;
+  c.scores[i][T(t)] += 1; c.server = t; c.log.push(t + i);
+};
+const minus = (t) => (c) => {
+  ensure(c); const i = idx(c);
+  if (c.scores[i][T(t)] > 0) {
+    c.scores[i][T(t)] -= 1;
+    const k = c.log.lastIndexOf(t + i); if (k >= 0) c.log.splice(k, 1);
   }
+};
+const undo = (c) => {
+  ensure(c);
+  const last = c.log.pop(); if (!last) return;
+  const t = last[0], i = Number(last[1]);
+  if (c.scores[i][T(t)] > 0) c.scores[i][T(t)] -= 1;
+  c.activeSet = i;
+  const prev = c.log[c.log.length - 1]; if (prev) c.server = prev[0];
+};
 
-  function draw() {
-    $('court-badge').textContent = 'COURT ' + (courtNo || '–');
-    if (!courtNo) return show('ลิงก์นี้ไม่ระบุคอร์ต ให้สแกน QR จากหน้า "สายแข่ง & คอร์ทสด" ของแต่ละคอร์ต');
-    const c = court;
-    if (!c) return show(liveId ? 'กำลังเชื่อมต่อ… ถ้านานเกิน 10 วินาทีให้ตรวจอินเทอร์เน็ต หรือผู้จัดยังไม่ได้เปิดข้อมูลคอร์ตนี้' : 'ไม่พบข้อมูลคอร์ตนี้ในเครื่องนี้ ให้สแกน QR ใหม่จากหน้าผู้จัด');
-    $('msg').classList.add('hidden'); $('pad').classList.remove('hidden');
-    setIdx = currentSet(c);
-    const live = c.status === 'LIVE';
-    $('round').textContent = c.round;
-    $('status').textContent = live ? '● กำลังแข่งขัน' : 'คอร์ตว่าง รอผู้จัดเรียกคู่ลงสนาม';
-    $('nameA').textContent = c.teamA; $('clubA').textContent = c.clubA;
-    $('nameB').textContent = c.teamB; $('clubB').textContent = c.clubB;
-    $('scoreA').textContent = c.scores[setIdx][0];
-    $('scoreB').textContent = c.scores[setIdx][1];
-    $('shuttle').textContent = c.shuttleUsed + ' ลูก';
-    $('sets').innerHTML = [0, 1, 2].map((i) =>
-      `<button data-set="${i}" class="px-4 py-2 rounded-lg text-sm font-bold ${i === setIdx ? 'bg-emerald-500 text-slate-950' : 'bg-slate-800 text-slate-300'}">${i + 1}</button>`).join('');
-    const enabled = live && canWrite;
-    ['incA', 'decA', 'incB', 'decB', 'shInc', 'shDec', 'finish'].forEach((id) => { $(id).disabled = !enabled; $(id).classList.toggle('opacity-40', !enabled); });
-    $('sets').querySelectorAll('button').forEach((b) => { b.disabled = !canWrite; });
-    const net = !liveId ? 'โหมดในเครื่อง (ไม่ซิงก์ข้ามเครื่อง)' : online ? '● ซิงก์สดกับผู้จัดแล้ว' : '○ ออฟไลน์ ระบบจะส่งเมื่อกลับมาออนไลน์';
-    $('sync').textContent = (noteText ? noteText + ' · ' : '') + net;
-    $('sync').className = 'text-center text-[11px] ' + (liveId && !online ? 'text-amber-400' : 'text-slate-500');
+/* ---------------- rendering ---------------- */
+const view = () => (prefs.flip ? { L: 'B', R: 'A' } : { L: 'A', R: 'B' });
+const nameOf = (c, t) => (t === 'A' ? c.teamA : c.teamB);
+const clubOf = (c, t) => (t === 'A' ? c.clubA : c.clubB);
+const initials = (name) => String(name || '?').split('/').map((p) => p.replace(/^คุณ\s*/, '').trim()).filter(Boolean).slice(0, 2).map((p) => Array.from(p)[0] || '?');
+const fmtTime = (ms) => new Date(ms).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+const toast = (t) => { const el = $('toast'); el.textContent = t; el.classList.add('on'); clearTimeout(toast.k); toast.k = setTimeout(() => el.classList.remove('on'), 2200); };
+const showMsg = (t) => { $('msgTxt').textContent = t; $('msg').classList.add('on'); };
+
+function draw() {
+  if (!courtNo) return showMsg('ลิงก์นี้ไม่ระบุคอร์ต ให้สแกน QR จากหน้า "สายแข่ง & คอร์ทสด" ของแต่ละคอร์ต');
+  if (!court) return showMsg(liveId ? 'กำลังเชื่อมต่อ… ถ้านานเกิน 10 วินาทีให้ตรวจอินเทอร์เน็ต หรือผู้จัดยังไม่ได้เปิดข้อมูลคอร์ตนี้' : 'ไม่พบข้อมูลคอร์ตนี้ในเครื่องนี้ ให้สแกน QR ใหม่จากหน้าผู้จัด');
+  $('msg').classList.remove('on');
+  const c = ensure(court), v = view(), i = idx(c);
+  const liveMatch = c.status === 'LIVE', begun = started(c), running = liveMatch && begun && !c.paused;
+  const [wa, wb] = setsWon(c, false);
+
+  $('tname').textContent = c.tournament || 'การแข่งขันแบดมินตัน';
+  $('tsub').textContent = 'สนามที่ ' + courtNo + ' | ' + new Date().toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' });
+  $('livepill').className = 'pill' + (running ? ' live' : '');
+  $('livetxt').textContent = running ? 'LIVE' : liveMatch ? (c.paused ? 'PAUSED' : 'READY') : 'IDLE';
+
+  for (const side of ['L', 'R']) {
+    const t = v[side];
+    $('n' + side).textContent = nameOf(c, t);
+    $('c' + side).textContent = clubOf(c, t);
+    $('av' + side).innerHTML = initials(nameOf(c, t)).map((x) => `<div class="av">${x}</div>`).join('');
+    $('team' + side).dataset.t = t; $('side' + side).dataset.t = t;
+    $('big' + side).className = 'big ' + (t === 'A' ? 'a' : 'b');
+    $('big' + side).textContent = c.scores[i][T(t)];
+    $('plus' + side + 'n').textContent = nameOf(c, t);
+    $('srv' + side).classList.toggle('on', c.server === t);
+    $('tag' + side).textContent = initials(nameOf(c, t)).join(' / ') ? nameOf(c, t) : '';
   }
+  $('tagL').className = 'tag ' + (v.L === 'A' ? 'a' : 'b'); $('tagR').className = 'tag ' + (v.R === 'A' ? 'a' : 'b');
+  $('setlab').textContent = 'เซตที่ ' + (i + 1);
+  const wl = v.L === 'A' ? wa : wb, wr = v.L === 'A' ? wb : wa;
+  $('setsWon').textContent = wl + ' - ' + wr;
+  $('chip').textContent = setPointChip(c);
+  $('shuttle').textContent = c.shuttleUsed;
+  $('server').textContent = c.server ? nameOf(c, c.server) : 'ยังไม่ระบุ';
+  // server dot on the court graphic
+  const onLeft = c.server ? v.L === c.server : true, evenScore = (c.scores[i][T(c.server || 'A')] % 2) === 0;
+  const dot = $('srvDot'); dot.setAttribute('cx', onLeft ? 160 : 280); dot.setAttribute('cy', evenScore ? (onLeft ? 135 : 65) : (onLeft ? 65 : 135));
+  dot.style.display = c.server ? '' : 'none';
 
-  async function commit(mutate, extraLocal) {
-    if (!canWrite) return;
-    if (liveId) {
-      try { await Live.updateCourt(liveId, courtNo, mutate); } catch (e) {
-        if (e.code === 'PERMISSION_DENIED') { canWrite = false; noteText = 'รหัสถูกเปลี่ยนแล้วหรือไม่มีสิทธิ์ ให้ขอ QR ใหม่จากผู้จัด'; }
-        else noteText = 'ส่งไม่สำเร็จ: ' + (e.code || e.message);
-        draw(); return;
-      }
-    } else {
-      local.edit(mutate, extraLocal); court = local.court();
-    }
-    noteText = 'บันทึกล่าสุด ' + new Date().toLocaleTimeString('th-TH');
-    draw();
-  }
+  $('startTxt').textContent = !begun ? 'เริ่มเกม' : c.paused ? 'เล่นต่อ' : 'กำลังแข่ง';
+  const st = $('state');
+  st.className = 'statusv' + (!liveMatch ? ' idle' : c.paused ? ' warn' : !begun ? ' idle' : '');
+  st.textContent = !liveMatch ? 'คอร์ตว่าง' : c.paused ? 'พักการแข่งขัน' : !begun ? 'พร้อมเริ่ม' : 'กำลังแข่งขัน';
+  $('since').textContent = c.startedAt ? 'เริ่มแข่ง ' + fmtTime(c.startedAt) + ' น.' : '';
+  $('pause').lastChild.textContent = c.paused ? 'เล่นต่อ' : 'พักการแข่งขัน';
+  $('hint').textContent = !liveMatch ? 'รอผู้จัดเรียกคู่ลงสนาม' : !begun ? 'กด "เริ่มเกม" เพื่อเริ่มนับแต้ม' : c.paused ? 'พักการแข่งขัน กด "เล่นต่อ"' : '';
 
-  $('sets').addEventListener('click', (e) => { const b = e.target.closest('[data-set]'); if (b) { const i = Number(b.dataset.set); commit((c) => { c.activeSet = i; }); } });
-  $('incA').onclick = () => commit((c) => { c.scores[currentSet(c)][0] += 1; });
-  $('incB').onclick = () => commit((c) => { c.scores[currentSet(c)][1] += 1; });
-  $('decA').onclick = () => commit((c) => { const s = c.scores[currentSet(c)]; if (s[0] > 0) s[0] -= 1; });
-  $('decB').onclick = () => commit((c) => { const s = c.scores[currentSet(c)]; if (s[1] > 0) s[1] -= 1; });
-  $('shInc').onclick = () => commit((c) => { c.shuttleUsed += 1; });
-  $('shDec').onclick = () => commit((c) => { if (c.shuttleUsed > 0) c.shuttleUsed -= 1; });
+  ['plusL', 'plusR', 'minL', 'minR', 'srvBtnL', 'srvBtnR', 'undoL', 'undoR', 'shInc', 'shDec', 'swapServe', 'endSet'].forEach((id) => { $(id).disabled = !(canWrite && liveMatch && begun && !c.paused); });
+  $('start').disabled = !(canWrite && liveMatch && (!begun || c.paused));
+  $('pause').disabled = !(canWrite && liveMatch && begun);
+  $('endMatch').disabled = !(canWrite && liveMatch && begun);
+  $('undoL').disabled = $('undoR').disabled = $('undoL').disabled || !c.log.length;
 
-  $('finish').onclick = async () => {
-    if (!court || !confirm('จบแมตช์นี้และบันทึกผล?')) return;
-    const c = court;
-    const aWin = c.scores[0][0] >= c.scores[0][1];
-    const done = {
-      courtNo, slot: 'c' + courtNo,
-      code: c.matchCode || ('M-' + Math.floor(105 + Math.random() * 80)),
-      round: c.round,
-      winner: aWin ? `${c.teamA} (${c.clubA})` : `${c.teamB} (${c.clubB})`,
-      loser: aWin ? `${c.teamB} (${c.clubB})` : `${c.teamA} (${c.clubA})`,
-      scoreText: c.scores.filter((s, i) => i === 0 || s[0] > 0 || s[1] > 0).map((s) => s[0] + '-' + s[1]).join(', '),
-      shuttleUsed: c.shuttleUsed,
-      time: new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' น.',
-    };
-    const reset = (x) => {
-      x.status = 'READY'; x.matchCode = ''; x.round = 'คอร์ทว่าง (พร้อมเรียกคู่ถัดไป)';
-      x.teamA = 'รอเรียกคู่แข่งขัน'; x.clubA = '-'; x.teamB = 'รอเรียกคู่แข่งขัน'; x.clubB = '-';
-      x.scores = [[0, 0], [0, 0], [0, 0]]; x.shuttleUsed = 0; x.activeSet = -1;
-    };
-    if (liveId) {
-      try { await Live.addCompleted(liveId, done); } catch (e) { noteText = e.code === 'PERMISSION_DENIED' ? 'รหัสถูกเปลี่ยนแล้ว ให้ขอ QR ใหม่จากผู้จัด' : 'บันทึกผลไม่สำเร็จ: ' + (e.code || e.message); return draw(); }
-      await commit(reset);
-    } else {
-      await commit(reset, (st) => { (st.completedMatches = st.completedMatches || []).unshift(done); });
-    }
-  };
+  const net = !liveId ? 'โหมดในเครื่อง' : online ? '' : 'ออฟไลน์ ระบบจะส่งเมื่อกลับมาออนไลน์';
+  const line = [note, net].filter(Boolean).join(' · ');
+  if (line) $('hint').textContent = (line + (($('hint').textContent) ? ' · ' + $('hint').textContent : ''));
+  $('swFlip').classList.toggle('on', prefs.flip); $('swWake').classList.toggle('on', prefs.wake);
+}
 
-  // ---- start ----
-  draw();
+/* ---------------- writes ---------------- */
+async function commit(mutate, extraLocal) {
+  if (!canWrite) return;
   if (liveId) {
-    Live.connect(liveId, { courtNo, key: secret }).then((r) => {
-      canWrite = r.canWrite;
-      if (r.error === 'auth') noteText = 'เปิดใช้ Anonymous sign-in ใน Firebase ก่อน (' + (r.detail || '') + ')';
-      else if (r.error === 'nokey' || r.error === 'badkey') noteText = 'ลิงก์ไม่มีรหัสของคอร์ตนี้ ดูอย่างเดียว ให้สแกน QR ใหม่';
-      draw();
-    });
-    Live.watchConnection((on) => { online = on; draw(); });
-    Live.watchCourt(liveId, courtNo, (c) => { court = c; draw(); });
+    try { await Live.updateCourt(liveId, courtNo, mutate); }
+    catch (e) {
+      note = e.code === 'PERMISSION_DENIED' ? 'รหัสถูกเปลี่ยนแล้วหรือไม่มีสิทธิ์ ให้ขอ QR ใหม่จากผู้จัด' : 'ส่งไม่สำเร็จ: ' + (e.code || e.message);
+      if (e.code === 'PERMISSION_DENIED') canWrite = false;
+      return draw();
+    }
+  } else { local.edit(mutate, extraLocal); court = local.court(); }
+  note = '';
+  draw();
+}
+const vibe = () => { try { navigator.vibrate && navigator.vibrate(18); } catch {} };
+
+const sideTeam = (side) => view()[side];
+for (const side of ['L', 'R']) {
+  $('plus' + side).onclick = () => { vibe(); commit(addPoint(sideTeam(side))); };
+  $('min' + side).onclick = () => commit(minus(sideTeam(side)));
+  $('srvBtn' + side).onclick = () => commit((c) => { c.server = sideTeam(side); });
+  $('undo' + side).onclick = () => commit(undo);
+}
+$('swapServe').onclick = () => commit((c) => { c.server = c.server === 'A' ? 'B' : 'A'; });
+$('shInc').onclick = () => commit((c) => { c.shuttleUsed += 1; });
+$('shDec').onclick = () => commit((c) => { if (c.shuttleUsed > 0) c.shuttleUsed -= 1; });
+$('start').onclick = () => { requestWake(); commit((c) => { ensure(c); if (!c.startedAt) c.startedAt = Date.now(); c.paused = false; }); };
+$('pause').onclick = () => commit((c) => { c.paused = !c.paused; });
+
+$('endSet').onclick = () => {
+  const c = ensure(court), i = idx(c);
+  if (i >= MAXSET - 1) return toast('นี่คือเซตสุดท้าย กด "จบการแข่งขัน"');
+  if (!setWinner(c.scores[i]) && !confirm('คะแนนยังไม่ถึงเกณฑ์จบเซต (21 แต้ม ห่าง 2) จบเซตนี้เลยไหม?')) return;
+  commit((x) => { ensure(x); x.activeSet = Math.min(MAXSET - 1, idx(x) + 1); });
+};
+
+$('endMatch').onclick = async () => {
+  const c = ensure(court);
+  const [a, b] = setsWon(c, true);
+  const aWin = a !== b ? a > b : c.scores.reduce((n, s) => n + s[0] - s[1], 0) >= 0;
+  if (!confirm(`จบการแข่งขัน?\nเซตที่ชนะ ${a} - ${b}  ผู้ชนะ ${aWin ? c.teamA : c.teamB}`)) return;
+  const done = {
+    courtNo, slot: 'c' + courtNo,
+    code: c.matchCode || ('M-' + Math.floor(105 + Math.random() * 80)),
+    round: c.round,
+    winner: aWin ? `${c.teamA} (${c.clubA})` : `${c.teamB} (${c.clubB})`,
+    loser: aWin ? `${c.teamB} (${c.clubB})` : `${c.teamA} (${c.clubA})`,
+    scoreText: c.scores.filter((s, i) => i === 0 || s[0] > 0 || s[1] > 0).map((s) => s[0] + '-' + s[1]).join(', '),
+    shuttleUsed: c.shuttleUsed,
+    time: new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' น.',
+  };
+  const reset = (x) => {
+    x.status = 'READY'; x.matchCode = ''; x.round = 'คอร์ทว่าง (พร้อมเรียกคู่ถัดไป)';
+    x.teamA = 'รอเรียกคู่แข่งขัน'; x.clubA = '-'; x.teamB = 'รอเรียกคู่แข่งขัน'; x.clubB = '-';
+    x.scores = [[0, 0], [0, 0], [0, 0]]; x.shuttleUsed = 0; x.activeSet = -1;
+    x.server = ''; x.paused = false; x.startedAt = 0; x.log = [];
+  };
+  if (liveId) {
+    try { await Live.addCompleted(liveId, done); }
+    catch (e) { note = e.code === 'PERMISSION_DENIED' ? 'รหัสถูกเปลี่ยนแล้ว ให้ขอ QR ใหม่จากผู้จัด' : 'บันทึกผลไม่สำเร็จ: ' + (e.code || e.message); return draw(); }
+    await commit(reset);
   } else {
-    canWrite = true;
-    court = local.court();
-    window.addEventListener('storage', (e) => { if (e.key === LOCAL_KEY) { court = local.court(); draw(); } });
-    draw();
+    await commit(reset, (st) => { (st.completedMatches = st.completedMatches || []).unshift(done); });
   }
+};
+
+/* ---------------- settings, clock, wake lock ---------------- */
+let wakeLock = null;
+async function requestWake() {
+  if (!prefs.wake || !('wakeLock' in navigator)) return;
+  try { wakeLock = await navigator.wakeLock.request('screen'); } catch {}
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') requestWake(); });
+$('gear').onclick = () => $('modal').classList.add('on');
+$('closeModal').onclick = () => $('modal').classList.remove('on');
+$('optFlip').onclick = () => { prefs.flip = !prefs.flip; savePrefs(); draw(); };
+$('optWake').onclick = () => { prefs.wake = !prefs.wake; savePrefs(); if (prefs.wake) requestWake(); else { try { wakeLock && wakeLock.release(); } catch {} } draw(); };
+setInterval(() => { $('clock').textContent = new Date().toLocaleTimeString('th-TH', { hour12: false }); }, 1000);
+$('clock').textContent = new Date().toLocaleTimeString('th-TH', { hour12: false });
+if (prefs.wake) requestWake();
+
+/* ---------------- start ---------------- */
+draw();
+if (liveId) {
+  Live.connect(liveId, { courtNo, key: secret }).then((r) => {
+    canWrite = r.canWrite;
+    if (r.error === 'auth') note = 'เปิด Anonymous sign-in ใน Firebase ก่อน (' + (r.detail || '') + ')';
+    else if (r.error === 'nokey' || r.error === 'badkey') note = 'ลิงก์ไม่มีรหัสของคอร์ตนี้ ดูอย่างเดียว ให้สแกน QR ใหม่';
+    draw();
+  });
+  Live.watchConnection((on) => { online = on; draw(); });
+  Live.watchCourt(liveId, courtNo, (c) => { court = c; draw(); });
+} else {
+  canWrite = true; court = local.court();
+  window.addEventListener('storage', (e) => { if (e.key === LOCAL_KEY) { court = local.court(); draw(); } });
+  draw();
+}
 </script>
 </body>
 </html>

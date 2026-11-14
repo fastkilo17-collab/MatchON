@@ -1866,7 +1866,8 @@
     }
 
     const liveSync = { on: false, canWrite: false, online: false, lastRemote: '', pushTimer: null };
-    const canonCourts = () => state.courts.map(c => window.MatchOnLive.canon(c));
+    const tournamentTitle = () => (state.tournaments.find(t => t.id === state.selectedTournamentId) || state.tournaments[0] || {}).title || '';
+    const canonCourts = () => state.courts.map(c => window.MatchOnLive.canon({ ...c, tournament: tournamentTitle() }));
 
     function setLiveStatus(text) {
       const el = document.getElementById('liveSyncStatus');
@@ -1892,7 +1893,7 @@
         let changed = false;
         remote.forEach(rc => {
           const lc = state.courts.find(c => c.courtNo === rc.courtNo);
-          if (lc && JSON.stringify(L.canon(lc)) !== JSON.stringify(rc)) { Object.assign(lc, rc); changed = true; }
+          if (lc && JSON.stringify(L.canon({ ...lc, tournament: tournamentTitle() })) !== JSON.stringify(rc)) { Object.assign(lc, rc); changed = true; }
         });
         if (changed) {
           try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}

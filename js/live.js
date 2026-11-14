@@ -40,6 +40,11 @@ export function canon(c) {
     shuttleUsed: num(c.shuttleUsed),
     nextMatch: c.nextMatch || '',
     activeSet: Number.isInteger(c.activeSet) ? c.activeSet : -1, // -1 = not chosen yet
+    tournament: c.tournament || '',
+    server: c.server === 'A' || c.server === 'B' ? c.server : '',
+    paused: !!c.paused,
+    startedAt: num(c.startedAt),
+    log: Array.isArray(c.log) ? c.log.slice(-150) : (c.log && typeof c.log === 'object' ? Object.values(c.log).slice(-150) : []),
   };
 }
 
