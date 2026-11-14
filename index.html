@@ -9,9 +9,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
   <script type="module">
     import * as Live from './js/live.js';
+    import { qrToCanvas } from './js/qr.js';
+    window.MatchOnQR = qrToCanvas;
     window.MatchOnLive = Live;
     window.dispatchEvent(new Event('matchon:live-ready'));
   </script>
@@ -768,8 +769,12 @@
     <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4 text-center">
       <h3 id="qrCourtTitle" class="font-extrabold text-white">COURT</h3>
       <div class="bg-white rounded-xl p-2 inline-block"><canvas id="qrCourtCanvas" width="260" height="260"></canvas></div>
-      <p class="text-xs text-slate-400">ให้กรรมการสแกนด้วยกล้องมือถือเพื่อเปิดหน้านับแต้มของคอร์ตนี้</p>
+      <p class="text-xs text-slate-400">QR นี้ใช้ได้เฉพาะคอร์ตนี้ ให้กรรมการสแกนด้วยกล้องมือถือเพื่อนับแต้ม</p>
       <p id="qrCourtUrl" class="text-[11px] text-slate-500 break-all select-all"></p>
+      <div class="grid grid-cols-2 gap-2">
+        <button data-qr-action="copy" class="py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm">คัดลอกลิงก์</button>
+        <button data-qr-action="rotate" class="py-2.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 border border-rose-500/40 font-bold text-sm">สร้างรหัสใหม่</button>
+      </div>
       <button onclick="document.getElementById('qrModal').classList.add('hidden')" class="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-sm">ปิด</button>
     </div>
   </div>
@@ -1855,6 +1860,8 @@
       const rnd = (n) => Array.from(crypto.getRandomValues(new Uint8Array(n)), b => 'abcdefghijkmnpqrstuvwxyz23456789'[b % 32]).join('');
       if (!state.liveId) { state.liveId = rnd(16); }
       if (!state.liveSecret) { state.liveSecret = rnd(28); }
+      if (!state.courtKeys) state.courtKeys = {};
+      (state.courts || []).forEach(c => { if (!state.courtKeys[c.courtNo]) state.courtKeys[c.courtNo] = rnd(24); });
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
     }
 
@@ -1871,10 +1878,11 @@
       liveSync.on = true;
       ensureLiveKeys();
       const L = window.MatchOnLive;
-      L.connect(state.liveId, state.liveSecret).then(r => {
+      L.connect(state.liveId, { master: state.liveSecret }).then(async r => {
         liveSync.canWrite = r.canWrite;
         if (r.error === 'auth') setLiveStatus('Firebase: เปิด Anonymous sign-in ก่อน (' + (r.detail || '') + ')');
         else if (!r.canWrite) setLiveStatus('Firebase: ไม่มีสิทธิ์เขียน (รหัสไม่ตรง)');
+        if (r.canWrite) await publishAllCourtKeys();
         schedulePush();
       }).catch(e => setLiveStatus('Firebase เชื่อมต่อไม่ได้: ' + (e.message || e)));
       L.watchConnection(on => { liveSync.online = on; setLiveStatus(on ? 'Firebase: ซิงก์สดแล้ว' : 'Firebase: ออฟไลน์'); });
@@ -1903,6 +1911,12 @@
       });
     }
 
+    function publishAllCourtKeys() {
+      const o = {};
+      state.courts.forEach(c => { o['c' + c.courtNo] = state.courtKeys[c.courtNo]; });
+      return window.MatchOnLive.publishCourtKeys(state.liveId, o).catch(e => setLiveStatus('ส่งรหัสคอร์ตไม่สำเร็จ: ' + (e.code || e.message)));
+    }
+
     function schedulePush() {
       if (!liveSync.on || !liveSync.canWrite) return;
       clearTimeout(liveSync.pushTimer);
@@ -1917,17 +1931,41 @@
 
     function refereeUrl(courtNo) {
       ensureLiveKeys();
-      return new URL('referee.html?court=' + courtNo + '&live=' + state.liveId, location.href).href + '#k=' + state.liveSecret;
+      return new URL('referee.html?court=' + courtNo + '&live=' + state.liveId, location.href).href + '#k=' + state.courtKeys[courtNo];
+    }
+
+    let qrCourt = 0;
+    function drawCourtQr() {
+      const url = refereeUrl(qrCourt);
+      document.getElementById('qrCourtTitle').textContent = 'COURT ' + qrCourt + ' • หน้ากรรมการ';
+      document.getElementById('qrCourtUrl').textContent = url.replace(/#k=.*/, '#k=••••••••');
+      try { window.MatchOnQR(document.getElementById('qrCourtCanvas'), url, 260); }
+      catch (e) { document.getElementById('qrCourtUrl').textContent = 'สร้าง QR ไม่สำเร็จ: ' + e.message; }
     }
 
     function openCourtQr(courtNo) {
-      const url = refereeUrl(courtNo);
-      document.getElementById('qrCourtTitle').textContent = 'COURT ' + courtNo + ' • หน้ากรรมการ';
-      document.getElementById('qrCourtUrl').textContent = url.replace(/#k=.*/, '#k=••••••••');
-      const cv = document.getElementById('qrCourtCanvas');
-      if (window.QRCode) window.QRCode.toCanvas(cv, url, { width: 260, margin: 2 });
+      qrCourt = courtNo;
       document.getElementById('qrModal').classList.remove('hidden');
+      drawCourtQr();
     }
+
+    document.addEventListener('click', async (ev) => {
+      const t = ev.target.closest('[data-qr-action]');
+      if (!t) return;
+      if (t.dataset.qrAction === 'copy') {
+        try { await navigator.clipboard.writeText(refereeUrl(qrCourt)); t.textContent = 'คัดลอกแล้ว ✓'; }
+        catch (e) { t.textContent = 'คัดลอกไม่ได้ ใช้ QR แทน'; }
+        setTimeout(() => { t.textContent = 'คัดลอกลิงก์'; }, 1800);
+      } else if (t.dataset.qrAction === 'rotate') {
+        if (!confirm('สร้างรหัสใหม่ให้ COURT ' + qrCourt + '?\nQR และลิงก์เดิมของคอร์ตนี้จะใช้เขียนคะแนนไม่ได้ทันที กรรมการที่เปิดหน้าอยู่ต้องสแกนใหม่')) return;
+        const rnd = (n) => Array.from(crypto.getRandomValues(new Uint8Array(n)), b => 'abcdefghijkmnpqrstuvwxyz23456789'[b % 32]).join('');
+        state.courtKeys[qrCourt] = rnd(24);
+        saveStateToStorage();
+        if (liveSync.canWrite) await publishAllCourtKeys();
+        drawCourtQr();
+        showToast('สร้างรหัสใหม่ให้คอร์ต ' + qrCourt + ' แล้ว');
+      }
+    });
 
     function renderLiveCourts() {
       const grid = document.getElementById('liveCourtsGrid');

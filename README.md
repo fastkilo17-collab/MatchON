@@ -8,5 +8,5 @@
 
 ## คะแนนสด (Firebase Realtime Database)
 - `js/live.js` ซิงก์คอร์ตและผลแมตช์ผ่าน Firebase โปรเจกต์ `matchon-c5217`
-- `database.rules.json` กฎความปลอดภัย: ทุกคนอ่านคะแนนสดได้ แต่เขียนได้เฉพาะเครื่องที่มีรหัสกรรมการ (อยู่ใน QR ส่วนหลัง `#k=`)
+- `database.rules.json` กฎความปลอดภัย: ทุกคนอ่านคะแนนสดได้ แต่เขียนได้เฉพาะเครื่องที่มีรหัสกรรมการ (รหัสแยกรายคอร์ต อยู่ใน QR ส่วนหลัง `#k=`)
 - ต้องเปิด Authentication → Sign-in method → **Anonymous** และวางกฎใน Realtime Database → Rules

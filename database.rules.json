@@ -2,41 +2,53 @@
   "rules": {
     ".read": false,
     ".write": false,
-
     "secrets": {
       "$liveId": {
         ".write": "!data.exists()",
         ".validate": "newData.isString() && newData.val().length >= 16 && newData.val().length <= 64"
       }
     },
-
-    "refs": {
+    "courtkeys": {
       "$liveId": {
-        "$uid": {
-          ".write": "auth != null && auth.uid === $uid && newData.val() === root.child('secrets').child($liveId).val()",
-          ".validate": "newData.isString()"
+        "$slot": {
+          ".write": "auth != null && root.child('secrets').child($liveId).exists() && root.child('refs').child($liveId).child('master').child(auth.uid).val() === root.child('secrets').child($liveId).val()",
+          ".validate": "$slot.matches(/^c[0-9]+$/) && newData.isString() && newData.val().length >= 16 && newData.val().length <= 64"
         }
       }
     },
-
+    "refs": {
+      "$liveId": {
+        "$slot": {
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid && (($slot === 'master' && root.child('secrets').child($liveId).exists() && newData.val() === root.child('secrets').child($liveId).val()) || ($slot.matches(/^c[0-9]+$/) && root.child('courtkeys').child($liveId).child($slot).exists() && newData.val() === root.child('courtkeys').child($liveId).child($slot).val()))",
+            ".validate": "newData.isString()"
+          }
+        }
+      }
+    },
     "live": {
       "$liveId": {
         ".read": true,
         "courts": {
-          ".write": "auth != null && root.child('refs').child($liveId).child(auth.uid).exists()",
+          ".write": "auth != null && root.child('secrets').child($liveId).exists() && root.child('refs').child($liveId).child('master').child(auth.uid).val() === root.child('secrets').child($liveId).val()",
           "$n": {
+            ".write": "auth != null && root.child('courtkeys').child($liveId).child('c' + $n).exists() && root.child('refs').child($liveId).child('c' + $n).child(auth.uid).val() === root.child('courtkeys').child($liveId).child('c' + $n).val()",
             ".validate": "newData.hasChildren(['courtNo', 'status', 'scores'])",
             "scores": {
               "$set": {
-                "$team": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 99" }
+                "$team": {
+                  ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 99"
+                }
               }
             },
-            "shuttleUsed": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 999" }
+            "shuttleUsed": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 999"
+            }
           }
         },
         "completed": {
           "$id": {
-            ".write": "auth != null && root.child('refs').child($liveId).child(auth.uid).exists() && !data.exists()"
+            ".write": "((auth != null && root.child('secrets').child($liveId).exists() && root.child('refs').child($liveId).child('master').child(auth.uid).val() === root.child('secrets').child($liveId).val()) || (auth != null && newData.child('slot').isString() && root.child('courtkeys').child($liveId).child(newData.child('slot').val()).exists() && root.child('refs').child($liveId).child(newData.child('slot').val()).child(auth.uid).val() === root.child('courtkeys').child($liveId).child(newData.child('slot').val()).val())) && !data.exists()"
           }
         }
       }

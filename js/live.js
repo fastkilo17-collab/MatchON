@@ -49,22 +49,36 @@ export const newId = (n = 24) => {
   return Array.from(a, (b) => 'abcdefghijkmnpqrstuvwxyz23456789'[b % 32]).join('');
 };
 
-/** Sign in anonymously and prove we hold the referee key. Resolves {canWrite, error?}. */
-export async function connect(liveId, secret) {
+/**
+ * Sign in anonymously and prove which key we hold.
+ *   organizer: connect(liveId, { master })           -> may write every court and publish court keys
+ *   referee:   connect(liveId, { courtNo, key })     -> may write that one court only
+ * Resolves {canWrite, error?}.
+ */
+export async function connect(liveId, who) {
   boot();
   try {
     if (!auth.currentUser) await signInAnonymously(auth);
   } catch (e) {
     return { canWrite: false, error: 'auth', detail: e.code || e.message };
   }
-  if (!secret) return { canWrite: false, error: 'nokey' };
-  try { await set(ref(db, `secrets/${liveId}`), secret); } catch { /* already claimed by whoever made the tournament */ }
-  try {
-    await set(ref(db, `refs/${liveId}/${auth.currentUser.uid}`), secret);
-    return { canWrite: true };
-  } catch {
-    return { canWrite: false, error: 'badkey' };
+  const uid = auth.currentUser.uid;
+  if (who && who.master) {
+    try { await set(ref(db, `secrets/${liveId}`), who.master); } catch { /* already claimed by this organizer earlier */ }
+    try { await set(ref(db, `refs/${liveId}/master/${uid}`), who.master); return { canWrite: true }; }
+    catch { return { canWrite: false, error: 'badkey' }; }
   }
+  if (who && who.courtNo && who.key) {
+    try { await set(ref(db, `refs/${liveId}/c${who.courtNo}/${uid}`), who.key); return { canWrite: true }; }
+    catch { return { canWrite: false, error: 'badkey' }; }
+  }
+  return { canWrite: false, error: 'nokey' };
+}
+
+/** Organizer only: publish (or rotate) the per-court referee keys, e.g. {c1: '...', c2: '...'}. */
+export function publishCourtKeys(liveId, keys) {
+  boot();
+  return update(ref(db, `courtkeys/${liveId}`), keys);
 }
 
 export function watchConnection(cb) {
@@ -100,6 +114,9 @@ export function updateCourt(liveId, courtNo, mutate) {
     const c = canon(cur);
     mutate(c);
     return canon(c);
+  }).then((r) => {
+    if (!r.committed) throw Object.assign(new Error('not committed'), { code: 'PERMISSION_DENIED' });
+    return r;
   });
 }
 

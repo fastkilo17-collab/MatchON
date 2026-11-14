@@ -130,7 +130,11 @@
   async function commit(mutate, extraLocal) {
     if (!canWrite) return;
     if (liveId) {
-      try { await Live.updateCourt(liveId, courtNo, mutate); } catch (e) { noteText = 'ส่งไม่สำเร็จ: ' + (e.code || e.message); draw(); return; }
+      try { await Live.updateCourt(liveId, courtNo, mutate); } catch (e) {
+        if (e.code === 'PERMISSION_DENIED') { canWrite = false; noteText = 'รหัสถูกเปลี่ยนแล้วหรือไม่มีสิทธิ์ ให้ขอ QR ใหม่จากผู้จัด'; }
+        else noteText = 'ส่งไม่สำเร็จ: ' + (e.code || e.message);
+        draw(); return;
+      }
     } else {
       local.edit(mutate, extraLocal); court = local.court();
     }
@@ -151,6 +155,7 @@
     const c = court;
     const aWin = c.scores[0][0] >= c.scores[0][1];
     const done = {
+      courtNo, slot: 'c' + courtNo,
       code: c.matchCode || ('M-' + Math.floor(105 + Math.random() * 80)),
       round: c.round,
       winner: aWin ? `${c.teamA} (${c.clubA})` : `${c.teamB} (${c.clubB})`,
@@ -165,7 +170,7 @@
       x.scores = [[0, 0], [0, 0], [0, 0]]; x.shuttleUsed = 0; x.activeSet = -1;
     };
     if (liveId) {
-      try { await Live.addCompleted(liveId, done); } catch (e) { noteText = 'บันทึกผลไม่สำเร็จ: ' + (e.code || e.message); return draw(); }
+      try { await Live.addCompleted(liveId, done); } catch (e) { noteText = e.code === 'PERMISSION_DENIED' ? 'รหัสถูกเปลี่ยนแล้ว ให้ขอ QR ใหม่จากผู้จัด' : 'บันทึกผลไม่สำเร็จ: ' + (e.code || e.message); return draw(); }
       await commit(reset);
     } else {
       await commit(reset, (st) => { (st.completedMatches = st.completedMatches || []).unshift(done); });
@@ -175,10 +180,10 @@
   // ---- start ----
   draw();
   if (liveId) {
-    Live.connect(liveId, secret).then((r) => {
+    Live.connect(liveId, { courtNo, key: secret }).then((r) => {
       canWrite = r.canWrite;
       if (r.error === 'auth') noteText = 'เปิดใช้ Anonymous sign-in ใน Firebase ก่อน (' + (r.detail || '') + ')';
-      else if (r.error === 'nokey' || r.error === 'badkey') noteText = 'ลิงก์ไม่มีรหัสกรรมการ ดูอย่างเดียว ให้สแกน QR ใหม่';
+      else if (r.error === 'nokey' || r.error === 'badkey') noteText = 'ลิงก์ไม่มีรหัสของคอร์ตนี้ ดูอย่างเดียว ให้สแกน QR ใหม่';
       draw();
     });
     Live.watchConnection((on) => { online = on; draw(); });
