@@ -90,6 +90,7 @@
     if (!courtNo) return show('ลิงก์นี้ไม่ระบุคอร์ต ให้สแกน QR จากหน้า "สายแข่ง & คอร์ทสด" ของแต่ละคอร์ต');
     if (!c) return show('ไม่พบข้อมูลคอร์ตนี้ในเครื่องนี้ ตอนนี้ข้อมูลเก็บในเบราว์เซอร์ของเครื่องที่เปิดหน้าผู้จัด ต้องเปิดหน้านี้บนเครื่อง/เบราว์เซอร์เดียวกันจึงจะเห็นข้อมูล (การสแกนจากมือถือเครื่องอื่นจะใช้ได้เมื่อต่อ Firebase)');
     $('msg').classList.add('hidden'); $('pad').classList.remove('hidden');
+    setIdx = Number.isInteger(c.activeSet) ? c.activeSet : 0;
     const live = c.status === 'LIVE';
     $('round').textContent = c.round;
     $('status').textContent = live ? '● กำลังแข่งขัน' : 'คอร์ตว่าง รอเรียกคู่ลงสนาม';
@@ -115,7 +116,7 @@
     draw();
   }
 
-  $('sets').addEventListener('click', (e) => { const b = e.target.closest('[data-set]'); if (b) { setIdx = Number(b.dataset.set); draw(); } });
+  $('sets').addEventListener('click', (e) => { const b = e.target.closest('[data-set]'); if (b) commit((c) => { c.activeSet = Number(b.dataset.set); }); });
   $('incA').onclick = () => commit((c) => { c.scores[setIdx][0] += 1; });
   $('incB').onclick = () => commit((c) => { c.scores[setIdx][1] += 1; });
   $('decA').onclick = () => commit((c) => { if (c.scores[setIdx][0] > 0) c.scores[setIdx][0] -= 1; });
@@ -142,7 +143,7 @@
       c.status = 'READY'; c.round = 'คอร์ทว่าง (พร้อมเรียกคู่ถัดไป)';
       c.teamA = 'รอเรียกคู่แข่งขัน'; c.clubA = '-'; c.teamB = 'รอเรียกคู่แข่งขัน'; c.clubB = '-';
       c.scores = [[0, 0], [0, 0], [0, 0]]; c.shuttleUsed = 0;
-      setIdx = 0;
+      c.activeSet = 0;
     });
   };
 
