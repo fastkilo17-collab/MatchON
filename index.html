@@ -1,42 +1,2527 @@
-<!doctype html>
-<html lang="th">
+<!DOCTYPE html>
+<html lang="th" class="dark">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>CourtDay ระบบจัดแข่งแบดมินตัน</title>
-<meta name="description" content="สมัครแข่ง ชำระเงิน และดูคะแนนสดแบดมินตัน">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Noto+Sans+Thai:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MatchON — ระบบบริหารจัดการแข่งขันแบดมินตันครบวงจร</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Noto Sans Thai"', 'Inter', 'sans-serif'],
+          },
+          colors: {
+            court: {
+              50: '#ecfdf5',
+              100: '#d1fae5',
+              400: '#34d399',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857',
+              900: '#064e3b',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      font-family: 'Noto Sans Thai', 'Inter', sans-serif;
+      background-color: #090d16;
+      color: #f1f5f9;
+    }
+    .court-surface {
+      background: radial-gradient(circle at center, #065f46 0%, #064e3b 100%);
+      border: 2px solid rgba(255, 255, 255, 0.85);
+      position: relative;
+    }
+    .court-lines::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: rgba(255, 255, 255, 0.55);
+      border-top: 1px dashed rgba(255, 255, 255, 0.8);
+    }
+    .scrollbar-thin::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .scrollbar-thin::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 9999px;
+    }
+    @keyframes pulse-ring {
+      0% { transform: scale(0.95); opacity: 0.9; }
+      50% { transform: scale(1.05); opacity: 0.4; }
+      0% { transform: scale(0.95); opacity: 0.9; }
+    }
+    .live-pulse {
+      animation: pulse-ring 2s infinite ease-in-out;
+    }
+  </style>
 </head>
-<body>
-<header class="topbar">
-  <div class="topbar-in">
-    <a class="brand" href="#/" aria-label="CourtDay หน้าแรก">
-      <svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#0E1A2B"/><rect x="7" y="8" width="18" height="16" fill="none" stroke="#D6F23D" stroke-width="1.6"/><path d="M16 8v16M7 13h18M7 19h18" stroke="#D6F23D" stroke-width="1.6"/></svg>
-      <span>CourtDay</span>
-    </a>
-    <nav id="nav-right" class="navr"></nav>
+<body class="min-h-screen flex flex-col selection:bg-emerald-500 selection:text-slate-950">
+
+  <!-- Top Announcement / Voice PA Banner -->
+  <div id="paBanner" class="hidden bg-gradient-to-r from-amber-500 via-emerald-500 to-cyan-500 text-slate-950 px-4 py-2.5 text-sm font-semibold shadow-lg z-50">
+    <div class="max-w-7xl mx-auto flex items-center justify-between gap-3">
+      <div class="flex items-center gap-2.5">
+        <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-slate-950 text-emerald-400">
+          <i data-lucide="volume-2" class="w-4 h-4"></i>
+        </span>
+        <span id="paBannerText">กำลังประกาศเรียกนักกีฬาลงสนาม...</span>
+      </div>
+      <button id="closePaBannerBtn" class="text-xs bg-slate-950/20 hover:bg-slate-950/30 px-2.5 py-1 rounded-md font-bold">
+        รับทราบ
+      </button>
+    </div>
   </div>
-</header>
-<main id="app"><p class="wrap skeleton">กำลังโหลด…</p></main>
-<script>
-// Shows the real error on screen if the app fails to start (blocked script, network, bad config).
-function bootFail(msg) {
-  var a = document.getElementById('app');
-  if (!a || a.getAttribute('data-ready') === '1') return;
-  a.innerHTML = '';
-  var s = document.createElement('section'); s.className = 'wrap narrow';
-  var p = document.createElement('p'); p.className = 'err';
-  p.textContent = 'โหลดหน้าเว็บไม่สำเร็จ: ' + msg;
-  var q = document.createElement('p'); q.className = 'muted small';
-  q.textContent = 'ลองรีเฟรชหน้านี้ ถ้ายังไม่ได้ส่งข้อความนี้ให้ผู้พัฒนา';
-  s.appendChild(p); s.appendChild(q); a.appendChild(s);
-}
-window.addEventListener('error', function (e) { bootFail(e.message || 'เกิดข้อผิดพลาดของสคริปต์'); });
-window.addEventListener('unhandledrejection', function (e) { bootFail((e.reason && e.reason.message) || String(e.reason)); });
-</script>
-<script type="module" src="js/main.js" onerror="bootFail('โหลดไฟล์ js/main.js ไม่ได้ (ตรวจชื่อโฟลเดอร์ js ตัวพิมพ์เล็ก)')"></script>
+
+  <!-- Role Switcher & LocalStorage Bar (Testing 3 Roles + Quick Sim Team) -->
+  <div class="bg-slate-900 border-b border-slate-800 px-4 sm:px-6 py-2.5 z-40">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+      <!-- 3-Role Switcher -->
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="text-xs font-bold text-slate-400 flex items-center gap-1.5">
+          <i data-lucide="eye" class="w-3.5 h-3.5 text-emerald-400"></i>
+          โหมดทดสอบสิทธิ์ (Role Preview):
+        </span>
+        <div class="inline-flex rounded-xl bg-slate-950 p-1 border border-slate-800 gap-1">
+          <button data-role-mode="guest" class="role-mode-btn px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 text-slate-400 hover:text-white">
+            <i data-lucide="globe" class="w-3.5 h-3.5"></i>
+            <span>1. โหมดคนทั่วไป (ผู้ชม)</span>
+          </button>
+          <button data-role-mode="applicant" class="role-mode-btn px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 text-slate-400 hover:text-white">
+            <i data-lucide="user-check" class="w-3.5 h-3.5"></i>
+            <span>2. โหมดผู้สมัคร (นักกีฬา)</span>
+          </button>
+          <button data-role-mode="admin" class="role-mode-btn px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 bg-amber-500 text-slate-950 shadow">
+            <i data-lucide="shield" class="w-3.5 h-3.5"></i>
+            <span>3. โหมดผู้จัด / Admin (เห็นปุ่มกรรมการ)</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Simulation & LocalStorage Status Controls -->
+      <div class="flex flex-wrap items-center gap-2">
+        <button id="simulateRandomTeamBtn" class="px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-slate-950 font-extrabold text-xs flex items-center gap-1.5 shadow-md transition">
+          <i data-lucide="dice-5" class="w-4 h-4"></i>
+          <span>+ จำลองสมัครนักกีฬา (สุ่ม 1 ทีม)</span>
+        </button>
+
+        <div class="flex items-center gap-1.5 bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1 text-[11px]">
+          <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+          <span id="storageStatusText" class="text-slate-300 font-medium">บันทึกข้อมูลลงเครื่องอัตโนมัติ</span>
+          <button id="resetLocalStorageBtn" class="ml-1.5 text-rose-400 hover:text-rose-300 underline font-bold">
+            รีเซ็ตค่าเริ่มต้น
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Role Permission Description Strip -->
+    <div class="max-w-7xl mx-auto mt-2 pt-2 border-t border-slate-800/60 flex flex-wrap items-center justify-between gap-2 text-xs">
+      <div id="roleDescriptionBanner" class="text-amber-300 font-medium flex items-center gap-2">
+        <!-- Populated by JS -->
+      </div>
+      <div class="text-slate-400 text-[11px]">
+        ลองสลับปุ่มทั้ง 3 สิทธิ์ด้านบนเพื่อตรวจสอบว่าแต่ละสิทธิ์มองเห็นหรือซ่อนปุ่มใดบ้าง
+      </div>
+    </div>
+  </div>
+
+  <!-- Header Navigation -->
+  <header class="sticky top-0 z-30 border-b border-slate-800/80 bg-slate-950/90 backdrop-blur-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
+      <!-- Brand -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/20 text-slate-950 font-extrabold text-xl">
+          🏸
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="font-extrabold text-lg tracking-tight text-white">Match<span class="text-emerald-400">ON</span></span>
+            <span id="activeRoleBadgeHeader" class="text-[11px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">สิทธิ์: ผู้จัด / ADMIN</span>
+          </div>
+          <p class="text-xs text-slate-400">ระบบจัดแข่งแบดมินตัน ประเมินมือ ตรวจสลิป QR & ตารางคอร์ทสด</p>
+        </div>
+      </div>
+
+      <!-- Active Tournament Selector -->
+      <div class="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5">
+        <i data-lucide="trophy" class="w-4 h-4 text-amber-400 shrink-0"></i>
+        <label for="globalTournamentSelect" class="text-xs text-slate-400 hidden sm:inline">ทัวร์นาเมนต์หลัก:</label>
+        <select id="globalTournamentSelect" class="bg-transparent text-xs sm:text-sm font-semibold text-white focus:outline-none cursor-pointer">
+        </select>
+      </div>
+
+      <!-- Main Role Tabs (3 Core Pillars) -->
+      <nav class="flex items-center gap-1.5 bg-slate-900/90 p-1 rounded-xl border border-slate-800 w-full lg:w-auto justify-between sm:justify-start overflow-x-auto">
+        <button id="navTabApplicant" data-main-tab="applicant" class="main-tab-btn flex-1 sm:flex-initial flex items-center justify-center gap-2 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all bg-emerald-500 text-slate-950 shadow">
+          <i data-lucide="users" class="w-4 h-4"></i>
+          <span id="navTabApplicantLabel">1. ผู้สมัคร / นักกีฬา</span>
+        </button>
+        <button id="navTabOrganizer" data-main-tab="organizer" class="main-tab-btn flex-1 sm:flex-initial flex items-center justify-center gap-2 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all text-slate-300 hover:text-white hover:bg-slate-800/60">
+          <i data-lucide="shield-check" class="w-4 h-4"></i>
+          <span>2. ผู้จัดการแข่งขัน</span>
+          <span id="pendingBadge" class="px-1.5 py-0.5 text-[10px] rounded-full bg-amber-500 text-slate-950 font-extrabold">2</span>
+        </button>
+        <button id="navTabRelated" data-main-tab="related" class="main-tab-btn flex-1 sm:flex-initial flex items-center justify-center gap-2 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all text-slate-300 hover:text-white hover:bg-slate-800/60">
+          <i data-lucide="layout-grid" class="w-4 h-4"></i>
+          <span>3. สายแข่ง & คอร์ทสด</span>
+          <span class="w-2 h-2 rounded-full bg-rose-500 live-pulse"></span>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Quick KPI Summary Bar -->
+  <section class="border-b border-slate-800/60 bg-slate-900/40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div class="bg-slate-900/80 border border-slate-800/80 rounded-xl p-3 flex items-center justify-between">
+        <div>
+          <p class="text-[11px] text-slate-400">รายการแข่งขันที่เปิดอยู่</p>
+          <p id="kpiTotalTournaments" class="text-lg sm:text-xl font-extrabold text-white">4 รายการ</p>
+        </div>
+        <div class="w-9 h-9 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+          <i data-lucide="calendar-check" class="w-5 h-5"></i>
+        </div>
+      </div>
+      <div class="bg-slate-900/80 border border-slate-800/80 rounded-xl p-3 flex items-center justify-between">
+        <div>
+          <p class="text-[11px] text-slate-400">คู่สมัครในรายการที่เลือก</p>
+          <p id="kpiTotalPairs" class="text-lg sm:text-xl font-extrabold text-emerald-400">8 คู่</p>
+        </div>
+        <div class="w-9 h-9 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400">
+          <i data-lucide="user-check" class="w-5 h-5"></i>
+        </div>
+      </div>
+      <div class="bg-slate-900/80 border border-slate-800/80 rounded-xl p-3 flex items-center justify-between">
+        <div>
+          <p class="text-[11px] text-slate-400">รอตรวจสลิป / ประเมินมือ</p>
+          <p id="kpiPendingReviews" class="text-lg sm:text-xl font-extrabold text-amber-400">2 คู่</p>
+        </div>
+        <div class="w-9 h-9 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+          <i data-lucide="scan-line" class="w-5 h-5"></i>
+        </div>
+      </div>
+      <div class="bg-slate-900/80 border border-slate-800/80 rounded-xl p-3 flex items-center justify-between">
+        <div>
+          <p class="text-[11px] text-slate-400">คอร์ทกำลังแข่งขันสด</p>
+          <p id="kpiLiveCourts" class="text-lg sm:text-xl font-extrabold text-rose-400">4 / 6 คอร์ท</p>
+        </div>
+        <div class="w-9 h-9 rounded-lg bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400">
+          <i data-lucide="radio" class="w-5 h-5"></i>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Content Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6">
+
+    <!-- ==========================================
+         VIEW 1: ผู้สมัคร / นักกีฬา & คนทั่วไปดูรายการแข่ง
+         ========================================== -->
+    <section id="view-applicant" class="space-y-6">
+      <!-- Sub-navigation for Applicant -->
+      <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-900/70 p-3 rounded-2xl border border-slate-800">
+        <div class="flex flex-wrap items-center gap-2">
+          <button data-app-subtab="tournaments" class="app-subtab-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-2">
+            <i data-lucide="search" class="w-4 h-4"></i> ค้นหารายการ & สมัครแข่ง
+          </button>
+          <button data-app-subtab="check-status" class="app-subtab-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold text-slate-400 hover:text-white border border-transparent flex items-center gap-2">
+            <i data-lucide="clipboard-list" class="w-4 h-4"></i> ตรวจสอบรายชื่อ / สถานะประเมินมือ
+          </button>
+          <button id="subtabAthleteCardBtn" data-app-subtab="athlete-card" class="app-subtab-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold text-slate-400 hover:text-white border border-transparent flex items-center gap-2">
+            <i data-lucide="id-card" class="w-4 h-4"></i> บัตรนักกีฬา & ประวัติระดับมือ
+          </button>
+          <button data-app-subtab="community" class="app-subtab-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold text-slate-400 hover:text-white border border-transparent flex items-center gap-2">
+            <i data-lucide="sparkles" class="w-4 h-4"></i> หาก๊วน / โค้ช / น็อคเกอร์
+          </button>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <button id="simulateRandomTeamBtnSub" class="px-3.5 py-2 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 font-bold text-xs flex items-center gap-1.5 transition">
+            <i data-lucide="dice-5" class="w-4 h-4"></i> สุ่มเพิ่มนักกีฬา 1 ทีม
+          </button>
+          <button id="openQuickApplyBtn" class="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-emerald-500/20 transition">
+            <i data-lucide="user-plus" class="w-4 h-4"></i> สมัครแข่งขันรายการนี้ทันที
+          </button>
+        </div>
+      </div>
+
+      <!-- Subview 1A: Tournament Discovery & Registration -->
+      <div id="app-subview-tournaments" class="space-y-5">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3 bg-slate-900/50 p-4 rounded-2xl border border-slate-800">
+          <div class="md:col-span-2 relative">
+            <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+            <input id="searchTournamentInput" type="text" placeholder="ค้นหาชื่อรายการ, สนามแข่ง, จังหวัด (เช่น ขอนแก่น, พระราม 2)..." class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500" />
+          </div>
+          <div>
+            <select id="filterLevelSelect" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-emerald-500">
+              <option value="ALL">ทุกระดับมือ / รุ่นอายุ</option>
+              <option value="BG">มือ BG (Beginner / หน้าบ้าน)</option>
+              <option value="N">มือ N (ทั่วไปต้น)</option>
+              <option value="S-">มือ S- (ทั่วไปกลาง)</option>
+              <option value="P-">มือ P- / Open</option>
+              <option value="U15">เยาวชน U11 / U13 / U15</option>
+            </select>
+          </div>
+          <div>
+            <select id="filterStatusSelect" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-emerald-500">
+              <option value="ALL">ทุกสถานะรายการ</option>
+              <option value="OPEN">เปิดรับสมัคร</option>
+              <option value="LIVE">กำลังแข่งขันสด</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="tournamentCardsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <!-- Populated dynamically via JS -->
+        </div>
+      </div>
+
+      <!-- Subview 1B: Check Applicant List & Status -->
+      <div id="app-subview-check-status" class="hidden space-y-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+          <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
+            <div>
+              <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                <i data-lucide="list-checks" class="w-5 h-5 text-emerald-400"></i>
+                ตรวจสอบรายชื่อผู้สมัคร & สถานะประเมินมือ
+              </h2>
+              <p id="statusSubtitle" class="text-xs text-slate-400 mt-0.5">แสดงข้อมูลการสมัครแบบเรียลไทม์ พร้อมสถานะตรวจสลิป QR และผลประเมินระดับมือ</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+              <select id="applicantHandFilter" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs font-semibold text-white">
+                <option value="ALL">ทุกรุ่นมือในรายการนี้</option>
+                <option value="BG">รุ่นมือ BG</option>
+                <option value="N">รุ่นมือ N</option>
+                <option value="S-">รุ่นมือ S-</option>
+                <option value="P-">รุ่นมือ P-</option>
+              </select>
+              <button id="simulateRandomTeamBtnTable" class="px-3.5 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-extrabold text-xs flex items-center gap-1.5 shadow">
+                <i data-lucide="dice-5" class="w-4 h-4"></i> + จำลองสุ่มสมัคร 1 ทีม
+              </button>
+              <button id="openQuickApplyBtn2" class="px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs flex items-center gap-1.5">
+                <i data-lucide="plus" class="w-4 h-4"></i> สมัครเพิ่ม
+              </button>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto scrollbar-thin">
+            <table class="w-full text-left border-collapse text-sm">
+              <thead>
+                <tr class="border-b border-slate-800 text-slate-400 text-xs uppercase">
+                  <th class="py-3 px-3">ลำดับ</th>
+                  <th class="py-3 px-3">รุ่นมือ</th>
+                  <th class="py-3 px-3">นักกีฬา 1 & นักกีฬา 2 (ทีม/สังกัด)</th>
+                  <th class="py-3 px-3">สถานะชำระเงิน (QR Slip)</th>
+                  <th class="py-3 px-3">ผลประเมินระดับมือ</th>
+                  <th class="py-3 px-3 text-right">แจ้งเตือน LINE</th>
+                </tr>
+              </thead>
+              <tbody id="publicApplicantTableBody" class="divide-y divide-slate-800/60">
+                <!-- Populated by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Subview 1C: Athlete Profile & Digital ID Card -->
+      <div id="app-subview-athlete-card" class="hidden space-y-5">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <!-- Digital Athlete ID Card -->
+          <div class="bg-gradient-to-br from-slate-900 via-emerald-950/60 to-slate-900 border border-emerald-500/40 rounded-2xl p-6 shadow-xl relative overflow-hidden">
+            <div class="flex items-center justify-between mb-4">
+              <span class="text-xs font-bold tracking-wider uppercase px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                MatchON DIGITAL PASS
+              </span>
+              <span class="text-xs text-slate-400 font-mono" id="cardAthleteId">ID: JB-2026-8841</span>
+            </div>
+
+            <div class="flex items-center gap-4 mb-5">
+              <div id="cardAvatar" class="w-16 h-16 rounded-2xl bg-emerald-500 text-slate-950 font-extrabold text-2xl flex items-center justify-center shadow-lg">
+                ปุ้ม
+              </div>
+              <div>
+                <h3 id="cardName" class="text-xl font-extrabold text-white">คุณปุ้ม แบดมินตัน</h3>
+                <p id="cardClub" class="text-xs text-emerald-400 font-semibold">สังกัด: MD Sport Live Badminton Club</p>
+                <div class="flex items-center gap-2 mt-1.5">
+                  <span id="cardHandBadge" class="px-2.5 py-0.5 rounded-md bg-amber-400 text-slate-950 font-extrabold text-xs">ระดับมือ: N (ยืนยันแล้ว)</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2 bg-slate-950/70 rounded-xl p-3 border border-slate-800/80 mb-4 text-center">
+              <div>
+                <p class="text-[11px] text-slate-400">แมตช์สะสม</p>
+                <p id="cardMatches" class="text-base font-extrabold text-white">34</p>
+              </div>
+              <div>
+                <p class="text-[11px] text-slate-400">อัตราชนะ</p>
+                <p id="cardWinRate" class="text-base font-extrabold text-emerald-400">68%</p>
+              </div>
+              <div>
+                <p class="text-[11px] text-slate-400">คะแนนสะสม</p>
+                <p id="cardPoints" class="text-base font-extrabold text-amber-400">1,420</p>
+              </div>
+            </div>
+
+            <div class="bg-white text-slate-950 rounded-xl p-3 flex items-center justify-between">
+              <div>
+                <p class="text-[11px] font-bold uppercase text-slate-500">สแกนหน้าสนามเพื่อเช็คอิน</p>
+                <p class="text-xs font-extrabold">ยืนยันตัวตนก่อนลงคอร์ทแข่งขัน</p>
+                <p class="text-[11px] text-emerald-700 font-semibold mt-0.5">เชื่อมต่อแจ้งเตือน LINE OA แล้ว</p>
+              </div>
+              <div class="w-12 h-12 bg-slate-900 text-white rounded-lg flex items-center justify-center font-mono text-[10px] text-center leading-tight p-1">
+                [QR<br>PASS]
+              </div>
+            </div>
+          </div>
+
+          <!-- Athlete Switcher & Skill Level History -->
+          <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                  <i data-lucide="award" class="w-5 h-5 text-amber-400"></i>
+                  ฐานข้อมูลประวัติระดับมือ & ผลงานย้อนหลัง (Skill Level History)
+                </h3>
+                <p class="text-xs text-slate-400">ระบบอ้างอิงประวัติจากทัวร์นาเมนต์ในระบบ เพื่อป้องกันการลงผิดรุ่นมือ (Sandbagging)</p>
+              </div>
+              <select id="athleteSelectDropdown" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs font-semibold text-white">
+              </select>
+            </div>
+
+            <div id="athleteHistoryList" class="space-y-2.5">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Subview 1D: Community (Find Badminton Group, Coach, Knocker, Photos) -->
+      <div id="app-subview-community" class="hidden space-y-5">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="communityCardsContainer">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         VIEW 2: ผู้จัดการแข่งขัน (ORGANIZER CONSOLE)
+         ========================================== -->
+    <section id="view-organizer" class="hidden space-y-6">
+      <!-- Organizer Header Banner -->
+      <div class="bg-gradient-to-r from-slate-900 via-slate-900 to-emerald-950/50 border border-slate-800 rounded-2xl p-5 flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <span class="text-xs font-bold uppercase tracking-wider text-emerald-400">ORGANIZER CONTROL CENTER (เฉพาะโหมดผู้จัด / ADMIN)</span>
+          <h2 id="orgActiveTournamentTitle" class="text-xl font-extrabold text-white mt-0.5">จัดการแข่งขัน: รายการ เจอแน่ #EP2</h2>
+          <p class="text-xs text-slate-400 mt-1">ตรวจสลิป QR อัตโนมัติ • ตรวจสอบประวัติระดับมือ • สุ่มสายแบ่งกลุ่ม • ประกาศเสียงเรียกนักกีฬาลงคอร์ท</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2.5">
+          <button id="simulateRandomTeamBtnOrg" class="px-3.5 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-extrabold flex items-center gap-1.5 shadow transition">
+            <i data-lucide="dice-5" class="w-4 h-4"></i> + จำลองสุ่มสมัครนักกีฬา (1 ทีม)
+          </button>
+          <button id="openCreateTournamentModalBtn" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold flex items-center gap-1.5 border border-slate-700 transition">
+            <i data-lucide="plus-circle" class="w-4 h-4 text-emerald-400"></i> เปิดรายการแข่งขันใหม่
+          </button>
+          <button id="autoGenerateDrawBtn" class="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold flex items-center gap-1.5 shadow transition">
+            <i data-lucide="shuffle" class="w-4 h-4"></i> สุ่มจับสายการแข่งขันอัตโนมัติ
+          </button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Left 2 Columns: Applicant Hand Assessment & QR Slip Verification -->
+        <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h3 class="text-base font-bold text-white flex items-center gap-2">
+                <i data-lucide="shield-alert" class="w-5 h-5 text-amber-400"></i>
+                อนุมัติใบสมัคร: ตรวจสลิป QR & ประเมินระดับมือนักกีฬา
+              </h3>
+              <p class="text-xs text-slate-400">กด "ยืนยันสลิป QR" หรือกด "ผ่านประเมินมือ" เพื่อส่งแจ้งเตือนเข้า LINE นักกีฬาและบันทึกลงเครื่องทันที</p>
+            </div>
+            <span id="orgApplicantCountLabel" class="text-xs font-bold px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300">ทั้งหมด 8 คู่</span>
+          </div>
+
+          <div id="organizerApplicantsList" class="space-y-3 max-h-[540px] overflow-y-auto scrollbar-thin pr-1">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+        <!-- Right Column: Voice Call Out (PA System) & Court Assignment -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 flex flex-col justify-between">
+          <div class="space-y-4">
+            <div>
+              <h3 class="text-base font-bold text-white flex items-center gap-2">
+                <i data-lucide="volume-2" class="w-5 h-5 text-emerald-400"></i>
+                ระบบประกาศเรียกคู่แข่งด้วยเสียง (Voice Call Out)
+              </h3>
+              <p class="text-xs text-slate-400 mt-0.5">เลือกคิวแมตช์และคอร์ทที่ว่าง ระบบจะอ่านชื่อนักกีฬาและหมายเลขคอร์ทออกลำโพงอัตโนมัติ</p>
+            </div>
+
+            <div class="space-y-3 bg-slate-950 p-4 rounded-xl border border-slate-800">
+              <div>
+                <label class="block text-xs font-semibold text-slate-400 mb-1">เลือกแมตช์ที่รอลงสนาม (Match Queue)</label>
+                <select id="voiceMatchSelect" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs sm:text-sm font-semibold text-white">
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-400 mb-1">เลือกหมายเลขคอร์ท (Court 1 - 6)</label>
+                <select id="voiceCourtSelect" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs sm:text-sm font-semibold text-white">
+                  <option value="1">คอร์ท 1 (Court 1 - มาตรฐาน BWF)</option>
+                  <option value="2">คอร์ท 2 (Court 2 - มาตรฐาน BWF)</option>
+                  <option value="3">คอร์ท 3 (Court 3 - มาตรฐาน BWF)</option>
+                  <option value="4">คอร์ท 4 (Court 4 - มาตรฐาน BWF)</option>
+                  <option value="5">คอร์ท 5 (Court 5 - ว่างพร้อมแข่ง)</option>
+                  <option value="6">คอร์ท 6 (Court 6 - ว่างพร้อมแข่ง)</option>
+                </select>
+              </div>
+
+              <div class="pt-1 flex flex-col gap-2">
+                <button id="triggerVoiceCallBtn" class="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 transition">
+                  <i data-lucide="megaphone" class="w-4 h-4"></i>
+                  ประกาศเสียงเรียกลงคอร์ท & ส่ง LINE
+                </button>
+                <button id="assignCourtAndStartBtn" class="w-full py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-300 font-bold text-xs flex items-center justify-center gap-1.5 border border-slate-700 transition">
+                  <i data-lucide="play" class="w-3.5 h-3.5"></i> ส่งคู่แข่งลงคอร์ทสดทันที
+                </button>
+              </div>
+            </div>
+
+            <!-- Recent Announcements Log -->
+            <div>
+              <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">ประวัติการประกาศเรียก & แจ้งเตือน LINE OA</h4>
+              <div id="announcementLogList" class="space-y-2 max-h-48 overflow-y-auto scrollbar-thin text-xs">
+                <!-- Populated by JS -->
+              </div>
+            </div>
+          </div>
+
+          <div class="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-300 flex items-start gap-2">
+            <i data-lucide="check-circle-2" class="w-4 h-4 shrink-0 mt-0.5"></i>
+            <span>รองรับเสียงสังเคราะห์ภาษาไทย (Web Speech API) พร้อมส่งแจ้งเตือนเข้าสมาร์ทโฟนนักกีฬาอัตโนมัติ</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         VIEW 3: อื่นที่เกี่ยวข้อง (COURTS, UMPIRES, BRACKETS)
+         ========================================== -->
+    <section id="view-related" class="hidden space-y-6">
+      <!-- Sub-navigation for Related Features -->
+      <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-900/70 p-3 rounded-2xl border border-slate-800">
+        <div class="flex flex-wrap items-center gap-2">
+          <button data-rel-subtab="courts" class="rel-subtab-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-2">
+            <i data-lucide="tv" class="w-4 h-4"></i> ผังคอร์ทสด & สกอร์เรียลไทม์ (Live Courts)
+          </button>
+          <button data-rel-subtab="brackets" class="rel-subtab-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold text-slate-400 hover:text-white border border-transparent flex items-center gap-2">
+            <i data-lucide="git-branch" class="w-4 h-4"></i> สายการแข่งขัน (Group & Knockout)
+          </button>
+          <button data-rel-subtab="results" class="rel-subtab-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold text-slate-400 hover:text-white border border-transparent flex items-center gap-2">
+            <i data-lucide="trophy" class="w-4 h-4"></i> ผลการแข่งขัน & คะแนนสะสม
+          </button>
+        </div>
+        <div id="courtRoleHintText" class="flex items-center gap-2 text-xs text-amber-300 font-semibold">
+          <!-- Updated dynamically based on roleMode -->
+        </div>
+      </div>
+
+      <!-- Subview 3A: Live 6-Court Scoreboard & Umpire Pad -->
+      <div id="rel-subview-courts" class="space-y-5">
+        <div id="liveCourtsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- Subview 3B: Draws & Brackets (Group Stage + Knockout) -->
+      <div id="rel-subview-brackets" class="hidden space-y-6">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+          <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <div>
+              <h3 class="text-lg font-bold text-white">ตารางสายการแข่งขันรอบแบ่งกลุ่ม (Group Stage - รุ่นมือ N)</h3>
+              <p class="text-xs text-slate-400">คำนวณคะแนนอัตโนมัติ (ชนะได้ 1 คะแนน, อันดับ 1-2 ของแต่ละสายเข้ารอบรองชนะเลิศ Knock Out)</p>
+            </div>
+            <button id="reshuffleBracketBtn" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold text-xs flex items-center gap-1.5 border border-slate-700">
+              <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> สุ่มสายแบ่งกลุ่มใหม่
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-5" id="groupStageContainer">
+            <!-- Group A & Group B tables populated by JS -->
+          </div>
+        </div>
+
+        <!-- Knockout Bracket Visual Tree -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+          <h3 class="text-lg font-bold text-white mb-1">สายการแข่งขันรอบแพ้คัดออก (Knockout Stage - รุ่นมือ N)</h3>
+          <p class="text-xs text-slate-400 mb-5">อัปเดตผู้ชนะเข้าสู่รอบชิงชนะเลิศแบบเรียลไทม์เมื่อกรรมการกดจบการแข่งขัน</p>
+
+          <div id="knockoutBracketContainer" class="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Subview 3C: Completed Match Results & Coupon Shuttlecock Log -->
+      <div id="rel-subview-results" class="hidden space-y-5">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+          <h3 class="text-lg font-bold text-white mb-3 flex items-center gap-2">
+            <i data-lucide="check-square" class="w-5 h-5 text-emerald-400"></i>
+            บันทึกผลการแข่งขันล่าสุด & การใช้คูปองลูกแบดมินตัน
+          </h3>
+          <div id="completedMatchesList" class="space-y-3">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ==========================================
+       MODAL 1: สมัครแข่งขันออนไลน์ (APPLY TOURNAMENT)
+       ========================================== -->
+  <div id="applyModal" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div>
+          <span class="text-[11px] font-bold uppercase text-emerald-400">ONLINE ENTRY FORM</span>
+          <h3 class="text-lg font-extrabold text-white">สมัครเข้าร่วมแข่งขันแบดมินตัน</h3>
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="button" id="fillRandomModalFormBtn" class="px-2.5 py-1 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/30 text-xs font-bold flex items-center gap-1">
+            <i data-lucide="dice-5" class="w-3.5 h-3.5"></i> สุ่มกรอกข้อมูล
+          </button>
+          <button id="closeApplyModalBtn" class="text-slate-400 hover:text-white p-1">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+      </div>
+
+      <form id="applyTournamentForm" class="space-y-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">เลือกรายการแข่งขัน</label>
+            <select id="applyTournamentId" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">เลือกรุ่นระดับมือ</label>
+            <select id="applyHandLevel" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white">
+              <option value="BG">มือ BG (Beginner / หน้าบ้าน)</option>
+              <option value="N" selected>มือ N (ทั่วไปต้น)</option>
+              <option value="S-">มือ S- (ทั่วไปกลาง)</option>
+              <option value="P-">มือ P- (ทั่วไปสูง/Open)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
+          <p class="text-xs font-bold text-emerald-400">ข้อมูลนักกีฬาคนที่ 1 & คู่พาร์ทเนอร์คนที่ 2</p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">ชื่อ - นามสกุล / ชื่อเล่น (คนที่ 1) *</label>
+              <input id="applyPlayer1" type="text" required placeholder="เช่น คุณปุ้ม (ปุ้ม)" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white" />
+            </div>
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">ชื่อ - นามสกุล / ชื่อเล่น (คนที่ 2) *</label>
+              <input id="applyPlayer2" type="text" required placeholder="เช่น คุณแม็ค (แม็ค)" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white" />
+            </div>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">ชื่อทีม / สโมสรสังกัด *</label>
+              <input id="applyClub" type="text" required placeholder="เช่น MD Sport Live / บ้านไผ่แบด" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white" />
+            </div>
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">ผลงานล่าสุด / ลิงก์คลิปประเมินมือ</label>
+              <input id="applyHistoryNote" type="text" placeholder="เช่น ตกรอบ 8 ทีม รายการขอนแก่น" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Simulated QR Payment Slip Upload -->
+        <div class="p-3.5 rounded-xl bg-emerald-950/30 border border-emerald-500/30 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-emerald-300 flex items-center gap-1.5">
+              <i data-lucide="qr-code" class="w-4 h-4"></i> แนบสลิปโอนเงินค่าสมัคร (ระบบตรวจ QR อัตโนมัติ)
+            </span>
+            <span class="text-xs font-extrabold text-white">1,200 บาท / คู่</span>
+          </div>
+          <label class="flex items-center gap-3 cursor-pointer text-xs text-slate-300 pt-1">
+            <input id="applyIncludeSlip" type="checkbox" checked class="rounded border-slate-700 text-emerald-500 focus:ring-emerald-500" />
+            <span>แนบสลิปโอนเงินพร้อม QR Reference (ระบบตรวจสอบสลิปซ้ำอัตโนมัติ)</span>
+          </label>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-2">
+          <button type="button" id="cancelApplyModalBtn" class="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold">ยกเลิก</button>
+          <button type="submit" class="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs sm:text-sm shadow-lg shadow-emerald-500/20">
+            ยืนยันการสมัครแข่งขัน
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       MODAL 2: เครื่องมือกรรมการบันทึกผลสด (UMPIRE SCORING PAD)
+       ========================================== -->
+  <div id="umpireModal" class="fixed inset-0 z-50 hidden bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-5">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div>
+          <span id="umpireCourtBadge" class="text-xs font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-400 border border-rose-500/30">COURT 1 • UMPIRE REALTIME PAD</span>
+          <h3 id="umpireMatchCategory" class="text-base font-bold text-white mt-1">รอบแบ่งกลุ่ม สาย A • รุ่นมือ N</h3>
+        </div>
+        <button id="closeUmpireModalBtn" class="text-slate-400 hover:text-white p-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Set Selector -->
+      <div class="flex items-center justify-between bg-slate-950 p-2 rounded-xl border border-slate-800">
+        <span class="text-xs font-semibold text-slate-400 pl-2">กำลังบันทึกคะแนนเซตที่:</span>
+        <div class="flex gap-1.5">
+          <button data-set-idx="0" class="umpire-set-btn px-3 py-1 rounded-lg text-xs font-bold bg-emerald-500 text-slate-950">เซต 1</button>
+          <button data-set-idx="1" class="umpire-set-btn px-3 py-1 rounded-lg text-xs font-bold bg-slate-800 text-slate-300">เซต 2</button>
+          <button data-set-idx="2" class="umpire-set-btn px-3 py-1 rounded-lg text-xs font-bold bg-slate-800 text-slate-300">เซต 3</button>
+        </div>
+      </div>
+
+      <!-- Score Controls for Team A & Team B -->
+      <div class="grid grid-cols-2 gap-4">
+        <!-- Team A -->
+        <div class="bg-slate-950 border border-slate-800 rounded-2xl p-4 text-center space-y-3">
+          <p id="umpireTeamAName" class="text-sm font-bold text-white truncate">ทีม A</p>
+          <p id="umpireTeamAClub" class="text-[11px] text-slate-400 truncate">สโมสร A</p>
+          <div id="umpireScoreA" class="text-5xl font-extrabold text-emerald-400 py-2">18</div>
+          <div class="flex items-center justify-center gap-2">
+            <button id="umpireDecA" class="w-10 h-10 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-lg">-</button>
+            <button id="umpireIncA" class="flex-1 h-10 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-sm">+1 แต้ม</button>
+          </div>
+        </div>
+
+        <!-- Team B -->
+        <div class="bg-slate-950 border border-slate-800 rounded-2xl p-4 text-center space-y-3">
+          <p id="umpireTeamBName" class="text-sm font-bold text-white truncate">ทีม B</p>
+          <p id="umpireTeamBClub" class="text-[11px] text-slate-400 truncate">สโมสร B</p>
+          <div id="umpireScoreB" class="text-5xl font-extrabold text-cyan-400 py-2">16</div>
+          <div class="flex items-center justify-center gap-2">
+            <button id="umpireDecB" class="w-10 h-10 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-lg">-</button>
+            <button id="umpireIncB" class="flex-1 h-10 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-extrabold text-sm">+1 แต้ม</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Shuttlecock Counter -->
+      <div class="flex items-center justify-between bg-slate-950 px-4 py-2.5 rounded-xl border border-slate-800 text-xs">
+        <span class="text-slate-300">จำนวนลูกแบดที่ใช้ในแมตช์นี้ (หักคูปองอัตโนมัติ):</span>
+        <div class="flex items-center gap-2">
+          <button id="shuttleDecBtn" class="w-7 h-7 rounded-lg bg-slate-800 text-white font-bold">-</button>
+          <span id="shuttleCountLabel" class="font-extrabold text-amber-400 text-sm">2 ลูก</span>
+          <button id="shuttleIncBtn" class="w-7 h-7 rounded-lg bg-slate-800 text-white font-bold">+</button>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between gap-3 pt-2">
+        <button id="finishMatchBtn" class="flex-1 py-2.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs sm:text-sm flex items-center justify-center gap-1.5">
+          <i data-lucide="flag" class="w-4 h-4"></i> จบแมตช์ & ส่งผลเข้าระบบสายแข่ง
+        </button>
+        <button id="doneUmpireModalBtn" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs sm:text-sm">
+          บันทึกและปิด
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       MODAL 3: เปิดทัวร์นาเมนต์ใหม่ (CREATE TOURNAMENT)
+       ========================================== -->
+  <div id="createTournamentModal" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="text-lg font-extrabold text-white">สร้างรายการแข่งขันแบดมินตันใหม่ (สำหรับผู้จัด)</h3>
+        <button id="closeCreateTourModalBtn" class="text-slate-400 hover:text-white p-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <form id="createTournamentForm" class="space-y-3 text-sm">
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">ชื่อรายการแข่งขัน *</label>
+          <input id="newTourTitle" type="text" required placeholder="เช่น MD Sport Live Open 2026 #1" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white" />
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">วันที่แข่งขัน *</label>
+            <input id="newTourDate" type="text" required placeholder="เช่น 5-6 ธันวาคม 2569" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white" />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">สนามแข่งขัน / จังหวัด *</label>
+            <input id="newTourVenue" type="text" required placeholder="เช่น สนาม T Pun Badminton จันทบุรี" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white" />
+          </div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">ค่าสมัคร (บาท/คู่)</label>
+            <input id="newTourFee" type="number" value="1200" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white" />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">ลูกแบดที่ใช้ในการแข่งขัน</label>
+            <input id="newTourShuttle" type="text" value="Victor Champion No.1" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white" />
+          </div>
+        </div>
+        <div class="flex justify-end gap-2 pt-3">
+          <button type="button" id="cancelCreateTourBtn" class="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold">ยกเลิก</button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-emerald-500 text-slate-950 font-extrabold text-xs">เปิดรับสมัครทันที</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 space-y-2 pointer-events-none"></div>
+
+  <!-- Application Logic -->
+  <script>
+    const STORAGE_KEY = 'MATCHON_LOCAL_DB_V1';
+
+    // Pools for random 1-team applicant generator
+    const RANDOM_PLAYERS_POOL = [
+      'คุณกานต์ (กานต์)', 'คุณภูมิ (ภูมิ)', 'คุณเจมส์ (เจมส์)', 'คุณต้อม (ต้อม)',
+      'คุณไอซ์ (ไอซ์)', 'คุณนัท (นัท)', 'คุณปลื้ม (ปลื้ม)', 'คุณซัน (ซัน)',
+      'คุณบุ๊ค (บุ๊ค)', 'คุณโอม (โอม)', 'คุณเป้ (เป้)', 'คุณอ๊อฟ (อ๊อฟ)',
+      'คุณแน็ค (แน็ค)', 'คุณบอล (บอล)', 'คุณบอส (บอส)', 'คุณคิว (คิว)',
+      'คุณมิ้นท์ (มิ้นท์)', 'คุณเนย (เนย)', 'คุณพลอย (พลอย)', 'คุณจูน (จูน)'
+    ];
+    const RANDOM_CLUBS_POOL = [
+      'T Pun Badminton จันทบุรี', 'SC Badminton บ้านไผ่', 'MD Sport Live Club',
+      'Khlung Smash Team', 'CC Badminton พระราม 2', 'Khon Kaen Arena Club',
+      'Sand Haus Relax', 'Ubon Spirit Badminton', 'G2G Smash Team', 'Korat Badminton Club'
+    ];
+    const RANDOM_HISTORY_POOL = [
+      'ตกรอบ 8 ทีมสุดท้าย รายการ T Pun Open 2026',
+      'รอบแบ่งกลุ่ม รายการ SC บ้านไผ่ มินิคัพ',
+      'นักกีฬาใหม่ ประเมินมือจากคลิปซ้อมก๊วน MD Sport',
+      'รองชนะเลิศอันดับ 2 รุ่นมือ BG (ขอขยับขึ้นรุ่น)',
+      'ผ่านการประเมินมือจากระบบจัดแบดกลางเรียบร้อย',
+      'ตกรอบ 16 ทีม รายการ Khon Kaen Hall Open'
+    ];
+    const RANDOM_LEVELS_POOL = ['BG', 'N', 'S-', 'P-'];
+
+    // ==========================================
+    // 1. DEFAULT INITIAL STATE
+    // ==========================================
+    function getDefaultState() {
+      return {
+        roleMode: 'admin', // 'guest' | 'applicant' | 'admin'
+        activeMainTab: 'applicant',
+        activeAppSubtab: 'tournaments',
+        activeRelSubtab: 'courts',
+        selectedTournamentId: 'T01',
+        activeUmpireCourtId: null,
+        activeUmpireSetIdx: 0,
+
+        tournaments: [
+          {
+            id: 'T01',
+            title: 'รายการ เจอแน่ #EP2 (Journae Badminton Cup)',
+            date: '10 - 11 ตุลาคม 2569',
+            venue: 'Khonkaen Hall Central Khonkaen จ.ขอนแก่น',
+            organizer: 'ทีมงาน เจอแน่ แบดมินตัน',
+            shuttlecock: 'Victor Champion No.1 (คูปอง 600 บ./10 ลูก)',
+            fee: 1200,
+            status: 'LIVE',
+            levels: ['BG', 'N', 'S-', 'P-'],
+            maxPairsPerLevel: 16
+          },
+          {
+            id: 'T02',
+            title: 'Hundrad Cyber Badminton 2026 สนาม 4',
+            date: '29 พฤศจิกายน 2569',
+            venue: 'สนามแบดมินตัน CC พระราม 2 กรุงเทพฯ',
+            organizer: 'Cyber Badminton Thailand',
+            shuttlecock: 'Hundred Tournament (คูปอง 600 บ./10 ลูก)',
+            fee: 1400,
+            status: 'OPEN',
+            levels: ['BG', 'N', 'S-', 'U15'],
+            maxPairsPerLevel: 16
+          },
+          {
+            id: 'T03',
+            title: 'ติดพุงแบดมินตัน Open 2026',
+            date: '14 - 15 พฤศจิกายน 2569',
+            venue: 'สนามแบดมินตัน G2G แบดมินตัน',
+            organizer: 'ทีมงานติดพุงแบดมินตัน',
+            shuttlecock: 'Young Performance 45 (คูปอง 500 บ./10 ลูก)',
+            fee: 1000,
+            status: 'OPEN',
+            levels: ['BG', 'N', 'S-'],
+            maxPairsPerLevel: 16
+          },
+          {
+            id: 'T04',
+            title: 'SC Badminton Open บ้านไผ่ ครั้งที่ 3',
+            date: '15 - 16 พฤศจิกายน 2569',
+            venue: 'สนามแบดมินตัน SC บ้านไผ่ จ.ขอนแก่น',
+            organizer: 'Kratip & TG Badminton Team',
+            shuttlecock: 'Victor Champion No.1 สีเขียว (คูปอง 600 บ./10 ลูก)',
+            fee: 1100,
+            status: 'OPEN',
+            levels: ['BG', 'N', 'S-', 'P-'],
+            maxPairsPerLevel: 16
+          }
+        ],
+
+        applicants: [
+          {
+            id: 'APP-01',
+            tournamentId: 'T01',
+            level: 'N',
+            p1: 'คุณปุ้ม (ปุ้ม)',
+            p2: 'คุณบอย (บอย)',
+            club: 'MD Sport Live Club',
+            slipVerified: true,
+            slipRef: 'KBANK-20261001-9981',
+            handStatus: 'APPROVED',
+            historyNote: 'รองชนะเลิศอันดับ 1 มือ BG รายการ T Pun จันทบุรี (เลื่อนขึ้นมือ N)',
+            lineNotified: true
+          },
+          {
+            id: 'APP-02',
+            tournamentId: 'T01',
+            level: 'N',
+            p1: 'คุณตั้ม (ตั้ม)',
+            p2: 'คุณก้อง (ก้อง)',
+            club: 'SC Badminton บ้านไผ่',
+            slipVerified: true,
+            slipRef: 'SCB-20261001-4412',
+            handStatus: 'APPROVED',
+            historyNote: 'รอบ 8 ทีมสุดท้าย มือ N รายการ Khon Kaen Open',
+            lineNotified: true
+          },
+          {
+            id: 'APP-03',
+            tournamentId: 'T01',
+            level: 'N',
+            p1: 'คุณนนท์ (นนท์)',
+            p2: 'คุณพีท (พีท)',
+            club: 'G2G Smash Team',
+            slipVerified: true,
+            slipRef: 'KTB-20261002-7731',
+            handStatus: 'APPROVED',
+            historyNote: 'ผ่านเกณฑ์ประเมินมือ N จากระบบจัดแบดกลาง',
+            lineNotified: true
+          },
+          {
+            id: 'APP-04',
+            tournamentId: 'T01',
+            level: 'N',
+            p1: 'คุณอาร์ม (อาร์ม)',
+            p2: 'คุณเจ (เจ)',
+            club: 'Rama II Shuttle Club',
+            slipVerified: true,
+            slipRef: 'BBL-20261002-1109',
+            handStatus: 'APPROVED',
+            historyNote: 'รอบแบ่งกลุ่ม มือ N รายการ Cyber สนาม 3',
+            lineNotified: true
+          },
+          {
+            id: 'APP-05',
+            tournamentId: 'T01',
+            level: 'N',
+            p1: 'คุณเอิร์ธ (เอิร์ธ)',
+            p2: 'คุณวิน (วิน)',
+            club: 'Korat Arena Team',
+            slipVerified: true,
+            slipRef: 'KBANK-20261003-5520',
+            handStatus: 'PENDING',
+            historyNote: 'รอผู้จัดตรวจสอบคลิปวิดีโอการตีและประวัติจากรายการ Korat Cup',
+            lineNotified: false
+          },
+          {
+            id: 'APP-06',
+            tournamentId: 'T01',
+            level: 'BG',
+            p1: 'คุณเมย์ (เมย์)',
+            p2: 'คุณแพรว (แพรว)',
+            club: 'Sand Haus Relax',
+            slipVerified: false,
+            slipRef: 'รอแนบสลิป QR',
+            handStatus: 'PENDING',
+            historyNote: 'นักกีฬาหน้าใหม่ ลงแข่งขันรายการแรก',
+            lineNotified: false
+          },
+          {
+            id: 'APP-07',
+            tournamentId: 'T01',
+            level: 'S-',
+            p1: 'คุณแบงค์ (แบงค์)',
+            p2: 'คุณเต้ (เต้)',
+            club: 'Ubon Spirit Badminton',
+            slipVerified: true,
+            slipRef: 'SCB-20261003-8824',
+            handStatus: 'APPROVED',
+            historyNote: 'แชมป์มือ N รายการ One Spirit Ubon (บังคับขึ้น S-)',
+            lineNotified: true
+          },
+          {
+            id: 'APP-08',
+            tournamentId: 'T01',
+            level: 'S-',
+            p1: 'คุณฟลุ๊ค (ฟลุ๊ค)',
+            p2: 'คุณมาร์ค (มาร์ค)',
+            club: 'BTU Badminton Club',
+            slipVerified: true,
+            slipRef: 'KBANK-20261004-3190',
+            handStatus: 'REJECTED',
+            historyNote: 'ไม่ผ่านประเมินมือ S- (ตรวจพบเคยได้แชมป์มือ S รายการระดับภาค ต้องลงรุ่น P-)',
+            lineNotified: true
+          }
+        ],
+
+        athletes: [
+          {
+            id: 'JB-2026-8841',
+            name: 'คุณปุ้ม แบดมินตัน',
+            avatar: 'ปุ้ม',
+            club: 'MD Sport Live Badminton Club',
+            handLevel: 'N (ยืนยันแล้ว)',
+            matches: 34,
+            winRate: '68%',
+            points: '1,420',
+            history: [
+              { event: 'รายการ เจอแน่ #EP1 (ขอนแก่น)', level: 'มือ N', result: 'รอบ 8 ทีมสุดท้าย', date: 'ส.ค. 2569', status: 'ตรงตามระดับมือ' },
+              { event: 'T Pun Badminton Open จันทบุรี', level: 'มือ BG', result: 'รองชนะเลิศอันดับ 1 (เลื่อนขึ้น N)', date: 'ก.ค. 2569', status: 'ปรับขึ้นมือ N อัตโนมัติ' },
+              { event: 'SC Badminton บ้านไผ่ มินิคัพ', level: 'มือ BG', result: 'รอบรองชนะเลิศ', date: 'พ.ค. 2569', status: 'ตรงตามระดับมือ' }
+            ]
+          },
+          {
+            id: 'JB-2026-5012',
+            name: 'คุณตั้ม ขอนแก่น',
+            avatar: 'ตั้ม',
+            club: 'SC Badminton บ้านไผ่',
+            handLevel: 'N (ยืนยันแล้ว)',
+            matches: 48,
+            winRate: '72%',
+            points: '1,890',
+            history: [
+              { event: 'One Spirit Badminton Ubon #2', level: 'มือ N', result: 'รองชนะเลิศอันดับ 2', date: 'มิ.ย. 2569', status: 'ตรงตามระดับมือ' },
+              { event: '1HappyNess To Khon Kaen', level: 'มือ N', result: 'รอบ 8 ทีมสุดท้าย', date: 'เม.ย. 2569', status: 'ตรงตามระดับมือ' }
+            ]
+          },
+          {
+            id: 'JB-2026-9920',
+            name: 'คุณฟลุ๊ค ธนบุรี',
+            avatar: 'ฟลุ๊ค',
+            club: 'BTU Badminton Club',
+            handLevel: 'P- (ตรวจพบมือสูงกว่า S-)',
+            matches: 62,
+            winRate: '84%',
+            points: '2,750',
+            history: [
+              { event: 'Hundrad Cyber Badminton สนาม 3', level: 'มือ S', result: 'ชนะเลิศอันดับ 1 (แชมป์)', date: 'ก.ย. 2569', status: 'ระบบล็อกห้ามลงต่ำกว่า P-' },
+              { event: 'D-Like Open 2026 #5', level: 'มือ S-', result: 'ชนะเลิศอันดับ 1', date: 'ก.ค. 2569', status: 'เลื่อนระดับมือ' }
+            ]
+          }
+        ],
+
+        courts: [
+          {
+            courtNo: 1,
+            status: 'LIVE',
+            matchCode: 'M-101',
+            round: 'รอบแบ่งกลุ่ม สาย A • รุ่นมือ N',
+            teamA: 'คุณปุ้ม / คุณบอย',
+            clubA: 'MD Sport Live Club',
+            teamB: 'คุณตั้ม / คุณก้อง',
+            clubB: 'SC Badminton บ้านไผ่',
+            scores: [[21, 18], [17, 15], [0, 0]],
+            shuttleUsed: 3,
+            nextMatch: 'คุณนนท์ / คุณพีท vs คุณอาร์ม / คุณเจ'
+          },
+          {
+            courtNo: 2,
+            status: 'LIVE',
+            matchCode: 'M-102',
+            round: 'รอบแบ่งกลุ่ม สาย B • รุ่นมือ N',
+            teamA: 'คุณนนท์ / คุณพีท',
+            clubA: 'G2G Smash Team',
+            teamB: 'คุณอาร์ม / คุณเจ',
+            clubB: 'Rama II Shuttle Club',
+            scores: [[19, 21], [21, 14], [11, 9]],
+            shuttleUsed: 4,
+            nextMatch: 'คุณเอิร์ธ / คุณวิน vs คู่ชนะสาย A'
+          },
+          {
+            courtNo: 3,
+            status: 'LIVE',
+            matchCode: 'M-103',
+            round: 'รอบคัดเลือก • รุ่นมือ S-',
+            teamA: 'คุณแบงค์ / คุณเต้',
+            clubA: 'Ubon Spirit Badminton',
+            teamB: 'คุณกิต / คุณโอม',
+            clubB: 'CMI Chiangmai Club',
+            scores: [[15, 12], [0, 0], [0, 0]],
+            shuttleUsed: 2,
+            nextMatch: 'รอบก่อนรองชนะเลิศ S-'
+          },
+          {
+            courtNo: 4,
+            status: 'LIVE',
+            matchCode: 'M-104',
+            round: 'รอบแบ่งกลุ่ม • รุ่นมือ BG',
+            teamA: 'คุณเมย์ / คุณแพรว',
+            clubA: 'Sand Haus Relax',
+            teamB: 'คุณฟ้า / คุณหลิน',
+            clubB: 'One Badminton KK',
+            scores: [[21, 14], [12, 10], [0, 0]],
+            shuttleUsed: 2,
+            nextMatch: 'รุ่นเยาวชน U15'
+          },
+          {
+            courtNo: 5,
+            status: 'READY',
+            matchCode: '-',
+            round: 'คอร์ทว่าง (พร้อมเรียกคู่ถัดไป)',
+            teamA: 'รอเรียกคู่แข่งขัน',
+            clubA: '-',
+            teamB: 'รอเรียกคู่แข่งขัน',
+            clubB: '-',
+            scores: [[0, 0], [0, 0], [0, 0]],
+            shuttleUsed: 0,
+            nextMatch: 'สามารถเลือกคู่จากคิวด้านผู้จัดเพื่อลงสนาม'
+          },
+          {
+            courtNo: 6,
+            status: 'READY',
+            matchCode: '-',
+            round: 'คอร์ทว่าง (พร้อมเรียกคู่ถัดไป)',
+            teamA: 'รอเรียกคู่แข่งขัน',
+            clubA: '-',
+            teamB: 'รอเรียกคู่แข่งขัน',
+            clubB: '-',
+            scores: [[0, 0], [0, 0], [0, 0]],
+            shuttleUsed: 0,
+            nextMatch: 'สามารถเลือกคู่จากคิวด้านผู้จัดเพื่อลงสนาม'
+          }
+        ],
+
+        matchQueue: [
+          {
+            id: 'Q-201',
+            round: 'รอบรองชนะเลิศ 1 • รุ่นมือ N',
+            teamA: 'คุณปุ้ม / คุณบอย',
+            clubA: 'MD Sport Live Club',
+            teamB: 'คุณนนท์ / คุณพีท',
+            clubB: 'G2G Smash Team'
+          },
+          {
+            id: 'Q-202',
+            round: 'รอบรองชนะเลิศ 2 • รุ่นมือ N',
+            teamA: 'คุณตั้ม / คุณก้อง',
+            clubA: 'SC Badminton บ้านไผ่',
+            teamB: 'คุณอาร์ม / คุณเจ',
+            clubB: 'Rama II Shuttle Club'
+          },
+          {
+            id: 'Q-203',
+            round: 'รอบแบ่งกลุ่ม • รุ่นมือ S-',
+            teamA: 'คุณแบงค์ / คุณเต้',
+            clubA: 'Ubon Spirit Badminton',
+            teamB: 'คุณเอิร์ธ / คุณวิน',
+            clubB: 'Korat Arena Team'
+          }
+        ],
+
+        completedMatches: [
+          {
+            code: 'M-098',
+            round: 'รอบแบ่งกลุ่ม สาย A • รุ่นมือ N',
+            winner: 'คุณปุ้ม / คุณบอย (MD Sport Live)',
+            loser: 'คุณเอิร์ธ / คุณวิน (Korat Arena)',
+            scoreText: '21-15, 21-17',
+            shuttleUsed: 2,
+            time: '14:20 น.'
+          },
+          {
+            code: 'M-099',
+            round: 'รอบแบ่งกลุ่ม สาย B • รุ่นมือ N',
+            winner: 'คุณนนท์ / คุณพีท (G2G Smash)',
+            loser: 'คุณบาส / คุณต้อม (Khon Kaen Club)',
+            scoreText: '21-19, 18-21, 21-16',
+            shuttleUsed: 4,
+            time: '14:55 น.'
+          }
+        ],
+
+        announcements: [
+          {
+            time: '15:10 น.',
+            text: 'ขอเชิญนักกีฬารุ่นมือ N คุณปุ้ม คุณบอย พบกับ คุณตั้ม คุณก้อง ลงทำการแข่งขันที่คอร์ท 1 ค่ะ',
+            channel: 'ลำโพงสนาม + LINE OA'
+          },
+          {
+            time: '15:02 น.',
+            text: 'ขอเชิญนักกีฬารุ่นมือ N คุณนนท์ คุณพีท พบกับ คุณอาร์ม คุณเจ ลงทำการแข่งขันที่คอร์ท 2 ค่ะ',
+            channel: 'ลำโพงสนาม + LINE OA'
+          }
+        ],
+
+        knockoutFinalWinner: 'รอผลการแข่งขันรอบชิงฯ',
+
+        communityItems: [
+          {
+            type: 'ก๊วนแบดมินตันแนะนำ (Badminton Group)',
+            title: 'ก๊วน MD Sport & เพื่อนแบดขลุง-จันทบุรี',
+            location: 'สนาม T Pun Badminton • อังคาร / พฤหัส / เสาร์ 19:00-22:00 น.',
+            detail: 'จัดคิวด้วยระบบอัตโนมัติ มือ BG ถึง S- ค่าลูกหารตามจริง มีถ่ายทอดสดคอร์ทหลัก',
+            badge: 'ว่างรับเพิ่ม 6 คน',
+            actionLabel: 'ขอแจมก๊วนนี้'
+          },
+          {
+            type: 'ค้นหาโค้ช & น็อคเกอร์ (Find Coach / Knocker)',
+            title: 'โค้ชบอย (อดีตเยาวชนตัวแทนภาค) รับน็อคลูก & แก้เบสิก',
+            location: 'โซนขอนแก่น / บ้านไผ่ / พระราม 2 (นัดหมายล่วงหน้า)',
+            detail: 'เน้นฝึกฟุตเวิร์ค เกมรับลูกตบ และการขึ้นตบ Smash อย่างถูกจังหวะ',
+            badge: '450 บ./ชม.',
+            actionLabel: 'จองคิวซ้อม / น็อคเกอร์'
+          },
+          {
+            type: 'ค้นหารูปภาพนักกีฬาด้วย AI (Find My Photos)',
+            title: 'คลังภาพงานแข่ง เจอแน่ #EP2 & Cyber Badminton',
+            location: 'ค้นหาจากเบอร์คอร์ท หรือสแกนใบหน้านักกีฬา',
+            detail: 'ช่างภาพอัปโหลดภาพแอคชั่นคมชัดระดับ Full HD พร้อมดาวน์โหลดทันที',
+            badge: '1,280 รูปในอัลบั้ม',
+            actionLabel: 'สแกนใบหน้าค้นหารูป'
+          }
+        ]
+      };
+    }
+
+    let state = getDefaultState();
+
+    // ==========================================
+    // 2. LOCAL STORAGE PERSISTENCE
+    // ==========================================
+    function loadStateFromStorage() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          state = Object.assign(getDefaultState(), parsed);
+          updateStorageStatusLabel('โหลดข้อมูลล่าสุดจากเครื่องแล้ว');
+        }
+      } catch (e) {
+        state = getDefaultState();
+      }
+    }
+
+    function saveStateToStorage() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        const nowStr = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        updateStorageStatusLabel(`บันทึกลงเครื่องแล้ว (${nowStr})`);
+      } catch (e) {
+        updateStorageStatusLabel('โหมดหน่วยความจำชั่วคราว');
+      }
+    }
+
+    function updateStorageStatusLabel(text) {
+      const el = document.getElementById('storageStatusText');
+      if (el) el.textContent = text;
+    }
+
+    // ==========================================
+    // 3. HELPER UTILITIES (Toast, Speech API, Random Team Sim)
+    // ==========================================
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      const colorClass = type === 'amber'
+        ? 'bg-amber-500 text-slate-950'
+        : type === 'cyan'
+        ? 'bg-cyan-400 text-slate-950'
+        : 'bg-emerald-500 text-slate-950';
+      toast.className = `${colorClass} px-4 py-3 rounded-xl shadow-xl font-bold text-xs sm:text-sm flex items-center gap-2 pointer-events-auto transition-all`;
+      toast.innerHTML = `<span>🏸</span><span>${message}</span>`;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.remove();
+      }, 3600);
+    }
+
+    function speakThaiAnnouncement(text) {
+      const banner = document.getElementById('paBanner');
+      const bannerText = document.getElementById('paBannerText');
+      bannerText.textContent = `📢 ประกาศเสียงตามสาย: "${text}" (ส่งแจ้งเตือน LINE OA แล้ว)`;
+      banner.classList.remove('hidden');
+
+      try {
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+          const utter = new SpeechSynthesisUtterance(text);
+          utter.lang = 'th-TH';
+          utter.rate = 0.95;
+          window.speechSynthesis.speak(utter);
+        }
+      } catch (e) {
+        // Fallback visual banner is already shown
+      }
+    }
+
+    function pickRandomPair(arr) {
+      const idx1 = Math.floor(Math.random() * arr.length);
+      let idx2 = Math.floor(Math.random() * arr.length);
+      if (idx2 === idx1) idx2 = (idx1 + 1) % arr.length;
+      return [arr[idx1], arr[idx2]];
+    }
+
+    function simulateOneRandomApplicantTeam() {
+      const [p1, p2] = pickRandomPair(RANDOM_PLAYERS_POOL);
+      const club = RANDOM_CLUBS_POOL[Math.floor(Math.random() * RANDOM_CLUBS_POOL.length)];
+      const level = RANDOM_LEVELS_POOL[Math.floor(Math.random() * RANDOM_LEVELS_POOL.length)];
+      const historyNote = RANDOM_HISTORY_POOL[Math.floor(Math.random() * RANDOM_HISTORY_POOL.length)];
+      const slipRef = 'QR-SIM-' + Math.floor(10000 + Math.random() * 89999);
+
+      const newEntry = {
+        id: 'APP-' + Date.now() + '-' + Math.floor(Math.random() * 100),
+        tournamentId: state.selectedTournamentId,
+        level,
+        p1,
+        p2,
+        club,
+        slipVerified: true,
+        slipRef,
+        handStatus: 'PENDING',
+        historyNote,
+        lineNotified: true
+      };
+
+      state.applicants.unshift(newEntry);
+
+      // Also add to matchQueue so Organizer can immediately test calling them
+      state.matchQueue.unshift({
+        id: 'Q-' + Math.floor(300 + Math.random() * 600),
+        round: `แมตช์ซ้อม/รอบแบ่งกลุ่ม • รุ่นมือ ${level}`,
+        teamA: `${p1.split(' ')[0]} / ${p2.split(' ')[0]}`,
+        clubA: club,
+        teamB: 'คุณปุ้ม / คุณบอย',
+        clubB: 'MD Sport Live Club'
+      });
+
+      saveStateToStorage();
+      renderAll();
+      showToast(`สุ่มสมัคร 1 ทีมสำเร็จ: "${p1} + ${p2}" (${club}) รุ่นมือ ${level} บันทึกลงเครื่องแล้ว!`, 'cyan');
+    }
+
+    // ==========================================
+    // 4. ROLE MODE LOGIC (3 ROLES: guest | applicant | admin)
+    // ==========================================
+    function setRoleMode(role) {
+      state.roleMode = role;
+
+      // If switching to guest or applicant while currently on the Organizer tab, redirect automatically
+      if (role === 'guest' && state.activeMainTab === 'organizer') {
+        state.activeMainTab = 'related';
+      } else if (role === 'applicant' && state.activeMainTab === 'organizer') {
+        state.activeMainTab = 'applicant';
+      }
+
+      saveStateToStorage();
+      renderAll();
+
+      const roleNames = {
+        guest: 'โหมดคนทั่วไป (ผู้ชม)',
+        applicant: 'โหมดผู้สมัคร (นักกีฬา)',
+        admin: 'โหมดผู้จัด / Admin (เห็นปุ่มกรรมการนับแต้ม)'
+      };
+      showToast(`สลับเป็น "${roleNames[role]}" เรียบร้อยแล้ว`);
+    }
+
+    function applyRoleVisibility() {
+      const role = state.roleMode;
+
+      // Update Role Switcher Buttons
+      document.querySelectorAll('.role-mode-btn').forEach(btn => {
+        const r = btn.getAttribute('data-role-mode');
+        if (r === role) {
+          btn.className = 'role-mode-btn px-3 py-1.5 rounded-lg text-xs font-extrabold transition flex items-center gap-1.5 bg-amber-500 text-slate-950 shadow';
+        } else {
+          btn.className = 'role-mode-btn px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 text-slate-400 hover:text-white';
+        }
+      });
+
+      const badgeHeader = document.getElementById('activeRoleBadgeHeader');
+      const roleBanner = document.getElementById('roleDescriptionBanner');
+      const navOrganizer = document.getElementById('navTabOrganizer');
+      const navApplicantLabel = document.getElementById('navTabApplicantLabel');
+      const openQuickApplyBtn = document.getElementById('openQuickApplyBtn');
+      const openQuickApplyBtn2 = document.getElementById('openQuickApplyBtn2');
+      const reshuffleBracketBtn = document.getElementById('reshuffleBracketBtn');
+      const courtRoleHintText = document.getElementById('courtRoleHintText');
+
+      if (role === 'guest') {
+        badgeHeader.textContent = 'สิทธิ์: คนทั่วไป (ผู้ชม)';
+        badgeHeader.className = 'text-[11px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-slate-700 text-slate-200 border border-slate-600';
+        roleBanner.innerHTML = `<i data-lucide="eye" class="w-4 h-4 text-slate-300"></i> <span><strong>โหมดคนทั่วไป (ผู้ชม):</strong> ดูรายการแข่ง ตารางสายแข่ง และสกอร์สดได้เท่านั้น (ซ่อนปุ่มสมัครแข่ง ซ่อนหน้าผู้จัด และซ่อนปุ่มกรรมการใส่คะแนน)</span>`;
+        navOrganizer.classList.add('hidden');
+        navApplicantLabel.textContent = '1. ดูรายการแข่งขัน';
+        openQuickApplyBtn.classList.add('hidden');
+        openQuickApplyBtn2.classList.add('hidden');
+        reshuffleBracketBtn.classList.add('hidden');
+        courtRoleHintText.innerHTML = `<span class="inline-block w-2.5 h-2.5 rounded-full bg-slate-400"></span> มุมมองผู้ชมทั่วไป: รับชมสกอร์สดแบบ Realtime (ซ่อนปุ่มกรรมการใส่คะแนน)`;
+      } else if (role === 'applicant') {
+        badgeHeader.textContent = 'สิทธิ์: ผู้สมัคร / นักกีฬา';
+        badgeHeader.className = 'text-[11px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+        roleBanner.innerHTML = `<i data-lucide="user-check" class="w-4 h-4 text-emerald-400"></i> <span><strong>โหมดผู้สมัคร (นักกีฬา):</strong> เปิดปุ่มสมัครแข่งขัน แนบสลิป QR และดูบัตรนักกีฬาได้ (ซ่อนหน้าผู้จัด และซ่อนปุ่มกรรมการใส่คะแนนในหน้าสกอร์สด)</span>`;
+        navOrganizer.classList.add('hidden');
+        navApplicantLabel.textContent = '1. ผู้สมัคร / นักกีฬา';
+        openQuickApplyBtn.classList.remove('hidden');
+        openQuickApplyBtn2.classList.remove('hidden');
+        reshuffleBracketBtn.classList.add('hidden');
+        courtRoleHintText.innerHTML = `<span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-400"></span> มุมมองนักกีฬา: ติดตามคิวลงสนามและสกอร์สด (ซ่อนปุ่มกรรมการใส่คะแนน)`;
+      } else {
+        // admin
+        badgeHeader.textContent = 'สิทธิ์: ผู้จัด / ADMIN';
+        badgeHeader.className = 'text-[11px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30';
+        roleBanner.innerHTML = `<i data-lucide="shield-check" class="w-4 h-4 text-amber-400"></i> <span><strong>โหมดผู้จัด / Admin:</strong> เปิดครบทุกสิทธิ์! เข้าหน้าผู้จัดตรวจสลิป/ประเมินมือได้ และ <strong>แสดงปุ่มกรรมการใส่คะแนน + ปุ่มประกาศเสียงเรียก</strong> ในหน้าสกอร์สด</span>`;
+        navOrganizer.classList.remove('hidden');
+        navApplicantLabel.textContent = '1. ผู้สมัคร / นักกีฬา';
+        openQuickApplyBtn.classList.remove('hidden');
+        openQuickApplyBtn2.classList.remove('hidden');
+        reshuffleBracketBtn.classList.remove('hidden');
+        courtRoleHintText.innerHTML = `<span class="inline-block w-2.5 h-2.5 rounded-full bg-amber-400"></span> โหมด Admin: แสดงปุ่ม <strong>"โหมดกรรมการนับแต้ม"</strong> และ <strong>"เรียกคอร์ทนี้"</strong> บนทุกคอร์ท`;
+      }
+
+      // Ensure active main tab section is visible
+      ['applicant', 'organizer', 'related'].forEach(t => {
+        const section = document.getElementById(`view-${t}`);
+        if (t === state.activeMainTab) {
+          section.classList.remove('hidden');
+        } else {
+          section.classList.add('hidden');
+        }
+      });
+
+      document.querySelectorAll('.main-tab-btn').forEach(btn => {
+        if (btn.getAttribute('data-main-tab') === state.activeMainTab) {
+          btn.classList.add('bg-emerald-500', 'text-slate-950', 'shadow');
+          btn.classList.remove('text-slate-300', 'hover:text-white', 'hover:bg-slate-800/60');
+        } else {
+          btn.classList.remove('bg-emerald-500', 'text-slate-950', 'shadow');
+          btn.classList.add('text-slate-300', 'hover:text-white', 'hover:bg-slate-800/60');
+        }
+      });
+    }
+
+    // ==========================================
+    // 5. RENDER FUNCTIONS
+    // ==========================================
+    function renderGlobalSelectors() {
+      const globalSelect = document.getElementById('globalTournamentSelect');
+      const applySelect = document.getElementById('applyTournamentId');
+      globalSelect.innerHTML = '';
+      applySelect.innerHTML = '';
+
+      state.tournaments.forEach(t => {
+        const opt1 = document.createElement('option');
+        opt1.value = t.id;
+        opt1.textContent = `${t.title} (${t.date})`;
+        if (t.id === state.selectedTournamentId) opt1.selected = true;
+        globalSelect.appendChild(opt1);
+
+        const opt2 = document.createElement('option');
+        opt2.value = t.id;
+        opt2.textContent = `${t.title}`;
+        if (t.id === state.selectedTournamentId) opt2.selected = true;
+        applySelect.appendChild(opt2);
+      });
+
+      const activeTour = state.tournaments.find(t => t.id === state.selectedTournamentId) || state.tournaments[0];
+      document.getElementById('orgActiveTournamentTitle').textContent = `จัดการแข่งขัน: ${activeTour.title}`;
+    }
+
+    function renderKPIs() {
+      const tourApps = state.applicants.filter(a => a.tournamentId === state.selectedTournamentId);
+      const pendingApps = state.applicants.filter(a => a.handStatus === 'PENDING' || !a.slipVerified);
+      const liveCourtsCount = state.courts.filter(c => c.status === 'LIVE').length;
+
+      document.getElementById('kpiTotalTournaments').textContent = `${state.tournaments.length} รายการ`;
+      document.getElementById('kpiTotalPairs').textContent = `${tourApps.length} คู่`;
+      document.getElementById('kpiPendingReviews').textContent = `${pendingApps.length} คู่`;
+      document.getElementById('kpiLiveCourts').textContent = `${liveCourtsCount} / 6 คอร์ท`;
+      document.getElementById('pendingBadge').textContent = pendingApps.length;
+    }
+
+    function renderTournamentCards() {
+      const q = document.getElementById('searchTournamentInput').value.trim().toLowerCase();
+      const levelFilter = document.getElementById('filterLevelSelect').value;
+      const statusFilter = document.getElementById('filterStatusSelect').value;
+      const grid = document.getElementById('tournamentCardsGrid');
+      grid.innerHTML = '';
+
+      const isGuest = state.roleMode === 'guest';
+
+      const filtered = state.tournaments.filter(t => {
+        const matchQ = !q || t.title.toLowerCase().includes(q) || t.venue.toLowerCase().includes(q) || t.organizer.toLowerCase().includes(q);
+        const matchLevel = levelFilter === 'ALL' || t.levels.includes(levelFilter);
+        const matchStatus = statusFilter === 'ALL' || t.status === statusFilter;
+        return matchQ && matchLevel && matchStatus;
+      });
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `<div class="col-span-full bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center text-slate-400">ไม่พบรายการแข่งขันตามเงื่อนไขที่ค้นหา</div>`;
+        return;
+      }
+
+      filtered.forEach(t => {
+        const pairCount = state.applicants.filter(a => a.tournamentId === t.id).length;
+        const isLive = t.status === 'LIVE';
+        const statusBadge = isLive
+          ? `<span class="px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-rose-500/20 text-rose-400 border border-rose-500/30 flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-rose-500 live-pulse"></span>กำลังแข่งขันสด</span>`
+          : `<span class="px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">เปิดรับสมัครออนไลน์</span>`;
+
+        const levelPills = t.levels.map(lv => `<span class="px-2 py-0.5 rounded-md bg-slate-800 text-slate-200 text-xs font-bold border border-slate-700">มือ ${lv}</span>`).join('');
+
+        const applyButtonHTML = isGuest
+          ? `<button data-switch-applicant="${t.id}" class="guest-switch-apply-btn bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs py-2 px-3 rounded-xl border border-slate-700 transition">
+               สำหรับนักกีฬาสมัคร
+             </button>`
+          : `<button data-apply-tour="${t.id}" class="tour-apply-btn bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs py-2 px-3 rounded-xl transition">
+               สมัครแข่งขัน
+             </button>`;
+
+        const card = document.createElement('div');
+        card.className = 'bg-slate-900/90 hover:bg-slate-900 border border-slate-800 hover:border-emerald-500/40 rounded-2xl p-5 flex flex-col justify-between gap-4 transition shadow-lg';
+        card.innerHTML = `
+          <div class="space-y-3">
+            <div class="flex items-start justify-between gap-2">
+              <div>
+                <span class="text-[11px] font-semibold text-emerald-400">${t.organizer}</span>
+                <h3 class="text-base sm:text-lg font-extrabold text-white mt-0.5">${t.title}</h3>
+              </div>
+              ${statusBadge}
+            </div>
+
+            <div class="space-y-1.5 text-xs text-slate-300">
+              <p class="flex items-center gap-2"><span class="text-emerald-400 font-bold">📅 วันแข่ง:</span> ${t.date}</p>
+              <p class="flex items-center gap-2"><span class="text-emerald-400 font-bold">📍 สนาม:</span> ${t.venue}</p>
+              <p class="flex items-center gap-2"><span class="text-emerald-400 font-bold">🏸 ลูกแบด:</span> ${t.shuttlecock}</p>
+              <p class="flex items-center gap-2"><span class="text-emerald-400 font-bold">💰 ค่าสมัคร:</span> คู่ละ ${t.fee.toLocaleString()} บาท (สมัครแล้ว ${pairCount} คู่)</p>
+            </div>
+
+            <div class="flex flex-wrap gap-1.5 pt-1">
+              ${levelPills}
+            </div>
+          </div>
+
+          <div class="grid grid-cols-3 gap-2 pt-3 border-t border-slate-800/80">
+            ${applyButtonHTML}
+            <button data-check-tour="${t.id}" class="tour-check-btn bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs py-2 px-3 rounded-xl border border-slate-700 transition">
+              ตรวจสอบรายชื่อ
+            </button>
+            <button data-bracket-tour="${t.id}" class="tour-bracket-btn bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold text-xs py-2 px-3 rounded-xl border border-slate-700 transition">
+              สายแข่ง / คอร์ทสด
+            </button>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+
+      document.querySelectorAll('.tour-apply-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.selectedTournamentId = btn.getAttribute('data-apply-tour');
+          renderGlobalSelectors();
+          renderKPIs();
+          document.getElementById('applyModal').classList.remove('hidden');
+        });
+      });
+
+      document.querySelectorAll('.guest-switch-apply-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          showToast('กรุณากดปุ่ม "2. โหมดผู้สมัคร (นักกีฬา)" ด้านบนเพื่อเปิดสิทธิ์สมัครแข่งขัน', 'amber');
+        });
+      });
+
+      document.querySelectorAll('.tour-check-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.selectedTournamentId = btn.getAttribute('data-check-tour');
+          renderGlobalSelectors();
+          switchApplicantSubtab('check-status');
+        });
+      });
+
+      document.querySelectorAll('.tour-bracket-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.selectedTournamentId = btn.getAttribute('data-bracket-tour');
+          renderGlobalSelectors();
+          switchMainTab('related');
+        });
+      });
+    }
+
+    function renderPublicApplicantTable() {
+      const tbody = document.getElementById('publicApplicantTableBody');
+      const levelFilter = document.getElementById('applicantHandFilter').value;
+      tbody.innerHTML = '';
+
+      const list = state.applicants.filter(a => {
+        const matchTour = a.tournamentId === state.selectedTournamentId;
+        const matchLv = levelFilter === 'ALL' || a.level === levelFilter;
+        return matchTour && matchLv;
+      });
+
+      if (list.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="py-6 text-center text-slate-400">ยังไม่มีรายชื่อผู้สมัครในรุ่นนี้ กดปุ่ม "+ จำลองสุ่มสมัคร 1 ทีม" เพื่อทดสอบได้เลย</td></tr>`;
+        return;
+      }
+
+      list.forEach((a, idx) => {
+        const slipBadge = a.slipVerified
+          ? `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">✔ สลิป QR ถูกต้อง (${a.slipRef})</span>`
+          : `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30">⏳ รอตรวจสลิป QR</span>`;
+
+        let handBadge = '';
+        if (a.handStatus === 'APPROVED') {
+          handBadge = `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500 text-slate-950">ผ่านประเมินมือ ${a.level}</span>`;
+        } else if (a.handStatus === 'REJECTED') {
+          handBadge = `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30">ไม่ผ่าน (ระดับมือเกินรุ่น)</span>`;
+        } else {
+          handBadge = `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">รอฝ่ายจัดประเมินมือ</span>`;
+        }
+
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-800/40 transition';
+        tr.innerHTML = `
+          <td class="py-3 px-3 font-mono text-xs text-slate-400">#${idx + 1}</td>
+          <td class="py-3 px-3"><span class="px-2.5 py-1 rounded-lg bg-slate-800 text-white font-extrabold text-xs">มือ ${a.level}</span></td>
+          <td class="py-3 px-3">
+            <p class="font-bold text-white">${a.p1} + ${a.p2}</p>
+            <p class="text-xs text-slate-400">สังกัด: ${a.club} • <span class="text-slate-300">${a.historyNote}</span></p>
+          </td>
+          <td class="py-3 px-3">${slipBadge}</td>
+          <td class="py-3 px-3">${handBadge}</td>
+          <td class="py-3 px-3 text-right">
+            <span class="text-xs font-semibold ${a.lineNotified ? 'text-emerald-400' : 'text-slate-500'}">
+              ${a.lineNotified ? 'แจ้งเตือน LINE แล้ว' : 'รออนุมัติ'}
+            </span>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderAthleteProfileView() {
+      const dropdown = document.getElementById('athleteSelectDropdown');
+      if (dropdown.options.length === 0) {
+        state.athletes.forEach((ath, i) => {
+          const opt = document.createElement('option');
+          opt.value = i;
+          opt.textContent = `${ath.name} (${ath.club}) - ${ath.handLevel}`;
+          dropdown.appendChild(opt);
+        });
+      }
+      const idx = parseInt(dropdown.value || '0', 10);
+      const ath = state.athletes[idx] || state.athletes[0];
+
+      document.getElementById('cardAthleteId').textContent = `ID: ${ath.id}`;
+      document.getElementById('cardAvatar').textContent = ath.avatar;
+      document.getElementById('cardName').textContent = ath.name;
+      document.getElementById('cardClub').textContent = `สังกัด: ${ath.club}`;
+      document.getElementById('cardHandBadge').textContent = `ระดับมือ: ${ath.handLevel}`;
+      document.getElementById('cardMatches').textContent = ath.matches;
+      document.getElementById('cardWinRate').textContent = ath.winRate;
+      document.getElementById('cardPoints').textContent = ath.points;
+
+      const histList = document.getElementById('athleteHistoryList');
+      histList.innerHTML = '';
+      ath.history.forEach(h => {
+        const div = document.createElement('div');
+        div.className = 'bg-slate-950 border border-slate-800 rounded-xl p-3.5 flex flex-wrap items-center justify-between gap-2';
+        div.innerHTML = `
+          <div>
+            <p class="text-sm font-bold text-white">${h.event}</p>
+            <p class="text-xs text-slate-400">ลงรุ่น: <span class="text-emerald-400 font-semibold">${h.level}</span> • ผลงาน: <span class="text-amber-300 font-semibold">${h.result}</span> (${h.date})</p>
+          </div>
+          <span class="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700 text-xs font-bold text-slate-200">${h.status}</span>
+        `;
+        histList.appendChild(div);
+      });
+    }
+
+    function renderCommunitySection() {
+      const container = document.getElementById('communityCardsContainer');
+      container.innerHTML = '';
+      state.communityItems.forEach((item, idx) => {
+        const card = document.createElement('div');
+        card.className = 'bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col justify-between gap-4';
+        card.innerHTML = `
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] font-bold text-emerald-400 uppercase">${item.type}</span>
+              <span class="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-xs font-bold">${item.badge}</span>
+            </div>
+            <h3 class="text-base font-extrabold text-white">${item.title}</h3>
+            <p class="text-xs text-slate-400">${item.location}</p>
+            <p class="text-xs text-slate-300 pt-1">${item.detail}</p>
+          </div>
+          <button data-comm-idx="${idx}" class="comm-action-btn w-full py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-emerald-500 hover:text-slate-950 text-white font-bold text-xs transition border border-slate-700">
+            ${item.actionLabel}
+          </button>
+        `;
+        container.appendChild(card);
+      });
+
+      document.querySelectorAll('.comm-action-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const item = state.communityItems[parseInt(btn.getAttribute('data-comm-idx'), 10)];
+          showToast(`ดำเนินการ "${item.actionLabel}" เรียบร้อย ระบบส่งลิงก์รายละเอียดเข้า LINE ของคุณแล้ว`);
+        });
+      });
+    }
+
+    function renderOrganizerView() {
+      const listEl = document.getElementById('organizerApplicantsList');
+      listEl.innerHTML = '';
+
+      const list = state.applicants.filter(a => a.tournamentId === state.selectedTournamentId);
+      document.getElementById('orgApplicantCountLabel').textContent = `ทั้งหมด ${list.length} คู่`;
+
+      list.forEach(a => {
+        const statusColor = a.handStatus === 'APPROVED'
+          ? 'border-emerald-500/30 bg-emerald-950/10'
+          : a.handStatus === 'REJECTED'
+          ? 'border-rose-500/30 bg-rose-950/10'
+          : 'border-amber-500/40 bg-amber-950/15';
+
+        const card = document.createElement('div');
+        card.className = `rounded-xl border ${statusColor} p-4 space-y-3`;
+        card.innerHTML = `
+          <div class="flex flex-wrap items-start justify-between gap-2">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="px-2 py-0.5 rounded bg-emerald-500 text-slate-950 font-extrabold text-xs">รุ่นมือ ${a.level}</span>
+                <h4 class="font-extrabold text-white text-sm sm:text-base">${a.p1} & ${a.p2}</h4>
+                <span class="text-xs text-slate-400">(${a.club})</span>
+              </div>
+              <p class="text-xs text-slate-300 mt-1">ประวัติมือในระบบ: <span class="text-amber-300 font-semibold">${a.historyNote}</span></p>
+            </div>
+            <div class="text-right">
+              <span class="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-950 border border-slate-800 ${a.slipVerified ? 'text-emerald-400' : 'text-amber-400'}">
+                ${a.slipVerified ? `QR Slip: ${a.slipRef} (ไม่ซ้ำ)` : 'ยังไม่แนบสลิป QR'}
+              </span>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800/80">
+            <div class="text-xs">
+              สถานะปัจจุบัน:
+              <strong class="${a.handStatus === 'APPROVED' ? 'text-emerald-400' : a.handStatus === 'REJECTED' ? 'text-rose-400' : 'text-amber-300'}">
+                ${a.handStatus === 'APPROVED' ? 'อนุมัติรุ่นมือ & สลิปแล้ว' : a.handStatus === 'REJECTED' ? 'ไม่ผ่านประเมินมือ (มือแข็งเกินรุ่น)' : 'รอผู้จัดอนุมัติประเมินมือ'}
+              </strong>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+              <button data-verify-slip="${a.id}" class="org-slip-btn px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-bold text-cyan-300 border border-slate-700">
+                ยืนยันสลิป QR
+              </button>
+              <button data-approve-id="${a.id}" class="org-approve-btn px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold">
+                ผ่านประเมินมือ
+              </button>
+              <button data-reject-id="${a.id}" class="org-reject-btn px-3 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 text-xs font-bold">
+                ไม่ผ่าน (ปัดตก/ปรับรุ่น)
+              </button>
+            </div>
+          </div>
+        `;
+        listEl.appendChild(card);
+      });
+
+      document.querySelectorAll('.org-slip-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.getAttribute('data-verify-slip');
+          const app = state.applicants.find(x => x.id === id);
+          if (app) {
+            app.slipVerified = true;
+            if (app.slipRef === 'รอแนบสลิป QR') {
+              app.slipRef = 'PROMPTPAY-QR-' + Math.floor(1000 + Math.random() * 9000);
+            }
+            saveStateToStorage();
+            renderAll();
+            showToast(`ตรวจสอบ QR Slip ของคู่ "${app.p1} / ${app.p2}" เรียบร้อย (ไม่พบสลิปซ้ำ)`);
+          }
+        });
+      });
+
+      document.querySelectorAll('.org-approve-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.getAttribute('data-approve-id');
+          const app = state.applicants.find(x => x.id === id);
+          if (app) {
+            app.handStatus = 'APPROVED';
+            app.slipVerified = true;
+            app.lineNotified = true;
+            saveStateToStorage();
+            renderAll();
+            showToast(`อนุมัติระดับมือ ${app.level} ของคู่ "${app.p1} / ${app.p2}" และบันทึกลงเครื่องแล้ว`);
+          }
+        });
+      });
+
+      document.querySelectorAll('.org-reject-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.getAttribute('data-reject-id');
+          const app = state.applicants.find(x => x.id === id);
+          if (app) {
+            app.handStatus = 'REJECTED';
+            app.lineNotified = true;
+            saveStateToStorage();
+            renderAll();
+            showToast(`บันทึกผล "ไม่ผ่านประเมินมือ" สำหรับ "${app.p1} / ${app.p2}" เรียบร้อย`, 'amber');
+          }
+        });
+      });
+
+      // Populate Voice Call Match Queue
+      const matchSelect = document.getElementById('voiceMatchSelect');
+      matchSelect.innerHTML = '';
+      state.matchQueue.forEach(q => {
+        const opt = document.createElement('option');
+        opt.value = q.id;
+        opt.textContent = `[${q.round}] ${q.teamA} พบกับ ${q.teamB}`;
+        matchSelect.appendChild(opt);
+      });
+
+      // Announcement Log
+      const logEl = document.getElementById('announcementLogList');
+      logEl.innerHTML = '';
+      state.announcements.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'p-2.5 rounded-lg bg-slate-950 border border-slate-800';
+        div.innerHTML = `
+          <div class="flex items-center justify-between text-[11px] text-emerald-400 font-bold mb-0.5">
+            <span>🔊 ${item.channel}</span>
+            <span>${item.time}</span>
+          </div>
+          <p class="text-slate-200">${item.text}</p>
+        `;
+        logEl.appendChild(div);
+      });
+    }
+
+    function renderLiveCourts() {
+      const grid = document.getElementById('liveCourtsGrid');
+      grid.innerHTML = '';
+      const isAdmin = state.roleMode === 'admin';
+
+      state.courts.forEach(c => {
+        const isLive = c.status === 'LIVE';
+        const setPills = c.scores.map((s, idx) => {
+          if (s[0] === 0 && s[1] === 0 && idx > 0) return '';
+          return `<span class="px-2 py-0.5 rounded bg-slate-950/90 text-white font-mono text-xs font-bold border border-white/20">เซต ${idx + 1}: ${s[0]}-${s[1]}</span>`;
+        }).join('');
+
+        // Only show Umpire & Voice Call buttons when in Admin mode!
+        const adminControlsHTML = isAdmin
+          ? `<div class="flex gap-2 pt-1">
+               <button data-umpire-court="${c.courtNo}" class="open-umpire-btn flex-1 py-2 px-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs flex items-center justify-center gap-1.5 transition shadow">
+                 <span>🎯 โหมดกรรมการนับแต้ม</span>
+               </button>
+               <button data-call-court="${c.courtNo}" class="call-court-btn py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-300 font-bold text-xs border border-slate-700 transition">
+                 🔊 เรียกคอร์ทนี้
+               </button>
+             </div>`
+          : `<div class="pt-1 text-[11px] text-slate-500 flex items-center justify-between">
+               <span>🔒 ปุ่มกรรมการนับแต้มแสดงเฉพาะโหมดผู้จัด (Admin)</span>
+               <span class="text-emerald-400 font-semibold">● อัปเดตสกอร์สดอัตโนมัติ</span>
+             </div>`;
+
+        const card = document.createElement('div');
+        card.className = 'bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-lg flex flex-col justify-between';
+        card.innerHTML = `
+          <div>
+            <!-- Court Top Bar -->
+            <div class="px-4 py-2.5 bg-slate-950 flex items-center justify-between border-b border-slate-800">
+              <div class="flex items-center gap-2">
+                <span class="px-2.5 py-0.5 rounded-md font-extrabold text-xs ${isLive ? 'bg-emerald-500 text-slate-950' : 'bg-slate-800 text-slate-300'}">
+                  COURT ${c.courtNo}
+                </span>
+                <span class="text-xs font-semibold text-slate-300 truncate max-w-[180px]">${c.round}</span>
+              </div>
+              ${isLive
+                ? `<span class="text-[11px] font-bold text-rose-400 flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-rose-500 live-pulse"></span>LIVE</span>`
+                : `<span class="text-[11px] font-bold text-emerald-400">ว่างพร้อมแข่ง</span>`
+              }
+            </div>
+
+            <!-- Visual Badminton Court Surface -->
+            <div class="p-4">
+              <div class="court-surface court-lines rounded-xl p-4 text-white space-y-5 shadow-inner">
+                <!-- Team A Side -->
+                <div class="flex items-center justify-between">
+                  <div>
+                    <p class="font-extrabold text-sm sm:text-base drop-shadow">${c.teamA}</p>
+                    <p class="text-[11px] text-emerald-200">${c.clubA}</p>
+                  </div>
+                  <div class="text-2xl font-extrabold bg-slate-950/80 px-3 py-1 rounded-lg border border-white/20">
+                    ${c.scores[0][0]}
+                  </div>
+                </div>
+
+                <!-- Net Divider & Current Sets -->
+                <div class="flex flex-wrap items-center justify-center gap-1.5 py-1 relative z-10">
+                  ${setPills || '<span class="text-xs text-emerald-100 bg-slate-950/60 px-2.5 py-0.5 rounded">รอคู่แข่งขันลงสนาม</span>'}
+                </div>
+
+                <!-- Team B Side -->
+                <div class="flex items-center justify-between">
+                  <div>
+                    <p class="font-extrabold text-sm sm:text-base drop-shadow">${c.teamB}</p>
+                    <p class="text-[11px] text-emerald-200">${c.clubB}</p>
+                  </div>
+                  <div class="text-2xl font-extrabold bg-slate-950/80 px-3 py-1 rounded-lg border border-white/20">
+                    ${c.scores[0][1]}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Court Footer Controls -->
+          <div class="px-4 py-3 bg-slate-950/70 border-t border-slate-800 space-y-2">
+            <div class="flex items-center justify-between text-xs text-slate-400">
+              <span>คิวถัดไป: <strong class="text-slate-200">${c.nextMatch}</strong></span>
+              <span>🏸 ${c.shuttleUsed} ลูก</span>
+            </div>
+            ${adminControlsHTML}
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+
+      document.querySelectorAll('.open-umpire-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const courtNo = parseInt(btn.getAttribute('data-umpire-court'), 10);
+          openUmpireModal(courtNo);
+        });
+      });
+
+      document.querySelectorAll('.call-court-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const courtNo = parseInt(btn.getAttribute('data-call-court'), 10);
+          const c = state.courts.find(x => x.courtNo === courtNo);
+          if (c) {
+            const msg = c.status === 'LIVE'
+              ? `ขอเชิญนักกีฬาคู่ ${c.teamA} พบกับ ${c.teamB} ลงทำการแข่งขันที่คอร์ท ${c.courtNo} ได้เลยค่ะ`
+              : `คอร์ทที่ ${c.courtNo} ว่างแล้ว ขอเชิญนักกีฬาคู่ถัดไปเตรียมตัวลงสนามที่คอร์ท ${c.courtNo} ค่ะ`;
+            speakThaiAnnouncement(msg);
+          }
+        });
+      });
+    }
+
+    function renderBracketsAndResults() {
+      const approvedN = state.applicants.filter(a => a.tournamentId === state.selectedTournamentId && a.handStatus === 'APPROVED');
+      const groupAContainer = document.getElementById('groupStageContainer');
+      const isAdmin = state.roleMode === 'admin';
+
+      const groupA = approvedN.slice(0, 3);
+      const groupB = approvedN.slice(3, 6);
+
+      function buildGroupHTML(title, teams) {
+        const rows = teams.map((t, i) => `
+          <tr class="border-b border-slate-800/60">
+            <td class="py-2.5 px-2 font-bold text-emerald-400">#${i + 1}</td>
+            <td class="py-2.5 px-2">
+              <p class="font-bold text-white text-xs sm:text-sm">${t.p1} / ${t.p2}</p>
+              <p class="text-[11px] text-slate-400">${t.club}</p>
+            </td>
+            <td class="py-2.5 px-2 text-center font-mono text-xs">2</td>
+            <td class="py-2.5 px-2 text-center font-mono text-xs text-emerald-400 font-bold">${2 - (i > 1 ? 1 : 0)}</td>
+            <td class="py-2.5 px-2 text-center font-mono text-xs text-rose-400">${i > 1 ? 1 : 0}</td>
+            <td class="py-2.5 px-2 text-right font-extrabold text-amber-400 text-xs">${2 - (i > 1 ? 1 : 0)} pts</td>
+          </tr>
+        `).join('');
+
+        return `
+          <div class="bg-slate-950 border border-slate-800 rounded-xl p-4">
+            <h4 class="text-sm font-extrabold text-emerald-400 mb-3">${title}</h4>
+            <table class="w-full text-left text-xs">
+              <thead>
+                <tr class="border-b border-slate-800 text-slate-400">
+                  <th class="pb-2 px-2">อันดับ</th>
+                  <th class="pb-2 px-2">คู่แข่งขัน</th>
+                  <th class="pb-2 px-2 text-center">แข่ง</th>
+                  <th class="pb-2 px-2 text-center">ชนะ</th>
+                  <th class="pb-2 px-2 text-center">แพ้</th>
+                  <th class="pb-2 px-2 text-right">คะแนน</th>
+                </tr>
+              </thead>
+              <tbody>${rows || '<tr><td colspan="6" class="py-4 text-center text-slate-500">รอผู้จัดอนุมัติคู่แข่งขันเพิ่ม</td></tr>'}</tbody>
+            </table>
+          </div>
+        `;
+      }
+
+      groupAContainer.innerHTML = buildGroupHTML('สาย A (Group A)', groupA) + buildGroupHTML('สาย B (Group B)', groupB);
+
+      // Knockout Tree
+      const koContainer = document.getElementById('knockoutBracketContainer');
+      const semi1A = groupA[0] ? `${groupA[0].p1} / ${groupA[0].p2}` : 'อันดับ 1 สาย A';
+      const semi1B = groupB[1] ? `${groupB[1].p1} / ${groupB[1].p2}` : 'อันดับ 2 สาย B';
+      const semi2A = groupB[0] ? `${groupB[0].p1} / ${groupB[0].p2}` : 'อันดับ 1 สาย B';
+      const semi2B = groupA[1] ? `${groupA[1].p1} / ${groupA[1].p2}` : 'อันดับ 2 สาย A';
+
+      const adminDecisionButton = isAdmin
+        ? `<button id="simulateFinalWinnerBtn" class="w-full mt-2 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs transition">
+             ตัดสินแชมป์ประจำรุ่นมือ N (Admin)
+           </button>`
+        : '';
+
+      koContainer.innerHTML = `
+        <!-- Semifinals -->
+        <div class="space-y-4">
+          <p class="text-xs font-bold uppercase text-emerald-400">รอบรองชนะเลิศ (Semi-Finals)</p>
+          <div class="bg-slate-950 border border-slate-800 rounded-xl p-3.5 space-y-2">
+            <div class="flex justify-between items-center text-xs sm:text-sm font-bold text-white">
+              <span>${semi1A}</span>
+              <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono text-xs">21</span>
+            </div>
+            <div class="flex justify-between items-center text-xs sm:text-sm font-semibold text-slate-400">
+              <span>${semi1B}</span>
+              <span class="px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-mono text-xs">17</span>
+            </div>
+          </div>
+          <div class="bg-slate-950 border border-slate-800 rounded-xl p-3.5 space-y-2">
+            <div class="flex justify-between items-center text-xs sm:text-sm font-bold text-white">
+              <span>${semi2A}</span>
+              <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono text-xs">21</span>
+            </div>
+            <div class="flex justify-between items-center text-xs sm:text-sm font-semibold text-slate-400">
+              <span>${semi2B}</span>
+              <span class="px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-mono text-xs">19</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Finals -->
+        <div class="space-y-4">
+          <p class="text-xs font-bold uppercase text-amber-400">รอบชิงชนะเลิศ (Final Match)</p>
+          <div class="bg-slate-950 border-2 border-amber-500/40 rounded-xl p-4 space-y-3 shadow-lg">
+            <div class="flex justify-between items-center text-sm font-extrabold text-white">
+              <span>${semi1A}</span>
+              <span class="text-xs text-emerald-400">เข้าชิงฯ</span>
+            </div>
+            <div class="border-t border-slate-800"></div>
+            <div class="flex justify-between items-center text-sm font-extrabold text-white">
+              <span>${semi2A}</span>
+              <span class="text-xs text-emerald-400">เข้าชิงฯ</span>
+            </div>
+            ${adminDecisionButton}
+          </div>
+        </div>
+
+        <!-- Champion Podium -->
+        <div class="bg-gradient-to-br from-amber-500/20 via-slate-900 to-emerald-500/10 border border-amber-500/40 rounded-2xl p-5 text-center space-y-2">
+          <div class="text-3xl">🏆</div>
+          <p class="text-xs font-bold uppercase tracking-wider text-amber-300">CHAMPION • รุ่นมือ N</p>
+          <h4 class="text-lg font-extrabold text-white">${state.knockoutFinalWinner}</h4>
+          <p class="text-xs text-slate-400">รับถ้วยเกียรติยศ + เงินรางวัล และบันทึกประวัติเลื่อนระดับมือขึ้น S- อัตโนมัติ</p>
+        </div>
+      `;
+
+      const simBtn = document.getElementById('simulateFinalWinnerBtn');
+      if (simBtn) {
+        simBtn.addEventListener('click', () => {
+          state.knockoutFinalWinner = `${semi1A} (MD Sport Live)`;
+          saveStateToStorage();
+          renderBracketsAndResults();
+          showToast(`บันทึกผลการแข่งขันรอบชิงชนะเลิศ: "${state.knockoutFinalWinner}" คว้าแชมป์รุ่นมือ N!`);
+        });
+      }
+
+      // Completed matches list
+      const compEl = document.getElementById('completedMatchesList');
+      compEl.innerHTML = '';
+      state.completedMatches.forEach(m => {
+        const div = document.createElement('div');
+        div.className = 'bg-slate-950 border border-slate-800 rounded-xl p-3.5 flex flex-wrap items-center justify-between gap-2 text-xs sm:text-sm';
+        div.innerHTML = `
+          <div>
+            <span class="text-[11px] font-mono text-emerald-400 font-bold">[${m.code}] ${m.round}</span>
+            <p class="font-bold text-white mt-0.5">🏅 ผู้ชนะ: ${m.winner} <span class="text-slate-400 font-normal">ชนะ ${m.loser}</span></p>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700 font-mono font-bold text-amber-300">${m.scoreText}</span>
+            <span class="text-xs text-slate-400">🏸 ${m.shuttleUsed} ลูก (${m.time})</span>
+          </div>
+        `;
+        compEl.appendChild(div);
+      });
+    }
+
+    // ==========================================
+    // 6. UMPIRE MODAL LOGIC
+    // ==========================================
+    function openUmpireModal(courtNo) {
+      state.activeUmpireCourtId = courtNo;
+      state.activeUmpireSetIdx = 0;
+      const c = state.courts.find(x => x.courtNo === courtNo);
+      if (!c) return;
+
+      if (c.status !== 'LIVE') {
+        c.status = 'LIVE';
+        c.round = 'แมตช์พิเศษ • รุ่นมือ N';
+        c.teamA = 'คุณปุ้ม / คุณบอย';
+        c.clubA = 'MD Sport Live Club';
+        c.teamB = 'คุณเอิร์ธ / คุณวิน';
+        c.clubB = 'Korat Arena Team';
+        c.scores = [[0, 0], [0, 0], [0, 0]];
+        c.shuttleUsed = 1;
+        saveStateToStorage();
+      }
+
+      updateUmpireModalUI();
+      document.getElementById('umpireModal').classList.remove('hidden');
+    }
+
+    function updateUmpireModalUI() {
+      const c = state.courts.find(x => x.courtNo === state.activeUmpireCourtId);
+      if (!c) return;
+      const setIdx = state.activeUmpireSetIdx;
+
+      document.getElementById('umpireCourtBadge').textContent = `COURT ${c.courtNo} • UMPIRE REALTIME PAD`;
+      document.getElementById('umpireMatchCategory').textContent = c.round;
+      document.getElementById('umpireTeamAName').textContent = c.teamA;
+      document.getElementById('umpireTeamAClub').textContent = c.clubA;
+      document.getElementById('umpireTeamBName').textContent = c.teamB;
+      document.getElementById('umpireTeamBClub').textContent = c.clubB;
+      document.getElementById('umpireScoreA').textContent = c.scores[setIdx][0];
+      document.getElementById('umpireScoreB').textContent = c.scores[setIdx][1];
+      document.getElementById('shuttleCountLabel').textContent = `${c.shuttleUsed} ลูก`;
+
+      document.querySelectorAll('.umpire-set-btn').forEach(btn => {
+        const idx = parseInt(btn.getAttribute('data-set-idx'), 10);
+        if (idx === setIdx) {
+          btn.className = 'umpire-set-btn px-3 py-1 rounded-lg text-xs font-bold bg-emerald-500 text-slate-950';
+        } else {
+          btn.className = 'umpire-set-btn px-3 py-1 rounded-lg text-xs font-bold bg-slate-800 text-slate-300';
+        }
+      });
+    }
+
+    // ==========================================
+    // 7. NAVIGATION & EVENT BINDINGS
+    // ==========================================
+    function switchMainTab(tabName) {
+      if (tabName === 'organizer' && state.roleMode !== 'admin') {
+        showToast('หน้าผู้จัดการแข่งขันอนุญาตเฉพาะ "โหมดผู้จัด / Admin" เท่านั้น', 'amber');
+        return;
+      }
+      state.activeMainTab = tabName;
+      saveStateToStorage();
+      renderAll();
+    }
+
+    function switchApplicantSubtab(subtab) {
+      state.activeAppSubtab = subtab;
+      ['tournaments', 'check-status', 'athlete-card', 'community'].forEach(s => {
+        const el = document.getElementById(`app-subview-${s}`);
+        if (s === subtab) el.classList.remove('hidden');
+        else el.classList.add('hidden');
+      });
+
+      document.querySelectorAll('.app-subtab-btn').forEach(btn => {
+        if (btn.getAttribute('data-app-subtab') === subtab) {
+          btn.className = 'app-subtab-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-2';
+        } else {
+          btn.className = 'app-subtab-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold text-slate-400 hover:text-white border border-transparent flex items-center gap-2';
+        }
+      });
+
+      saveStateToStorage();
+      renderAll();
+    }
+
+    function switchRelatedSubtab(subtab) {
+      state.activeRelSubtab = subtab;
+      ['courts', 'brackets', 'results'].forEach(s => {
+        const el = document.getElementById(`rel-subview-${s}`);
+        if (s === subtab) el.classList.remove('hidden');
+        else el.classList.add('hidden');
+      });
+
+      document.querySelectorAll('.rel-subtab-btn').forEach(btn => {
+        if (btn.getAttribute('data-rel-subtab') === subtab) {
+          btn.className = 'rel-subtab-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-2';
+        } else {
+          btn.className = 'rel-subtab-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold text-slate-400 hover:text-white border border-transparent flex items-center gap-2';
+        }
+      });
+
+      saveStateToStorage();
+      renderAll();
+    }
+
+    function renderAll() {
+      applyRoleVisibility();
+      renderGlobalSelectors();
+      renderKPIs();
+      renderTournamentCards();
+      renderPublicApplicantTable();
+      renderAthleteProfileView();
+      renderCommunitySection();
+      renderOrganizerView();
+      renderLiveCourts();
+      renderBracketsAndResults();
+      if (window.lucide) {
+        window.lucide.createIcons();
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      // Load persisted state from localStorage first
+      loadStateFromStorage();
+
+      // 3-Role Switcher Buttons
+      document.querySelectorAll('.role-mode-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          setRoleMode(btn.getAttribute('data-role-mode'));
+        });
+      });
+
+      // Simulate 1 Random Team Buttons (Top bar, Applicant subbar, Applicant table, Organizer header)
+      ['simulateRandomTeamBtn', 'simulateRandomTeamBtnSub', 'simulateRandomTeamBtnTable', 'simulateRandomTeamBtnOrg'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.addEventListener('click', simulateOneRandomApplicantTeam);
+        }
+      });
+
+      // Fill Random Data inside Modal Form Button
+      const fillRandomModalBtn = document.getElementById('fillRandomModalFormBtn');
+      if (fillRandomModalBtn) {
+        fillRandomModalBtn.addEventListener('click', () => {
+          const [p1, p2] = pickRandomPair(RANDOM_PLAYERS_POOL);
+          const club = RANDOM_CLUBS_POOL[Math.floor(Math.random() * RANDOM_CLUBS_POOL.length)];
+          const level = RANDOM_LEVELS_POOL[Math.floor(Math.random() * RANDOM_LEVELS_POOL.length)];
+          const note = RANDOM_HISTORY_POOL[Math.floor(Math.random() * RANDOM_HISTORY_POOL.length)];
+          document.getElementById('applyHandLevel').value = level;
+          document.getElementById('applyPlayer1').value = p1;
+          document.getElementById('applyPlayer2').value = p2;
+          document.getElementById('applyClub').value = club;
+          document.getElementById('applyHistoryNote').value = note;
+        });
+      }
+
+      // Reset LocalStorage Button
+      document.getElementById('resetLocalStorageBtn').addEventListener('click', () => {
+        try {
+          localStorage.removeItem(STORAGE_KEY);
+        } catch (e) {}
+        state = getDefaultState();
+        saveStateToStorage();
+        renderAll();
+        showToast('รีเซ็ตข้อมูลในเครื่องกลับเป็นค่าเริ่มต้นเรียบร้อยแล้ว', 'amber');
+      });
+
+      // Main tabs
+      document.querySelectorAll('.main-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => switchMainTab(btn.getAttribute('data-main-tab')));
+      });
+
+      // Applicant subtabs
+      document.querySelectorAll('.app-subtab-btn').forEach(btn => {
+        btn.addEventListener('click', () => switchApplicantSubtab(btn.getAttribute('data-app-subtab')));
+      });
+
+      // Related subtabs
+      document.querySelectorAll('.rel-subtab-btn').forEach(btn => {
+        btn.addEventListener('click', () => switchRelatedSubtab(btn.getAttribute('data-rel-subtab')));
+      });
+
+      // Global Tournament Selector
+      document.getElementById('globalTournamentSelect').addEventListener('change', (e) => {
+        state.selectedTournamentId = e.target.value;
+        saveStateToStorage();
+        renderAll();
+      });
+
+      // Filters
+      document.getElementById('searchTournamentInput').addEventListener('input', renderTournamentCards);
+      document.getElementById('filterLevelSelect').addEventListener('change', renderTournamentCards);
+      document.getElementById('filterStatusSelect').addEventListener('change', renderTournamentCards);
+      document.getElementById('applicantHandFilter').addEventListener('change', renderPublicApplicantTable);
+      document.getElementById('athleteSelectDropdown').addEventListener('change', renderAthleteProfileView);
+
+      // PA Banner close
+      document.getElementById('closePaBannerBtn').addEventListener('click', () => {
+        document.getElementById('paBanner').classList.add('hidden');
+      });
+
+      // Apply Modal controls
+      const openApply = () => document.getElementById('applyModal').classList.remove('hidden');
+      const closeApply = () => document.getElementById('applyModal').classList.add('hidden');
+      document.getElementById('openQuickApplyBtn').addEventListener('click', openApply);
+      document.getElementById('openQuickApplyBtn2').addEventListener('click', openApply);
+      document.getElementById('closeApplyModalBtn').addEventListener('click', closeApply);
+      document.getElementById('cancelApplyModalBtn').addEventListener('click', closeApply);
+
+      document.getElementById('applyTournamentForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const tourId = document.getElementById('applyTournamentId').value;
+        const level = document.getElementById('applyHandLevel').value;
+        const p1 = document.getElementById('applyPlayer1').value.trim();
+        const p2 = document.getElementById('applyPlayer2').value.trim();
+        const club = document.getElementById('applyClub').value.trim();
+        const note = document.getElementById('applyHistoryNote').value.trim() || 'รอฝ่ายจัดการแข่งขันประเมินระดับมือ';
+        const hasSlip = document.getElementById('applyIncludeSlip').checked;
+
+        state.selectedTournamentId = tourId;
+        state.applicants.unshift({
+          id: 'APP-' + Date.now(),
+          tournamentId: tourId,
+          level,
+          p1,
+          p2,
+          club,
+          slipVerified: hasSlip,
+          slipRef: hasSlip ? 'QR-PROMPT-' + Math.floor(1000 + Math.random() * 8999) : 'รอแนบสลิป QR',
+          handStatus: 'PENDING',
+          historyNote: note,
+          lineNotified: hasSlip
+        });
+
+        saveStateToStorage();
+        closeApply();
+        e.target.reset();
+        switchApplicantSubtab('check-status');
+        showToast(`ส่งใบสมัครคู่ "${p1} + ${p2}" (รุ่นมือ ${level}) และบันทึกลงเครื่องเรียบร้อย!`);
+      });
+
+      // Organizer Voice Call & Assign Court
+      document.getElementById('triggerVoiceCallBtn').addEventListener('click', () => {
+        const qId = document.getElementById('voiceMatchSelect').value;
+        const courtNo = document.getElementById('voiceCourtSelect').value;
+        const q = state.matchQueue.find(m => m.id === qId) || state.matchQueue[0];
+        if (!q) return;
+
+        const speechText = `ขอเชิญนักกีฬา ${q.round} คู่ของคุณ ${q.teamA} พบกับ ${q.teamB} ลงทำการแข่งขันที่คอร์ท ${courtNo} ค่ะ`;
+        state.announcements.unshift({
+          time: new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' น.',
+          text: speechText,
+          channel: `ลำโพงคอร์ท ${courtNo} + LINE OA`
+        });
+        saveStateToStorage();
+        speakThaiAnnouncement(speechText);
+        renderOrganizerView();
+      });
+
+      document.getElementById('assignCourtAndStartBtn').addEventListener('click', () => {
+        const qId = document.getElementById('voiceMatchSelect').value;
+        const courtNo = parseInt(document.getElementById('voiceCourtSelect').value, 10);
+        const q = state.matchQueue.find(m => m.id === qId) || state.matchQueue[0];
+        const court = state.courts.find(c => c.courtNo === courtNo);
+        if (q && court) {
+          court.status = 'LIVE';
+          court.round = q.round;
+          court.teamA = q.teamA;
+          court.clubA = q.clubA;
+          court.teamB = q.teamB;
+          court.clubB = q.clubB;
+          court.scores = [[0, 0], [0, 0], [0, 0]];
+          court.shuttleUsed = 1;
+          saveStateToStorage();
+          renderAll();
+          showToast(`ส่งคู่ "${q.teamA} vs ${q.teamB}" ลงทำการแข่งขันที่คอร์ท ${courtNo} เรียบร้อย!`);
+        }
+      });
+
+      // Auto Generate Draw
+      const shuffleDraws = () => {
+        const tourApps = state.applicants.filter(a => a.tournamentId === state.selectedTournamentId);
+        for (let i = state.applicants.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          const temp = state.applicants[i];
+          state.applicants[i] = state.applicants[j];
+          state.applicants[j] = temp;
+        }
+        saveStateToStorage();
+        renderAll();
+        showToast(`สุ่มจับสายการแข่งขันรอบแบ่งกลุ่ม (${tourApps.length} คู่) และบันทึกลงเครื่องเรียบร้อย!`);
+      };
+      document.getElementById('autoGenerateDrawBtn').addEventListener('click', () => {
+        shuffleDraws();
+        switchMainTab('related');
+        switchRelatedSubtab('brackets');
+      });
+      document.getElementById('reshuffleBracketBtn').addEventListener('click', shuffleDraws);
+
+      // Create Tournament Modal
+      const openCreateTour = () => document.getElementById('createTournamentModal').classList.remove('hidden');
+      const closeCreateTour = () => document.getElementById('createTournamentModal').classList.add('hidden');
+      document.getElementById('openCreateTournamentModalBtn').addEventListener('click', openCreateTour);
+      document.getElementById('closeCreateTourModalBtn').addEventListener('click', closeCreateTour);
+      document.getElementById('cancelCreateTourBtn').addEventListener('click', closeCreateTour);
+
+      document.getElementById('createTournamentForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const title = document.getElementById('newTourTitle').value.trim();
+        const date = document.getElementById('newTourDate').value.trim();
+        const venue = document.getElementById('newTourVenue').value.trim();
+        const fee = parseInt(document.getElementById('newTourFee').value || '1200', 10);
+        const shuttle = document.getElementById('newTourShuttle').value.trim();
+
+        const newId = 'T0' + (state.tournaments.length + 1);
+        state.tournaments.unshift({
+          id: newId,
+          title,
+          date,
+          venue,
+          organizer: 'ผู้จัดการแข่งขัน (คุณปุ้ม)',
+          shuttlecock: shuttle,
+          fee,
+          status: 'OPEN',
+          levels: ['BG', 'N', 'S-', 'P-'],
+          maxPairsPerLevel: 16
+        });
+        state.selectedTournamentId = newId;
+        saveStateToStorage();
+        closeCreateTour();
+        e.target.reset();
+        renderAll();
+        showToast(`สร้างรายการแข่งขัน "${title}" และบันทึกลงเครื่องเรียบร้อย!`);
+      });
+
+      // Umpire Modal Controls
+      const closeUmpire = () => {
+        document.getElementById('umpireModal').classList.add('hidden');
+        saveStateToStorage();
+        renderAll();
+      };
+      document.getElementById('closeUmpireModalBtn').addEventListener('click', closeUmpire);
+      document.getElementById('doneUmpireModalBtn').addEventListener('click', closeUmpire);
+
+      document.querySelectorAll('.umpire-set-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.activeUmpireSetIdx = parseInt(btn.getAttribute('data-set-idx'), 10);
+          updateUmpireModalUI();
+        });
+      });
+
+      document.getElementById('umpireIncA').addEventListener('click', () => {
+        const c = state.courts.find(x => x.courtNo === state.activeUmpireCourtId);
+        if (c) {
+          c.scores[state.activeUmpireSetIdx][0] += 1;
+          saveStateToStorage();
+          updateUmpireModalUI();
+          renderLiveCourts();
+        }
+      });
+      document.getElementById('umpireDecA').addEventListener('click', () => {
+        const c = state.courts.find(x => x.courtNo === state.activeUmpireCourtId);
+        if (c && c.scores[state.activeUmpireSetIdx][0] > 0) {
+          c.scores[state.activeUmpireSetIdx][0] -= 1;
+          saveStateToStorage();
+          updateUmpireModalUI();
+          renderLiveCourts();
+        }
+      });
+      document.getElementById('umpireIncB').addEventListener('click', () => {
+        const c = state.courts.find(x => x.courtNo === state.activeUmpireCourtId);
+        if (c) {
+          c.scores[state.activeUmpireSetIdx][1] += 1;
+          saveStateToStorage();
+          updateUmpireModalUI();
+          renderLiveCourts();
+        }
+      });
+      document.getElementById('umpireDecB').addEventListener('click', () => {
+        const c = state.courts.find(x => x.courtNo === state.activeUmpireCourtId);
+        if (c && c.scores[state.activeUmpireSetIdx][1] > 0) {
+          c.scores[state.activeUmpireSetIdx][1] -= 1;
+          saveStateToStorage();
+          updateUmpireModalUI();
+          renderLiveCourts();
+        }
+      });
+      document.getElementById('shuttleIncBtn').addEventListener('click', () => {
+        const c = state.courts.find(x => x.courtNo === state.activeUmpireCourtId);
+        if (c) {
+          c.shuttleUsed += 1;
+          saveStateToStorage();
+          updateUmpireModalUI();
+        }
+      });
+      document.getElementById('shuttleDecBtn').addEventListener('click', () => {
+        const c = state.courts.find(x => x.courtNo === state.activeUmpireCourtId);
+        if (c && c.shuttleUsed > 0) {
+          c.shuttleUsed -= 1;
+          saveStateToStorage();
+          updateUmpireModalUI();
+        }
+      });
+
+      document.getElementById('finishMatchBtn').addEventListener('click', () => {
+        const c = state.courts.find(x => x.courtNo === state.activeUmpireCourtId);
+        if (!c) return;
+        const s0 = c.scores[0];
+        const winner = s0[0] >= s0[1] ? `${c.teamA} (${c.clubA})` : `${c.teamB} (${c.clubB})`;
+        const loser = s0[0] >= s0[1] ? `${c.teamB} (${c.clubB})` : `${c.teamA} (${c.clubA})`;
+        const scoreStr = c.scores
+          .filter((s, idx) => idx === 0 || s[0] > 0 || s[1] > 0)
+          .map(s => `${s[0]}-${s[1]}`)
+          .join(', ');
+
+        state.completedMatches.unshift({
+          code: 'M-' + Math.floor(105 + Math.random() * 80),
+          round: c.round,
+          winner,
+          loser,
+          scoreText: scoreStr,
+          shuttleUsed: c.shuttleUsed,
+          time: new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' น.'
+        });
+
+        c.status = 'READY';
+        c.round = 'คอร์ทว่าง (พร้อมเรียกคู่ถัดไป)';
+        c.teamA = 'รอเรียกคู่แข่งขัน';
+        c.clubA = '-';
+        c.teamB = 'รอเรียกคู่แข่งขัน';
+        c.clubB = '-';
+        c.scores = [[0, 0], [0, 0], [0, 0]];
+        c.shuttleUsed = 0;
+
+        closeUmpire();
+        showToast(`บันทึกผลการแข่งขันสำเร็จ! ผู้ชนะ: ${winner} (${scoreStr})`);
+      });
+
+      // Initial render & sync subtab visibility
+      switchApplicantSubtab(state.activeAppSubtab || 'tournaments');
+      switchRelatedSubtab(state.activeRelSubtab || 'courts');
+      renderAll();
+    });
+  </script>
 </body>
 </html>
