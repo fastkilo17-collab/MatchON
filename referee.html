@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="th" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MatchON กรรมการ</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Noto+Sans+Thai:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Noto Sans Thai','Inter',sans-serif; background:#090d16; color:#f1f5f9; -webkit-tap-highlight-color: transparent; }
+    .score { font-variant-numeric: tabular-nums; }
+    button { touch-action: manipulation; }
+  </style>
+</head>
+<body class="min-h-screen">
+<main class="max-w-lg mx-auto p-4 space-y-4" style="padding-bottom:max(1rem, env(safe-area-inset-bottom))">
+  <header class="flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <span class="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center text-lg">🏸</span>
+      <span class="font-extrabold text-lg">Match<span class="text-emerald-400">ON</span></span>
+    </div>
+    <span id="court-badge" class="text-xs font-extrabold px-2.5 py-1 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30">COURT –</span>
+  </header>
+
+  <div id="msg" class="hidden rounded-2xl border border-amber-500/40 bg-amber-500/10 text-amber-200 p-4 text-sm leading-relaxed"></div>
+
+  <section id="pad" class="hidden space-y-4">
+    <div>
+      <h1 id="round" class="font-bold text-base"></h1>
+      <p id="status" class="text-xs text-slate-400"></p>
+    </div>
+
+    <div class="flex items-center justify-between bg-slate-900 p-2 rounded-xl border border-slate-800">
+      <span class="text-xs font-semibold text-slate-400 pl-2">เซตที่</span>
+      <div class="flex gap-1.5" id="sets"></div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-3">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 text-center space-y-3">
+        <p id="nameA" class="text-sm font-bold truncate"></p>
+        <p id="clubA" class="text-[11px] text-slate-400 truncate"></p>
+        <div id="scoreA" class="score text-7xl font-extrabold text-emerald-400 py-2">0</div>
+        <button id="incA" class="w-full h-16 rounded-2xl bg-emerald-500 active:bg-emerald-400 text-slate-950 font-extrabold text-lg">+1</button>
+        <button id="decA" class="w-full h-11 rounded-xl bg-slate-800 active:bg-slate-700 font-bold">− แก้แต้ม</button>
+      </div>
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 text-center space-y-3">
+        <p id="nameB" class="text-sm font-bold truncate"></p>
+        <p id="clubB" class="text-[11px] text-slate-400 truncate"></p>
+        <div id="scoreB" class="score text-7xl font-extrabold text-cyan-400 py-2">0</div>
+        <button id="incB" class="w-full h-16 rounded-2xl bg-cyan-400 active:bg-cyan-300 text-slate-950 font-extrabold text-lg">+1</button>
+        <button id="decB" class="w-full h-11 rounded-xl bg-slate-800 active:bg-slate-700 font-bold">− แก้แต้ม</button>
+      </div>
+    </div>
+
+    <div class="flex items-center justify-between bg-slate-900 px-4 py-3 rounded-xl border border-slate-800 text-sm">
+      <span class="text-slate-300">ลูกแบดที่ใช้</span>
+      <div class="flex items-center gap-3">
+        <button id="shDec" class="w-10 h-10 rounded-lg bg-slate-800 font-bold">−</button>
+        <span id="shuttle" class="font-extrabold text-amber-400 text-lg w-14 text-center">0 ลูก</span>
+        <button id="shInc" class="w-10 h-10 rounded-lg bg-slate-800 font-bold">+</button>
+      </div>
+    </div>
+
+    <button id="finish" class="w-full py-4 rounded-2xl bg-amber-500 active:bg-amber-400 text-slate-950 font-extrabold">🏁 จบแมตช์ และส่งผลเข้าระบบ</button>
+    <p id="sync" class="text-center text-[11px] text-slate-500"></p>
+  </section>
+</main>
+
+<script>
+  // ---- data layer: the only part that changes when Firebase is connected ----
+  const KEY = 'MATCHON_LOCAL_DB_V1';
+  const Store = {
+    load() { try { return JSON.parse(localStorage.getItem(KEY) || 'null'); } catch { return null; } },
+    save(state) { localStorage.setItem(KEY, JSON.stringify(state)); },
+    subscribe(fn) { window.addEventListener('storage', (e) => { if (e.key === KEY) fn(); }); },
+  };
+
+  const $ = (id) => document.getElementById(id);
+  const courtNo = Number(new URLSearchParams(location.search).get('court'));
+  let setIdx = 0;
+  let state = null;
+
+  const court = () => state && state.courts && state.courts.find((c) => c.courtNo === courtNo);
+  const show = (text) => { $('msg').textContent = text; $('msg').classList.remove('hidden'); $('pad').classList.add('hidden'); };
+
+  function draw() {
+    state = Store.load();
+    const c = court();
+    $('court-badge').textContent = 'COURT ' + (courtNo || '–');
+    if (!courtNo) return show('ลิงก์นี้ไม่ระบุคอร์ต ให้สแกน QR จากหน้า "สายแข่ง & คอร์ทสด" ของแต่ละคอร์ต');
+    if (!c) return show('ไม่พบข้อมูลคอร์ตนี้ในเครื่องนี้ ตอนนี้ข้อมูลเก็บในเบราว์เซอร์ของเครื่องที่เปิดหน้าผู้จัด ต้องเปิดหน้านี้บนเครื่อง/เบราว์เซอร์เดียวกันจึงจะเห็นข้อมูล (การสแกนจากมือถือเครื่องอื่นจะใช้ได้เมื่อต่อ Firebase)');
+    $('msg').classList.add('hidden'); $('pad').classList.remove('hidden');
+    const live = c.status === 'LIVE';
+    $('round').textContent = c.round;
+    $('status').textContent = live ? '● กำลังแข่งขัน' : 'คอร์ตว่าง รอเรียกคู่ลงสนาม';
+    $('nameA').textContent = c.teamA; $('clubA').textContent = c.clubA;
+    $('nameB').textContent = c.teamB; $('clubB').textContent = c.clubB;
+    $('scoreA').textContent = c.scores[setIdx][0];
+    $('scoreB').textContent = c.scores[setIdx][1];
+    $('shuttle').textContent = c.shuttleUsed + ' ลูก';
+    $('sets').innerHTML = [0, 1, 2].map((i) =>
+      `<button data-set="${i}" class="px-4 py-2 rounded-lg text-sm font-bold ${i === setIdx ? 'bg-emerald-500 text-slate-950' : 'bg-slate-800 text-slate-300'}">${i + 1}</button>`).join('');
+    ['incA', 'decA', 'incB', 'decB', 'shInc', 'shDec', 'finish'].forEach((id) => { $(id).disabled = !live; $(id).classList.toggle('opacity-40', !live); });
+  }
+
+  function commit(mutate) {
+    const fresh = Store.load();
+    if (!fresh) return;
+    state = fresh;
+    const c = court();
+    if (!c) return;
+    mutate(c);
+    Store.save(state);
+    $('sync').textContent = 'บันทึกล่าสุด ' + new Date().toLocaleTimeString('th-TH');
+    draw();
+  }
+
+  $('sets').addEventListener('click', (e) => { const b = e.target.closest('[data-set]'); if (b) { setIdx = Number(b.dataset.set); draw(); } });
+  $('incA').onclick = () => commit((c) => { c.scores[setIdx][0] += 1; });
+  $('incB').onclick = () => commit((c) => { c.scores[setIdx][1] += 1; });
+  $('decA').onclick = () => commit((c) => { if (c.scores[setIdx][0] > 0) c.scores[setIdx][0] -= 1; });
+  $('decB').onclick = () => commit((c) => { if (c.scores[setIdx][1] > 0) c.scores[setIdx][1] -= 1; });
+  $('shInc').onclick = () => commit((c) => { c.shuttleUsed += 1; });
+  $('shDec').onclick = () => commit((c) => { if (c.shuttleUsed > 0) c.shuttleUsed -= 1; });
+
+  $('finish').onclick = () => {
+    const c = court();
+    if (!c || !confirm('จบแมตช์นี้และบันทึกผล?')) return;
+    commit((c) => {
+      const s0 = c.scores[0];
+      const aWin = s0[0] >= s0[1];
+      const scoreText = c.scores.filter((s, i) => i === 0 || s[0] > 0 || s[1] > 0).map((s) => s[0] + '-' + s[1]).join(', ');
+      state.completedMatches = state.completedMatches || [];
+      state.completedMatches.unshift({
+        code: 'M-' + Math.floor(105 + Math.random() * 80),
+        round: c.round,
+        winner: aWin ? `${c.teamA} (${c.clubA})` : `${c.teamB} (${c.clubB})`,
+        loser: aWin ? `${c.teamB} (${c.clubB})` : `${c.teamA} (${c.clubA})`,
+        scoreText, shuttleUsed: c.shuttleUsed,
+        time: new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' น.',
+      });
+      c.status = 'READY'; c.round = 'คอร์ทว่าง (พร้อมเรียกคู่ถัดไป)';
+      c.teamA = 'รอเรียกคู่แข่งขัน'; c.clubA = '-'; c.teamB = 'รอเรียกคู่แข่งขัน'; c.clubB = '-';
+      c.scores = [[0, 0], [0, 0], [0, 0]]; c.shuttleUsed = 0;
+      setIdx = 0;
+    });
+  };
+
+  Store.subscribe(draw);
+  draw();
+</script>
+</body>
+</html>

@@ -9,6 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Thai:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
   <script>
     tailwind.config = {
       darkMode: 'class',
@@ -753,6 +754,17 @@
           บันทึกและปิด
         </button>
       </div>
+    </div>
+  </div>
+
+  <!-- QR modal: scan to open the referee page of one court -->
+  <div id="qrModal" class="fixed inset-0 z-50 hidden bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4 text-center">
+      <h3 id="qrCourtTitle" class="font-extrabold text-white">COURT</h3>
+      <div class="bg-white rounded-xl p-2 inline-block"><canvas id="qrCourtCanvas" width="260" height="260"></canvas></div>
+      <p class="text-xs text-slate-400">ให้กรรมการสแกนด้วยกล้องมือถือเพื่อเปิดหน้านับแต้มของคอร์ตนี้</p>
+      <p id="qrCourtUrl" class="text-[11px] text-slate-500 break-all select-all"></p>
+      <button onclick="document.getElementById('qrModal').classList.add('hidden')" class="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-sm">ปิด</button>
     </div>
   </div>
 
@@ -1830,6 +1842,19 @@
       });
     }
 
+    function refereeUrl(courtNo) {
+      return new URL('referee.html?court=' + courtNo, location.href).href;
+    }
+
+    function openCourtQr(courtNo) {
+      const url = refereeUrl(courtNo);
+      document.getElementById('qrCourtTitle').textContent = 'COURT ' + courtNo + ' • หน้ากรรมการ';
+      document.getElementById('qrCourtUrl').textContent = url;
+      const cv = document.getElementById('qrCourtCanvas');
+      if (window.QRCode) window.QRCode.toCanvas(cv, url, { width: 260, margin: 2 });
+      document.getElementById('qrModal').classList.remove('hidden');
+    }
+
     function renderLiveCourts() {
       const grid = document.getElementById('liveCourtsGrid');
       grid.innerHTML = '';
@@ -1845,8 +1870,11 @@
         // Only show Umpire & Voice Call buttons when in Admin mode!
         const adminControlsHTML = isAdmin
           ? `<div class="flex gap-2 pt-1">
-               <button data-umpire-court="${c.courtNo}" class="open-umpire-btn flex-1 py-2 px-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs flex items-center justify-center gap-1.5 transition shadow">
-                 <span>🎯 โหมดกรรมการนับแต้ม</span>
+               <a href="${refereeUrl(c.courtNo)}" target="_blank" rel="noopener" class="flex-1 py-2 px-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs flex items-center justify-center gap-1.5 transition shadow">
+                 <span>🎯 เปิดหน้ากรรมการ</span>
+               </a>
+               <button data-qr-court="${c.courtNo}" class="open-qr-btn py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs border border-slate-700 transition">
+                 ▦ QR
                </button>
                <button data-call-court="${c.courtNo}" class="call-court-btn py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-300 font-bold text-xs border border-slate-700 transition">
                  🔊 เรียกคอร์ทนี้
@@ -1925,6 +1953,10 @@
           const courtNo = parseInt(btn.getAttribute('data-umpire-court'), 10);
           openUmpireModal(courtNo);
         });
+      });
+
+      document.querySelectorAll('.open-qr-btn').forEach(btn => {
+        btn.addEventListener('click', () => openCourtQr(parseInt(btn.getAttribute('data-qr-court'), 10)));
       });
 
       document.querySelectorAll('.call-court-btn').forEach(btn => {
