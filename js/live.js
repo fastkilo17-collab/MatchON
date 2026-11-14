@@ -49,6 +49,7 @@ export function canon(c) {
     startedAt: num(c.startedAt),
     pausedAt: num(c.pausedAt),
     pausedTotal: num(c.pausedTotal),
+    firstSrv: strs(c.firstSrv, 3),
     swapA: !!c.swapA,
     swapB: !!c.swapB,
     realA: strs(c.realA, 2),

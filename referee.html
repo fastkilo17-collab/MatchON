@@ -238,7 +238,21 @@ td:first-child{max-width:150px}
 .rad{display:flex;align-items:center;gap:10px;padding:8px 0;font-size:16px;flex-wrap:wrap}
 .rad input{width:20px;height:20px;accent-color:#2f74ff}
 .rad small{width:100%;margin-left:30px}
-#srvSwap{height:100px!important}</style>
+#srvSwap{height:100px!important}
+/* ---- v4 ---- */
+.sheet{overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;max-height:calc(100dvh - 24px)}
+.sheet>*{flex:none}
+@media (max-height:520px){.sheet{padding:12px;gap:8px}.sheet h3{font-size:16px}.row{padding:8px 12px;font-size:14px}.rad{padding:4px 0;font-size:14px}.close{padding:9px;font-size:14px}.modal{padding:8px}}
+.sb.R{clip-path:polygon(0 0,100% 0,100% 100%,26px 100%)}
+.mr{align-items:start}
+.mr .pn{align-self:stretch}
+.stp{align-self:start;grid-template-rows:none;grid-auto-rows:86px;gap:10px}
+.stp .bt{font-size:27px}
+.mr .pn:nth-child(2){justify-content:center}.mr .pn:nth-child(2) .sc{flex:none;padding-top:0}.mr .pn:nth-child(2) .back{margin-top:10px}
+.stp{align-self:center}
+#gear2{position:fixed;top:6px;right:6px;z-index:12;width:40px;height:40px;border-radius:50%;background:#000a;border:1px solid #2b4aa8;font-size:22px;display:none;place-items:center;color:#cfe0ff}
+body.fill #gear2{display:grid}
+</style>
 </head>
 <body>
 <div id="wrap"><div id="cv">
@@ -294,6 +308,7 @@ td:first-child{max-width:150px}
   </section>
 </div></div>
 
+<button id="gear2" aria-label="ตั้งค่า">⚙</button>
 <div class="msg" id="msg"><div id="msgTxt"></div></div>
 <div class="rot"><div><span>📱↻</span>หมุนจอเป็นแนวนอน<br>เพื่อใช้หน้ากรรมการ</div></div>
 <div class="toast" id="toast"></div>
@@ -303,7 +318,7 @@ td:first-child{max-width:150px}
   <button class="row" id="optWake"><div>เปิดหน้าจอค้างไว้<small>กันจอดับระหว่างแมตช์</small></div><span class="sw" id="swWake"></span></button>
   <div class="row" style="display:block"><div style="margin-bottom:8px">การแสดงผลเต็มจอ</div>
     <label class="rad"><input type="radio" name="fitmode" value="fit"> Fit screen <small>เห็นทั้งหน้า คงสัดส่วน อาจมีขอบดำ</small></label>
-    <label class="rad"><input type="radio" name="fitmode" value="fill"> Fill screen <small>ขยายเต็มจอ ไม่มีขอบ สัดส่วนอาจยืด</small></label></div>
+    <label class="rad"><input type="radio" name="fitmode" value="fill"> Fill screen <small>ขยายเต็มจอ ตัดขอบส่วนที่เกิน</small></label></div>
   <button class="close" id="closeModal">ปิด</button>
 </div></div>
 <div class="modal" id="evModal"><div class="sheet"><h3>เหตุการณ์ทั้งหมด</h3><div class="evlist" id="evList"></div><button class="close" id="closeEv">ปิด</button></div></div>
@@ -328,12 +343,17 @@ const savePrefs = () => { try { localStorage.setItem(PREF, JSON.stringify(prefs)
 
 /* ---------------- canvas scaling ---------------- */
 function fit() {
-  const W = innerWidth, H = innerHeight;
-  let sx, sy;
-  if (prefs.fit === 'fill') { sx = W / 1536; sy = H / 1024; }          // stretch to fill the whole screen
-  else { sx = sy = Math.min(W / 1536, H / 1024); }                      // keep proportions, whole page visible
-  $('wrap').style.width = 1536 * sx + 'px'; $('wrap').style.height = 1024 * sy + 'px';
-  $('cv').style.transform = `scale(${sx},${sy})`;
+  const W = innerWidth, H = innerHeight, cv = $('cv'), wrap = $('wrap');
+  if (prefs.fit === 'fill') {                                           // cover the whole screen, crop the overflow
+    const k = Math.max(W / 1536, H / 1024);
+    wrap.style.width = W + 'px'; wrap.style.height = H + 'px'; wrap.style.overflow = 'hidden';
+    cv.style.left = (W - 1536 * k) / 2 + 'px'; cv.style.top = (H - 1024 * k) / 2 + 'px'; cv.style.transform = `scale(${k})`;
+  } else {                                                              // whole page visible, proportions kept
+    const k = Math.min(W / 1536, H / 1024);
+    wrap.style.width = 1536 * k + 'px'; wrap.style.height = 1024 * k + 'px'; wrap.style.overflow = '';
+    cv.style.left = '0px'; cv.style.top = '0px'; cv.style.transform = `scale(${k})`;
+  }
+  document.body.classList.toggle('fill', prefs.fit === 'fill');
   document.documentElement.style.overflowY = 'hidden';
 }
 addEventListener('resize', fit); fit();
@@ -382,6 +402,7 @@ const pushEv = (c, txt) => { c.events.push({ at: Date.now(), txt }); if (c.event
 
 const addPoints = (t, n) => (c) => {
   ensure(c); const i = act(c);
+  if (!c.log.some((e) => Number(e[1]) === i)) { c.firstSrv = Array.isArray(c.firstSrv) ? c.firstSrv.slice(0, 3) : []; while (c.firstSrv.length < 3) c.firstSrv.push(''); c.firstSrv[i] = server(c) || 'A'; }
   for (let k = 0; k < n; k++) { c.scores[i][T(t)] += 1; c.log.push(t + i); }
   c.server = t;
   pushEv(c, `คะแนน ${teamName(c, t)} ${c.scores[i][T(t)]} - ${c.scores[i][T(OTHER(t))]}`);
@@ -450,7 +471,7 @@ function draw() {
   // players in each team can swap places: tap before the match starts, then they swap every time the serving side holds serve
   const entries = c.log.filter((e) => Number(e[1]) === vi);
   const flips = { A: !!c.swapA, B: !!c.swapB };
-  let prev = null;
+  let prev = (Array.isArray(c.firstSrv) && c.firstSrv[vi]) || null;
   entries.forEach((e) => { if (e[0] === prev) flips[e[0]] = !flips[e[0]]; prev = e[0]; });
 
   // team cards + big scores (sides follow the "swap sides" setting)
@@ -575,7 +596,7 @@ $('endSet').onclick = () => {
 $('setbtns').addEventListener('click', (e) => { const b = e.target.closest('[data-set]'); if (b) { viewSet = Number(b.dataset.set); draw(); } });
 
 const wipe = (x) => {
-  x.scores = [[0, 0], [0, 0], [0, 0]]; x.shuttleUsed = 1; x.activeSet = 0; x.server = ''; x.swapA = false; x.swapB = false; x.paused = false;
+  x.scores = [[0, 0], [0, 0], [0, 0]]; x.shuttleUsed = 1; x.activeSet = 0; x.server = ''; x.swapA = false; x.swapB = false; x.firstSrv = ['', '', '']; x.paused = false;
   x.startedAt = 0; x.pausedAt = 0; x.pausedTotal = 0; x.log = []; x.events = [];
 };
 $('reset').onclick = () => {
@@ -619,7 +640,7 @@ $('evAll').onclick = () => {
   $('evModal').classList.add('on');
 };
 $('closeEv').onclick = () => $('evModal').classList.remove('on');
-$('gear').onclick = () => $('modal').classList.add('on');
+$('gear').onclick = $('gear2').onclick = () => $('modal').classList.add('on');
 $('closeModal').onclick = () => $('modal').classList.remove('on');
 document.querySelectorAll('input[name=fitmode]').forEach((r) => { r.checked = r.value === prefs.fit; r.onchange = () => { prefs.fit = r.value; savePrefs(); fit(); }; });
 $('optFlip').onclick = () => { prefs.flip = !prefs.flip; savePrefs(); draw(); };
