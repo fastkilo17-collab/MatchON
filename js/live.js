@@ -49,6 +49,8 @@ export function canon(c) {
     startedAt: num(c.startedAt),
     pausedAt: num(c.pausedAt),
     pausedTotal: num(c.pausedTotal),
+    swapA: !!c.swapA,
+    swapB: !!c.swapB,
     photoA: strs(c.photoA, 2),
     photoB: strs(c.photoB, 2),
     events: evs(c.events),

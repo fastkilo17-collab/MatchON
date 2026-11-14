@@ -181,6 +181,41 @@ tr:last-child td{border-bottom:0}
 .evlist{overflow:auto;display:flex;flex-direction:column;gap:2px;font-size:15px}
 .evlist div{display:flex;gap:12px;padding:6px 4px;border-bottom:1px solid #1a2d70}.evlist b{font-weight:500;color:#8da3d8;flex:none}
 @media (orientation:portrait) and (max-width:700px){.rot{display:grid}}
+
+/* ---- v2 layout: everything on one screen ---- */
+.hd{height:80px}
+.bd{height:262px}
+.hs{height:60px;gap:14px;padding:0 12px}
+.hs .setbtns{display:flex;gap:8px;flex:none}
+.hs .sbtn{width:54px;height:44px}
+.hs .cells{height:100%}
+.tm{display:flex;align-items:center;gap:10px;flex:none;border-left:2px solid #1d2f70;padding-left:16px}
+.tm b{font:700 32px/1 'Prompt'}
+.mr{flex:1;min-height:0;display:grid;grid-template-columns:402px 1fr 402px;gap:12px}
+.mr .pn{min-height:0}
+.sc{flex:1;display:grid;grid-template-columns:1fr 96px 1fr;grid-template-rows:3fr 1fr;gap:10px;min-height:0}
+.sc .bt{font:800 84px 'Prompt'}
+.sc [id^="mi"],.sc [id^="mr"]{font-size:40px}
+.sc .swp{grid-column:2;grid-row:1/3;grid-area:auto;font:700 18px 'Noto Sans Thai'}
+#pl1{grid-column:1;grid-row:1}#pr1{grid-column:3;grid-row:1}#mi1{grid-column:1;grid-row:2}#mr1{grid-column:3;grid-row:2}
+.back{height:52px}
+.shc{display:flex;align-items:center;gap:8px}
+.shc .bt{width:46px;height:46px;font:700 30px 'Prompt';padding:0}
+.shc b{min-width:44px;text-align:center;font:800 34px 'Prompt';color:var(--lime)}
+.pn h3{font-size:24px}
+table{font-size:22px}
+td:first-child{max-width:150px}
+.ev{gap:4px}.ev div{font-size:21px}
+.stp{height:96px;flex:none;display:grid;grid-template-columns:repeat(4,1fr);gap:14px;padding:0}
+.stp .bt{font-size:30px;justify-content:center;padding:0 10px}
+.stp .bt .ic{font-size:32px}
+.pic{position:relative;overflow:visible;cursor:default}
+.pic .pi{position:absolute;inset:0;border-radius:10px;overflow:hidden;display:grid;place-items:center}
+.pic .pi img{width:100%;height:100%;object-fit:cover}
+.pic .ball{position:absolute;right:-8px;bottom:-8px;width:52px;height:52px;border-radius:50%;background:#16a34a;border:3px solid #b8ffd2;display:grid;place-items:center;box-shadow:0 0 16px #22c55e;z-index:3}
+.pic .ball svg{width:34px;height:34px}
+.ph.canswap .pic{cursor:pointer}
+.ttl strong{font-size:24px}.ttl span{font-size:20px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
 </style>
 </head>
 <body>
@@ -189,7 +224,7 @@ tr:last-child td{border-bottom:0}
   <header class="hd">
     <div class="logo"><img src="img/matchon-logo.png" alt="MatchON"><small>Badminton Live Score</small></div>
     <div class="vdiv"></div>
-    <div class="ttl"><span class="cup">🏆</span><div><strong id="tname">การแข่งขัน</strong><span id="tsub">สนามที่ –</span></div></div>
+    <div class="ttl"><span class="cup">🏆</span><div><strong id="tname">การแข่งขัน</strong><span id="tsub">สนาม –</span></div></div>
     <div class="livep idle" id="livep"><i></i><span id="livetxt">OFFLINE</span></div>
     <div class="vdiv"></div>
     <div class="clk"><svg viewBox="0 0 24 24" fill="none" stroke="#9fb5f5" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2" stroke-linecap="round"/></svg><span class="num" id="clock">--:--:--</span></div>
@@ -199,62 +234,42 @@ tr:last-child td{border-bottom:0}
   </header>
 
   <section class="bd">
-    <div class="tc" id="tcL" data-side="L"><span class="sv" id="svL"></span><h2 id="hL"></h2><div class="ph" id="phL"></div><div class="nm" id="nmL"></div></div>
+    <div class="tc" id="tcL" data-side="L"><h2 id="hL"></h2><div class="ph" id="phL"></div><div class="nm" id="nmL"></div></div>
     <div class="cn">
       <div class="cat" id="cat"></div>
       <div class="sb L" id="sbL"><div class="n num" id="nL">0</div><div class="l" id="lL">คะแนนปัจจุบัน</div></div>
       <div class="mid"><div class="s">SET</div><div class="w num" id="won">0 - 0</div><div class="st" id="midst">กำลังแข่งขัน</div></div>
       <div class="sb R" id="sbR"><div class="n num" id="nR">0</div><div class="l" id="lR">คะแนนปัจจุบัน</div></div>
     </div>
-    <div class="tc" id="tcR" data-side="R"><span class="sv" id="svR"></span><h2 id="hR"></h2><div class="ph" id="phR"></div><div class="nm" id="nmR"></div></div>
+    <div class="tc" id="tcR" data-side="R"><h2 id="hR"></h2><div class="ph" id="phR"></div><div class="nm" id="nmR"></div></div>
   </section>
 
-  <section class="hs"><div class="lab" id="hsLab">สถิติเซต 1</div><div class="cells" id="cells"></div><div class="lg"><span><i id="lgA" style="background:#2f74ff"></i><b id="lgAn" style="font-weight:600"></b></span><span><i id="lgB" style="background:#ff3a57"></i><b id="lgBn" style="font-weight:600"></b></span></div></section>
+  <section class="hs"><div class="setbtns" id="setbtns"></div><div class="cells" id="cells"></div>
+    <div class="tm"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#9fb5f5" stroke-width="1.8"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 13.5V9M9.5 3h5M18.5 6l1.4-1.4" stroke-linecap="round"/></svg><b class="num" id="timer">00:00:00</b></div></section>
 
-  <section class="is">
-    <div class="it"><span id="icShuttle"></span><span class="lbl">ลูกขนไก่</span><span class="big num" id="shBig">0</span></div>
-    <div class="it"><span id="icServer"></span><span class="lbl">ผู้เสิร์ฟ</span><span class="pill none" id="svPill">–</span></div>
-    <div class="it"><span style="font-size:32px">🏆</span><span class="lbl">เซตที่</span><div class="setbtns" id="setbtns"></div></div>
-    <div class="it tm"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#9fb5f5" stroke-width="1.8"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 13.5V9M9.5 3h5M18.5 6l1.4-1.4" stroke-linecap="round"/></svg><div><small>เวลาการแข่งขัน</small><b class="num" id="timer">00:00:00</b></div></div>
-    <div class="it"><div class="stat idle" id="stat"><span>🏁</span><span id="statTxt">–</span></div></div>
-  </section>
-
-  <section class="pr">
+  <section class="mr">
+    <div class="pn"><div class="evh"><h3>สรุปคะแนน (Sets)</h3>
+      <div class="shc"><span id="icBall"></span><button class="bt g" id="shDec">-</button><b class="num" id="shNum">0</b><button class="bt g" id="shInc">+</button></div></div>
+      <table><thead><tr><th></th><th>Set 1</th><th>Set 2</th><th>Set 3</th></tr></thead><tbody id="sumBody"></tbody></table></div>
     <div class="pn"><h3><em style="color:#ffd23a">★</em>ให้คะแนน</h3>
       <div class="sc" id="sc">
-        <button class="bt" data-p="1" data-s="L" id="pl1">+1</button><button class="bt" data-p="-1" data-s="L" id="mi1">-1</button>
+        <button class="bt" data-p="1" data-s="L" id="pl1">+1</button>
         <button class="bt g swp" id="swapSide"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h12l-3-3M17 17H5l3 3"/></svg>สลับข้าง</button>
-        <button class="bt" data-p="1" data-s="R" id="pr1">+1</button><button class="bt" data-p="-1" data-s="R" id="mr1">-1</button>
-        <button class="bt" data-p="2" data-s="L" id="pl2">+2</button><button class="bt" data-p="-2" data-s="L" id="mi2">-2</button>
-        <button class="bt" data-p="2" data-s="R" id="pr2">+2</button><button class="bt" data-p="-2" data-s="R" id="mr2">-2</button>
+        <button class="bt" data-p="1" data-s="R" id="pr1">+1</button>
+        <button class="bt" data-p="-1" data-s="L" id="mi1">-1</button>
+        <button class="bt" data-p="-1" data-s="R" id="mr1">-1</button>
       </div>
       <button class="bt g back" id="undo">↩ ย้อนกลับ</button>
     </div>
-    <div class="pn"><h3><span id="icBall"></span>นับลูกแบด</h3>
-      <div class="sh"><button class="bt g" id="shInc">+1</button><button class="bt g" id="shDec">-1</button>
-        <div class="cnt"><small>ลูกที่</small><b class="num"><span id="shNum">0</span> <i>/ 21</i></b></div></div>
-    </div>
-    <div class="pn"><h3><span style="font-size:30px">🔄</span>ผู้เสิร์ฟ</h3>
-      <div class="sv2"><button class="bt A" id="srvA"></button><button class="bt B" id="srvB"></button><button class="bt g" id="srvSwap"><span style="font-size:28px">🔁</span>สลับผู้เสิร์ฟ</button></div>
-    </div>
-    <div class="pn"><h3><em style="color:#ffc933">⚑</em>สถานะการแข่งขัน</h3>
-      <div class="stp">
-        <button class="bt go" id="endMatch"><span class="ic">🏁</span>จบการแข่งขัน</button>
-        <button class="bt go" id="pp"><span class="ic" id="ppIc">▶</span><span id="ppTxt">เริ่มเกม</span></button>
-        <button class="bt or" id="endSet"><span class="ic">⏭</span>จบเซต</button>
-        <button class="bt ye" id="reset"><span class="ic">⚠</span>ยกเลิก/รีเซ็ต</button>
-      </div>
-    </div>
-  </section>
-
-  <section class="bm">
-    <div class="pn"><h3>สรุปคะแนน (Sets)</h3>
-      <table><thead><tr><th></th><th>Set 1</th><th>Set 2</th><th>Set 3</th></tr></thead><tbody id="sumBody"></tbody></table></div>
     <div class="pn"><div class="evh"><h3><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#9fb5f5" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2" stroke-linecap="round"/></svg>เหตุการณ์ล่าสุด</h3><button id="evAll">ดูทั้งหมด ›</button></div>
       <div class="ev" id="evBox"></div></div>
-    <div class="pn"><h3><span style="font-size:28px">ⓘ</span>ข้อมูลการแข่งขัน</h3>
-      <div class="inf"><div><b>ประเภท :</b><span id="iCat">–</span></div><div><b>รอบ :</b><span id="iRound">–</span></div><div><b>สนาม :</b><span id="iCourt">–</span></div></div></div>
-    <div class="art" id="art"></div>
+  </section>
+
+  <section class="stp">
+    <button class="bt go" id="pp"><span class="ic" id="ppIc">▶</span><span id="ppTxt">เริ่มเกม</span></button>
+    <button class="bt or" id="endSet"><span class="ic">⏭</span>จบเซต</button>
+    <button class="bt go" id="endMatch"><span class="ic">🏁</span>จบการแข่งขัน</button>
+    <button class="bt ye" id="reset"><span class="ic">⚠</span>ยกเลิก/รีเซ็ต</button>
   </section>
 
 </div></div>
@@ -402,25 +417,36 @@ function draw() {
   const [roundTxt, catTxt] = String(c.round || '').split('•').map((x) => x.trim());
 
   // header
+  const mno = String(c.matchCode || '').replace(/\D/g, '');
   $('tname').textContent = c.tournament || 'การแข่งขันแบดมินตัน';
-  $('tsub').textContent = 'สนามที่ ' + courtNo + '  |  วันที่ ' + new Date().toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' });
+  $('tsub').textContent = 'สนาม ' + courtNo + (mno ? '  |  แมตช์ที่ ' + mno : '') + '  ' + String(c.round || '').replace('•', '-').replace(/\s+/g, ' ');
   $('livep').className = 'livep' + (running ? '' : live && begun ? ' paused' : ' idle');
   $('livetxt').textContent = running ? 'LIVE' : live && begun ? 'PAUSED' : live ? 'READY' : 'IDLE';
+
+  // players in each team can swap places: tap before the match starts, then they swap every time the serving side holds serve
+  const entries = c.log.filter((e) => Number(e[1]) === vi);
+  const flips = { A: !!c.swapA, B: !!c.swapB };
+  let prev = null;
+  entries.forEach((e) => { if (e[0] === prev) flips[e[0]] = !flips[e[0]]; prev = e[0]; });
 
   // team cards + big scores (sides follow the "swap sides" setting)
   for (const sd of ['L', 'R']) {
     const t = v[sd], ns = names(c, t), photos = (t === 'A' ? c.photoA : c.photoB) || [];
+    const slots = [0, 1].slice(0, Math.max(1, Math.min(2, ns.length)));
+    if (flips[t] && slots.length === 2) slots.reverse();
+    const pts = c.scores[vi][T(t)];
+    const serverSlot = sv === t && slots.length === 2 ? (pts % 2 === 0 ? 1 : 0) : (sv === t ? 0 : -1);
     $('tc' + sd).dataset.t = t; $('sb' + sd).dataset.t = t;
     $('h' + sd).textContent = teamName(c, t);
-    $('nm' + sd).textContent = ns.join('  /  ');
-    $('ph' + sd).innerHTML = (ns.length ? ns : ['']).slice(0, 2).map((n, r) => {
-      const u = safeUrl(photos[r]);
-      return `<div class="pic">${u ? `<img src="${esc(u)}" alt="${esc(n)}">` : r + 1}</div>`;
+    $('nm' + sd).textContent = slots.map((k) => ns[k] || '').join('  /  ');
+    $('ph' + sd).dataset.t = t;
+    $('ph' + sd).classList.toggle('canswap', !begun && canWrite && slots.length === 2);
+    $('ph' + sd).innerHTML = slots.map((k, pos) => {
+      const u = safeUrl(photos[k]);
+      return `<div class="pic"><div class="pi">${u ? `<img src="${esc(u)}" alt="${esc(ns[k] || '')}">` : k + 1}</div>${pos === serverSlot ? `<span class="ball">${shuttle(34, true)}</span>` : ''}</div>`;
     }).join('');
     $('n' + sd).textContent = c.scores[vi][T(t)];
     $('l' + sd).textContent = viewingLive ? 'คะแนนปัจจุบัน' : 'คะแนนเซตที่ ' + (vi + 1);
-    $('sv' + sd).classList.toggle('on', sv === t);
-    $('sv' + sd).innerHTML = shuttle(30, true);
   }
   $('cat').textContent = catTxt || '';
   const wl = v.L === 'A' ? wa : wb, wr = v.L === 'A' ? wb : wa;
@@ -429,37 +455,20 @@ function draw() {
 
   // point history of the viewed set
   const sc = c.scores[vi], cnt = { A: 0, B: 0 };
-  const entries = c.log.filter((e) => Number(e[1]) === vi);
   const missing = sc[0] + sc[1] - entries.length;
   let cells = missing > 0 ? `<span class="c pre" title="แต้มก่อนเริ่มบันทึก">+${missing}</span>` : '';
   entries.forEach((e) => { const t = e[0]; cnt[t] += 1; cells += `<span class="c ${t}">${cnt[t]}</span>`; });
-  $('hsLab').textContent = 'สถิติเซต ' + (vi + 1);
   $('cells').innerHTML = cells || '<span class="none">ยังไม่มีแต้มในเซตนี้</span>';
-  $('lgAn').textContent = teamName(c, 'A'); $('lgBn').textContent = teamName(c, 'B');
   const cl = $('cells'); cl.scrollLeft = viewingLive ? cl.scrollWidth : 0;
-
-  // info strip
-  $('icShuttle').innerHTML = shuttle(40, false, '#e6ecff');
-  $('icBall').innerHTML = shuttle(34, false, '#e6ecff');
-  $('icServer').innerHTML = shuttle(40, true, '#fff');
-  $('shBig').textContent = c.shuttleUsed;
-  const svp = $('svPill'); svp.className = 'pill ' + (sv ? sv : 'none'); svp.textContent = sv ? teamName(c, sv) : 'ยังไม่ระบุ';
   $('setbtns').innerHTML = [0, 1, 2].map((i) => `<button class="sbtn${i === vi ? ' view' : ''}${i === a ? ' cur' : ''}" data-set="${i}">${i + 1}</button>`).join('');
   $('timer').textContent = hms(elapsed(c));
-  const stt = !live ? 'คอร์ตว่าง' : c.paused ? 'พักการแข่งขัน' : !begun ? 'พร้อมเริ่ม' : 'กำลังแข่งขัน';
-  $('stat').className = 'stat' + (!live || (!begun && !c.paused) ? ' idle' : c.paused ? ' paused' : '');
-  $('statTxt').textContent = stt;
+  $('icBall').innerHTML = shuttle(36, false, '#e6ecff');
 
   // score pad: buttons follow the sides
-  const colorOf = (sd) => v[sd];
-  for (const id of ['pl1', 'mi1', 'pl2', 'mi2']) { $(id).dataset.s = 'L'; }
-  ['pl1', 'mi1', 'pl2', 'mi2'].forEach((id) => { $(id).className = 'bt ' + colorOf('L'); });
-  ['pr1', 'mr1', 'pr2', 'mr2'].forEach((id) => { $(id).className = 'bt ' + colorOf('R'); });
+  ['pl1', 'mi1'].forEach((id) => { $(id).className = 'bt ' + v.L; });
+  ['pr1', 'mr1'].forEach((id) => { $(id).className = 'bt ' + v.R; });
   $('swapSide').className = 'bt g swp';
   $('shNum').textContent = c.shuttleUsed;
-  const sa = $('srvA'), sb = $('srvB');
-  sa.innerHTML = `<span>${esc(teamName(c, 'A'))}</span>${sv === 'A' ? shuttle(30, true) : ''}`; sa.classList.toggle('sel', sv === 'A');
-  sb.innerHTML = `<span>${esc(teamName(c, 'B'))}</span>${sv === 'B' ? shuttle(30, true) : ''}`; sb.classList.toggle('sel', sv === 'B');
 
   // one button for start / pause / resume
   const pp = $('pp');
@@ -469,9 +478,9 @@ function draw() {
 
   // enable / disable
   const score = canWrite && running && viewingLive, play = canWrite && running;
-  ['pl1', 'mi1', 'pl2', 'mi2', 'pr1', 'mr1', 'pr2', 'mr2', 'endSet'].forEach((id) => { $(id).disabled = !score; });
+  ['pl1', 'mi1', 'pr1', 'mr1', 'endSet'].forEach((id) => { $(id).disabled = !score; });
   $('undo').disabled = !(score && c.log.length);
-  ['shInc', 'shDec', 'srvA', 'srvB', 'srvSwap'].forEach((id) => { $(id).disabled = !play; });
+  ['shInc', 'shDec'].forEach((id) => { $(id).disabled = !play; });
   $('pp').disabled = !(canWrite && live);
   $('endMatch').disabled = !(canWrite && live && begun);
   $('reset').disabled = !(canWrite && live);
@@ -487,9 +496,8 @@ function draw() {
     }).join('') + '</tr>').join('');
 
   // recent events
-  const evs = c.events.slice(-3).reverse();
+  const evs = c.events.slice(-7).reverse();
   $('evBox').innerHTML = evs.length ? evs.map((e) => `<div><b>${clockTxt(e.at)}</b><span>${esc(e.txt)}</span></div>`).join('') : '<div><span style="color:#7f93c6">ยังไม่มีเหตุการณ์</span></div>';
-  $('iCat').textContent = catTxt || '–'; $('iRound').textContent = roundTxt || '–'; $('iCourt').textContent = 'สนามที่ ' + courtNo;
   $('swFlip').classList.toggle('on', prefs.flip); $('swWake').classList.toggle('on', prefs.wake);
   if (note) toast(note), note = '';
 }
@@ -523,13 +531,16 @@ $('sc').addEventListener('click', async (e) => {
   if (n > 0) { if (await commit(addPoints(t, n))) maybeEndSet(); }
   else commit(subPoints(t, -n));
 });
+for (const sd of ['L', 'R']) $('ph' + sd).addEventListener('click', (e) => {
+  if (!e.target.closest('.pic')) return;
+  const c = court && ensure(court); if (!c || began(c) || !canWrite) return;
+  const t = $('ph' + sd).dataset.t;
+  commit((x) => { if (t === 'A') x.swapA = !x.swapA; else x.swapB = !x.swapB; });
+});
 $('undo').onclick = () => commit(undo);
 $('swapSide').onclick = () => { prefs.flip = !prefs.flip; savePrefs(); draw(); };
 $('shInc').onclick = () => commit((c) => { ensure(c); c.shuttleUsed += 1; pushEv(c, `ลูกที่ ${c.shuttleUsed} ${teamName(c, server(c) || 'A')}`); });
 $('shDec').onclick = () => commit((c) => { if (c.shuttleUsed > 0) c.shuttleUsed -= 1; });
-$('srvA').onclick = () => commit((c) => { ensure(c); c.server = 'A'; pushEv(c, 'ผู้เสิร์ฟ: ' + teamName(c, 'A')); });
-$('srvB').onclick = () => commit((c) => { ensure(c); c.server = 'B'; pushEv(c, 'ผู้เสิร์ฟ: ' + teamName(c, 'B')); });
-$('srvSwap').onclick = () => commit((c) => { ensure(c); c.server = OTHER(server(c) || 'A'); pushEv(c, 'ผู้เสิร์ฟ: ' + teamName(c, c.server)); });
 $('pp').onclick = () => { requestWake(); commit(playPause); };
 $('endSet').onclick = () => {
   const c = ensure(court), i = act(c);
@@ -540,7 +551,7 @@ $('endSet').onclick = () => {
 $('setbtns').addEventListener('click', (e) => { const b = e.target.closest('[data-set]'); if (b) { viewSet = Number(b.dataset.set); draw(); } });
 
 const wipe = (x) => {
-  x.scores = [[0, 0], [0, 0], [0, 0]]; x.shuttleUsed = 0; x.activeSet = 0; x.server = ''; x.paused = false;
+  x.scores = [[0, 0], [0, 0], [0, 0]]; x.shuttleUsed = 0; x.activeSet = 0; x.server = ''; x.swapA = false; x.swapB = false; x.paused = false;
   x.startedAt = 0; x.pausedAt = 0; x.pausedTotal = 0; x.log = []; x.events = [];
 };
 $('reset').onclick = () => {
@@ -607,10 +618,6 @@ const syncFs = () => { $('fsBtn').textContent = fsOn() ? '🗗' : '⛶'; setTime
 ['fullscreenchange', 'webkitfullscreenchange'].forEach((ev) => document.addEventListener(ev, syncFs));
 $('fsBtn').onclick = toggleFullscreen;
 
-// decorative shuttle (bottom right)
-$('art').innerHTML = `<svg viewBox="0 0 240 210"><defs><linearGradient id="gl" x1="0" x2="1"><stop offset="0" stop-color="#2a63ff" stop-opacity="0"/><stop offset="1" stop-color="#7a4dff" stop-opacity=".9"/></linearGradient></defs>
-  <path d="M0 200 Q120 170 240 60" stroke="url(#gl)" stroke-width="14" fill="none" stroke-linecap="round" opacity=".55"/>
-  <g transform="translate(150 20) rotate(35 40 80)">${shuttle(120, false, '#f4f7ff').replace('<svg width="120" height="120"', '<svg x="0" y="0" width="120" height="150"').replace('viewBox="0 0 32 32"', 'viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet"')}</g></svg>`;
 
 setInterval(() => {
   $('clock').textContent = clockTxt(Date.now());
