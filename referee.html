@@ -25,7 +25,7 @@ button{font:inherit;color:inherit;border:0;cursor:pointer;touch-action:manipulat
 button:disabled{opacity:.38;cursor:not-allowed}
 .num{font-family:'Prompt',sans-serif;font-variant-numeric:tabular-nums}
 #wrap{position:relative;margin:auto 0}
-#cv{position:absolute;left:0;top:0;width:1536px;height:1024px;transform-origin:0 0;padding:10px 16px 12px;display:flex;flex-direction:column;gap:8px;
+#cv{position:absolute;left:0;top:0;width:1536px;min-height:0;transform-origin:0 0;padding:10px 16px 12px;display:flex;flex-direction:column;gap:8px;
   background:radial-gradient(1100px 520px at 50% 0,#102a78 0,transparent 62%),radial-gradient(900px 500px at 100% 100%,#1a1470 0,transparent 60%),linear-gradient(#060d2a,#050a1a)}
 
 /* ---------- header ---------- */
@@ -252,6 +252,18 @@ td:first-child{max-width:150px}
 .stp{align-self:center}
 #gear2{position:fixed;top:6px;right:6px;z-index:12;width:40px;height:40px;border-radius:50%;background:#000a;border:1px solid #2b4aa8;font-size:22px;display:none;place-items:center;color:#cfe0ff}
 body.fill #gear2{display:grid}
+
+/* ---- v5: no empty space ---- */
+#cv{height:auto}
+#wrap{overflow:hidden}
+.sb{width:calc(50% - 115px)}
+.sb.L,.sb.R{clip-path:none}
+.mr{flex:none;align-items:stretch}
+.mr .pn:nth-child(2){justify-content:flex-start}
+.mr .pn:nth-child(2) .sc{padding-top:4px}
+.stp{align-self:stretch;grid-template-rows:repeat(4,1fr);grid-auto-rows:auto}
+.mr .pn td{padding-top:12px;padding-bottom:12px}
+.mr .pn:first-child .bt#evAll{margin-top:auto}
 </style>
 </head>
 <body>
@@ -308,7 +320,6 @@ body.fill #gear2{display:grid}
   </section>
 </div></div>
 
-<button id="gear2" aria-label="ตั้งค่า">⚙</button>
 <div class="msg" id="msg"><div id="msgTxt"></div></div>
 <div class="rot"><div><span>📱↻</span>หมุนจอเป็นแนวนอน<br>เพื่อใช้หน้ากรรมการ</div></div>
 <div class="toast" id="toast"></div>
@@ -318,7 +329,7 @@ body.fill #gear2{display:grid}
   <button class="row" id="optWake"><div>เปิดหน้าจอค้างไว้<small>กันจอดับระหว่างแมตช์</small></div><span class="sw" id="swWake"></span></button>
   <div class="row" style="display:block"><div style="margin-bottom:8px">การแสดงผลเต็มจอ</div>
     <label class="rad"><input type="radio" name="fitmode" value="fit"> Fit screen <small>เห็นทั้งหน้า คงสัดส่วน อาจมีขอบดำ</small></label>
-    <label class="rad"><input type="radio" name="fitmode" value="fill"> Fill screen <small>ขยายเต็มจอ ตัดขอบส่วนที่เกิน</small></label></div>
+    <label class="rad"><input type="radio" name="fitmode" value="fill"> Fill screen <small>เต็มความกว้างจอ ไม่ตัด ไม่ยืดภาพ เลื่อนลงดูส่วนล่างได้</small></label></div>
   <button class="close" id="closeModal">ปิด</button>
 </div></div>
 <div class="modal" id="evModal"><div class="sheet"><h3>เหตุการณ์ทั้งหมด</h3><div class="evlist" id="evList"></div><button class="close" id="closeEv">ปิด</button></div></div>
@@ -344,19 +355,13 @@ const savePrefs = () => { try { localStorage.setItem(PREF, JSON.stringify(prefs)
 /* ---------------- canvas scaling ---------------- */
 function fit() {
   const W = innerWidth, H = innerHeight, cv = $('cv'), wrap = $('wrap');
-  if (prefs.fit === 'fill') {                                           // cover the whole screen, crop the overflow
-    const k = Math.max(W / 1536, H / 1024);
-    wrap.style.width = W + 'px'; wrap.style.height = H + 'px'; wrap.style.overflow = 'hidden';
-    cv.style.left = (W - 1536 * k) / 2 + 'px'; cv.style.top = (H - 1024 * k) / 2 + 'px'; cv.style.transform = `scale(${k})`;
-  } else {                                                              // whole page visible, proportions kept
-    const k = Math.min(W / 1536, H / 1024);
-    wrap.style.width = 1536 * k + 'px'; wrap.style.height = 1024 * k + 'px'; wrap.style.overflow = '';
-    cv.style.left = '0px'; cv.style.top = '0px'; cv.style.transform = `scale(${k})`;
-  }
-  document.body.classList.toggle('fill', prefs.fit === 'fill');
-  document.documentElement.style.overflowY = 'hidden';
+  const CH = cv.offsetHeight || 1024;                                   // natural height of the page (no empty space)
+  const k = prefs.fit === 'fill' ? W / 1536 : Math.min(W / 1536, H / CH);
+  wrap.style.width = 1536 * k + 'px'; wrap.style.height = CH * k + 'px';
+  cv.style.transform = `scale(${k})`;
+  document.documentElement.style.overflowY = CH * k > H + 1 ? 'auto' : 'hidden';   // fill: scroll down when the page is taller than the screen
 }
-addEventListener('resize', fit); fit();
+addEventListener('resize', fit); fit(); setTimeout(fit, 400); if (document.fonts) document.fonts.ready.then(fit);
 
 /* ---------------- icons ---------------- */
 // shuttlecock, drawn upright and tilted 45 degrees
@@ -640,7 +645,7 @@ $('evAll').onclick = () => {
   $('evModal').classList.add('on');
 };
 $('closeEv').onclick = () => $('evModal').classList.remove('on');
-$('gear').onclick = $('gear2').onclick = () => $('modal').classList.add('on');
+$('gear').onclick = () => $('modal').classList.add('on');
 $('closeModal').onclick = () => $('modal').classList.remove('on');
 document.querySelectorAll('input[name=fitmode]').forEach((r) => { r.checked = r.value === prefs.fit; r.onchange = () => { prefs.fit = r.value; savePrefs(); fit(); }; });
 $('optFlip').onclick = () => { prefs.flip = !prefs.flip; savePrefs(); draw(); };
