@@ -24,6 +24,9 @@ function boot() {
 }
 
 const num = (v) => Number(v) || 0;
+const arr = (v) => (Array.isArray(v) ? v : v && typeof v === 'object' ? Object.values(v) : []);
+const strs = (v, n) => arr(v).slice(0, n).map((x) => String(x || '').slice(0, 300));
+const evs = (v) => arr(v).slice(-40).map((e) => ({ at: num(e && e.at), txt: String((e && e.txt) || '').slice(0, 120) }));
 // Firebase returns keys sorted and may turn arrays into objects; always rebuild one fixed shape.
 export function canon(c) {
   const sc = c.scores || [];
@@ -44,6 +47,11 @@ export function canon(c) {
     server: c.server === 'A' || c.server === 'B' ? c.server : '',
     paused: !!c.paused,
     startedAt: num(c.startedAt),
+    pausedAt: num(c.pausedAt),
+    pausedTotal: num(c.pausedTotal),
+    photoA: strs(c.photoA, 2),
+    photoB: strs(c.photoB, 2),
+    events: evs(c.events),
     log: Array.isArray(c.log) ? c.log.slice(-150) : (c.log && typeof c.log === 'object' ? Object.values(c.log).slice(-150) : []),
   };
 }

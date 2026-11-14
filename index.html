@@ -4,6 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>MatchON — ระบบบริหารจัดการแข่งขันแบดมินตันครบวงจร</title>
+  <link rel="icon" type="image/png" href="img/matchon-icon.png">
+  <link rel="apple-touch-icon" href="img/matchon-icon.png">
+  <meta property="og:title" content="MatchON Badminton Platform">
+  <meta property="og:description" content="สมัครแข่ง ชำระเงิน สายแข่ง และคะแนนสดแบดมินตัน ในที่เดียว">
+  <meta property="og:image" content="img/matchon-poster.jpg">
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -156,12 +161,10 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
       <!-- Brand -->
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/20 text-slate-950 font-extrabold text-xl">
-          🏸
-        </div>
+        <img src="img/matchon-icon.png" alt="MatchON" width="44" height="44" class="w-11 h-11 rounded-xl shadow-lg shadow-blue-500/30 object-cover">
         <div>
           <div class="flex items-center gap-2">
-            <span class="font-extrabold text-lg tracking-tight text-white">Match<span class="text-emerald-400">ON</span></span>
+            <img src="img/matchon-logo.png" alt="MatchON" height="26" class="h-6 w-auto" style="-webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)">
             <span id="activeRoleBadgeHeader" class="text-[11px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">สิทธิ์: ผู้จัด / ADMIN</span>
           </div>
           <p class="text-xs text-slate-400">ระบบจัดแข่งแบดมินตัน ประเมินมือ ตรวจสลิป QR & ตารางคอร์ทสด</p>

@@ -3,255 +3,272 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#070d1f">
+<meta name="theme-color" content="#050a1a">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>MatchON กรรมการ</title>
+<link rel="icon" type="image/png" href="img/matchon-icon.png">
+<link rel="apple-touch-icon" href="img/matchon-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700;800&family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
+/* The whole screen is one 1536x1024 canvas that is scaled to fit, so it matches the design exactly on any device. */
 :root{
-  --bg:#070d1f; --panel:#0e1730; --panel2:#142040; --line:#26345c; --ink:#f3f6ff; --mute:#93a2c8;
-  --a:#2563eb; --a2:#1d4ed8; --a-glow:#3b82f6; --b:#e11d48; --b2:#be123c; --b-glow:#fb7185;
-  --amber:#f59e0b; --lime:#d6f23d;
-  --hdr:clamp(38px,8vh,58px); --brd:clamp(56px,14vh,96px); --bar:clamp(66px,18vh,124px);
-  --sidew:clamp(104px,15vw,176px);
+  --bg:#050a1a; --ink:#f4f7ff; --mute:#9db0dc; --line:#1c3b9a;
+  --a:#1f6bff; --a2:#0a3bb8; --b:#e11d3a; --b2:#9b0f27; --lime:#ffe04a; --go:#22c55e; --amber:#f59e0b;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;background:var(--bg);color:var(--ink);font-family:'Noto Sans Thai','Prompt',sans-serif;overflow:hidden}
+html,body{background:var(--bg);color:var(--ink);font-family:'Noto Sans Thai','Prompt',sans-serif}
+body{min-height:100dvh;display:flex;justify-content:center;align-items:flex-start;overflow-x:hidden}
 button{font:inherit;color:inherit;border:0;cursor:pointer;touch-action:manipulation;user-select:none}
 button:disabled{opacity:.38;cursor:not-allowed}
 .num{font-family:'Prompt',sans-serif;font-variant-numeric:tabular-nums}
-#app{height:100dvh;display:grid;grid-template-rows:var(--hdr) 1fr var(--bar);gap:6px;background:var(--bg);
-  padding:max(6px,env(safe-area-inset-top)) max(8px,env(safe-area-inset-right)) max(6px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left))}
+#wrap{position:relative;margin:auto 0}
+#cv{position:absolute;left:0;top:0;width:1536px;height:1024px;transform-origin:0 0;padding:10px 16px 12px;display:flex;flex-direction:column;gap:8px;
+  background:radial-gradient(1100px 520px at 50% 0,#102a78 0,transparent 62%),radial-gradient(900px 500px at 100% 100%,#1a1470 0,transparent 60%),linear-gradient(#060d2a,#050a1a)}
 
-/* top bar */
-.top{display:flex;align-items:center;gap:10px;background:linear-gradient(180deg,#0f1a3a,#0a1230);border:1px solid var(--line);border-radius:12px;padding:0 10px 0 0;min-width:0;overflow:hidden}
-.brand{display:flex;align-items:center;gap:8px;height:100%;padding:0 26px 0 12px;background:#050a1a;clip-path:polygon(0 0,100% 0,calc(100% - 18px) 100%,0 100%);font:800 clamp(15px,3.4vh,22px) 'Prompt';white-space:nowrap;margin-right:-8px}
-.brand i{font-style:normal;font-size:clamp(16px,3.8vh,26px)}
-.brand b{color:#34d399}
-.title{flex:1;min-width:0;display:flex;align-items:center;justify-content:center;gap:10px}
-.title .cup{font-size:clamp(18px,4.4vh,30px)}
-.title div{line-height:1.2;text-align:center;min-width:0}
-.title strong{display:block;font:700 clamp(12px,2.7vh,18px) 'Noto Sans Thai';white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.title span{font-size:clamp(10px,2.1vh,13px);color:var(--mute)}
-.pill{display:flex;align-items:center;gap:7px;padding:0 12px;height:72%;border-radius:99px;background:#0a1230;border:1px solid var(--line);font:700 clamp(11px,2.4vh,15px) 'Prompt';white-space:nowrap}
-.dot{width:.8em;height:.8em;border-radius:50%;background:#64748b}
-.live .dot{background:#ef4444;box-shadow:0 0 10px #ef4444;animation:blink 1.2s infinite}
-@keyframes blink{50%{opacity:.35}}
-.ibtn{width:clamp(30px,6.5vh,42px);aspect-ratio:1;border-radius:50%;background:transparent;font-size:clamp(16px,3.6vh,24px);display:grid;place-items:center;flex:none}
-.ibtn:active{background:#ffffff18}
+/* ---------- header ---------- */
+.hd{height:84px;flex:none;display:flex;align-items:center;gap:22px;padding:0 6px;border-bottom:2px solid #1b3a9a;box-shadow:0 8px 18px -12px #2a63ff}
+.logo{display:flex;flex-direction:column;align-items:flex-start;gap:0;width:330px;flex:none}
+.logo img{height:52px;width:auto;-webkit-mask-image:linear-gradient(90deg,transparent,#000 5%,#000 95%,transparent);mask-image:linear-gradient(90deg,transparent,#000 5%,#000 95%,transparent)}
+.logo small{font:500 15px 'Noto Sans Thai';color:#c9d6ff;letter-spacing:.3px;margin-left:6px}
+.vdiv{width:2px;height:54px;background:linear-gradient(transparent,#2a4aa8,transparent);flex:none}
+.ttl{flex:1;min-width:0;overflow:hidden;display:flex;align-items:center;gap:18px}
+.ttl .cup{font-size:50px;filter:drop-shadow(0 0 10px #f5b50a88)}
+.ttl strong{display:block;font:700 26px 'Noto Sans Thai';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.ttl span{font:500 22px 'Noto Sans Thai';color:#dbe5ff}
+.livep{display:flex;align-items:center;gap:10px;padding:0 24px;height:50px;border-radius:99px;border:2px solid #2c7a45;background:#0a2a1c;font:700 28px 'Prompt';color:#2bdc6b;flex:none}
+.livep i{width:18px;height:18px;border-radius:50%;background:#22c55e;box-shadow:0 0 12px #22c55e}
+.livep.paused{border-color:#9a6a12;background:#2a1c06;color:#ffb62e}.livep.paused i{background:#f59e0b;box-shadow:0 0 12px #f59e0b}
+.livep.idle{border-color:#334066;background:#0b1430;color:#9db0dc}.livep.idle i{background:#64748b;box-shadow:none}
+.clk{display:flex;align-items:center;gap:12px;font:600 32px 'Prompt';flex:none}
+.clk svg{width:34px;height:34px}
+.ib{width:52px;height:52px;border-radius:14px;background:transparent;font-size:30px;display:grid;place-items:center;flex:none;color:#9fb5f5}
+.ib:active{background:#ffffff1a}
 
-/* stage: the scene fills it, everything else floats on top */
-.stage{position:relative;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:linear-gradient(#0a1230,#0b1a44 55%,#0a5a31 55%);min-height:0}
-.scene{position:absolute;inset:0;width:100%;height:100%}
-.tag{position:absolute;transform:translateX(-50%);padding:2px 12px;border-radius:7px;font:700 clamp(10px,2.4vh,17px) 'Noto Sans Thai';color:#fff;white-space:nowrap;box-shadow:0 2px 8px #0008}
-.tag.a{background:var(--a)}.tag.b{background:var(--b)}
-.hint{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);padding:3px 14px;border-radius:99px;background:#000a;font-size:clamp(10px,2.2vh,14px);color:#d1fae5;white-space:nowrap;max-width:90%;overflow:hidden;text-overflow:ellipsis}
-.hint:empty{display:none}
+/* ---------- scoreboard ---------- */
+.bd{height:272px;flex:none;display:flex;gap:12px;margin-top:4px}
+.tc{width:402px;flex:none;position:relative;border-radius:20px;overflow:hidden;border:2px solid var(--c);display:flex;flex-direction:column;
+  background:linear-gradient(180deg,var(--c2),#071a4c);box-shadow:0 0 22px -4px var(--c)}
+.tc[data-t="A"]{--c:#2f74ff;--c2:#0b3ec4}.tc[data-t="B"]{--c:#ff3a57;--c2:#8a1024;background:linear-gradient(180deg,#8a1024,#3e0712)}
+.tc h2{height:58px;display:block;line-height:58px;text-align:center;background:#ffffff1c;font:700 31px/58px 'Noto Sans Thai';padding:0 64px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;position:relative}
+.tc .ph{flex:1;display:flex;justify-content:center;align-items:center;gap:16px;padding:10px 0 4px}
+.pic{width:176px;height:146px;border-radius:12px;overflow:hidden;border:2px solid #cfe0ff;background:linear-gradient(#4a8bff,#1a3f9a);display:grid;place-items:center;font:800 78px 'Prompt';color:#ffffffd9}
+.tc[data-t="B"] .pic{background:linear-gradient(#ff6b83,#9b1230)}
+.pic img{width:100%;height:100%;object-fit:cover}
+.tc .nm{height:48px;display:grid;place-items:center;font:600 27px 'Noto Sans Thai';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 12px}
+.sv{position:absolute;top:8px;width:42px;height:42px;border-radius:50%;background:#16a34a;display:none;place-items:center;box-shadow:0 0 16px #22c55e;border:2px solid #b8ffd2}
+.tc[data-side="L"] .sv{left:12px}.tc[data-side="R"] .sv{right:12px}
+.sv.on{display:grid;animation:pulse 1.4s infinite}
+@keyframes pulse{50%{box-shadow:0 0 5px #22c55e}}
+.sv svg{width:30px;height:30px}
 
-/* scoreboard (floating) */
-.board{position:absolute;top:8px;left:50%;transform:translateX(-50%);width:min(calc(100% - 16px),1180px);height:var(--brd);display:grid;grid-template-columns:1fr auto 1fr;gap:0;align-items:stretch;
-  background:linear-gradient(180deg,#0d1838ee,#08102aee);border:1px solid var(--line);border-radius:16px;backdrop-filter:blur(4px);overflow:hidden}
-.team{display:flex;align-items:center;gap:10px;padding:0 14px;min-width:0;position:relative}
-.team::before{content:"";position:absolute;inset:8px auto 8px 0;width:5px;border-radius:5px;background:var(--c)}
-.team.r{flex-direction:row-reverse;text-align:right}
-.team.r::before{inset:8px 0 8px auto}
-.team[data-t="A"]{--c:var(--a)} .team[data-t="B"]{--c:var(--b)}
-.avs{display:flex;flex:none}
-.av{width:clamp(28px,8vh,56px);aspect-ratio:1;border-radius:50%;display:grid;place-items:center;font:700 clamp(12px,3.2vh,22px) 'Prompt';background:#1c2b57;border:2px solid #cfe0ff;margin-left:-6px}
-.av:first-child{margin-left:0}
-.team.r .av{margin-left:0;margin-right:-6px}.team.r .av:first-child{margin-right:0}
-.who{min-width:0;line-height:1.15;flex:1}
-.who strong{display:block;font:700 clamp(13px,3.2vh,24px) 'Noto Sans Thai';overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.who span{font-size:clamp(10px,2.3vh,16px);color:var(--mute);display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.srv{flex:none;width:clamp(18px,4vh,28px);aspect-ratio:1;border-radius:50%;background:#16a34a;display:none;place-items:center;font-size:clamp(10px,2.4vh,16px);box-shadow:0 0 12px #22c55e}
-.srv.on{display:grid;animation:blink 1.4s infinite}
-.mid{display:grid;grid-template-columns:auto auto auto;align-items:center;gap:clamp(6px,1.4vw,18px);padding:0 clamp(8px,1.4vw,20px);background:#050a1acc;border-inline:1px solid var(--line)}
-.big{width:clamp(44px,12vh,88px);aspect-ratio:1;border-radius:50%;display:grid;place-items:center;font:800 clamp(24px,7.4vh,54px) 'Prompt';color:#fff;border:3px solid #ffffff55}
-.big.a{background:radial-gradient(circle at 30% 25%,var(--a-glow),var(--a2));box-shadow:0 0 18px #2563eb99}
-.big.b{background:radial-gradient(circle at 30% 25%,var(--b-glow),var(--b2));box-shadow:0 0 18px #e11d4899}
-.setinfo{text-align:center;line-height:1.1;min-width:clamp(58px,9vw,96px)}
-.setinfo small{display:block;font:600 clamp(10px,2.3vh,15px) 'Noto Sans Thai';color:#dbe5ff}
-.setinfo b{font:700 clamp(15px,4.2vh,30px) 'Prompt'}
-.chip{display:inline-block;margin-top:2px;padding:1px 8px;border-radius:99px;background:var(--amber);color:#111;font:700 clamp(9px,1.9vh,12px) 'Prompt'}
-.chip:empty{display:none}
+.cn{flex:1;position:relative;min-width:0}
+.cat{position:absolute;left:50%;top:0;transform:translateX(-50%);width:276px;height:54px;border-radius:14px 14px 0 0;background:linear-gradient(#6a2fd6,#4a1aa6);border:2px solid #8e63ff;border-bottom:0;display:grid;place-items:center;font:700 31px 'Noto Sans Thai';z-index:2;clip-path:polygon(7% 0,93% 0,100% 100%,0 100%);padding:0 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cat:empty{visibility:hidden}
+.sb{position:absolute;top:54px;bottom:0;width:262px;display:flex;flex-direction:column;overflow:hidden}
+.sb.L{left:0;clip-path:polygon(0 0,90% 0,100% 100%,0 100%);border-radius:18px 0 0 18px}
+.sb.R{right:0;clip-path:polygon(10% 0,100% 0,100% 100%,0 100%);border-radius:0 18px 18px 0}
+.sb .n{flex:1;display:grid;place-items:center;font:800 150px/1 'Prompt';color:#fff;text-shadow:0 6px 18px #0008}
+.sb .l{height:42px;display:grid;place-items:center;font:700 25px 'Noto Sans Thai';background:#ffffff26}
+.sb[data-t="A"]{background:linear-gradient(180deg,#2e78ff,#0a3bb8);box-shadow:inset 0 0 0 2px #6aa0ff}
+.sb[data-t="B"]{background:linear-gradient(180deg,#f0344f,#8d0c22);box-shadow:inset 0 0 0 2px #ff8195}
+.mid{position:absolute;left:50%;top:54px;bottom:0;width:230px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;justify-content:space-between;text-align:center;
+  background:linear-gradient(#040a22,#070f30);border-top:1px solid #1d2f70}
+.mid .s{margin-top:18px;font:700 34px 'Prompt';color:#8fb4ff;letter-spacing:2px}
+.mid .w{font:800 84px/1 'Prompt';color:#fff;white-space:nowrap}
+.mid .w b{color:var(--lime);font-weight:800}
+.mid .st{width:100%;height:42px;display:grid;place-items:center;font:700 25px 'Noto Sans Thai';background:#0b1642;color:#e9f0ff;border-top:1px solid #20357d;white-space:nowrap}
 
-/* side score pads (floating over the scene) */
-.side{position:absolute;top:calc(var(--brd) + 18px);bottom:8px;width:var(--sidew);display:flex;flex-direction:column;gap:6px;padding:6px;border-radius:16px;
-  background:linear-gradient(180deg,#0c1737d8,#08102ad8);border:1px solid var(--line);min-height:0}
-#sideL{left:8px}#sideR{right:8px}
-.side button{border-radius:12px;font:700 clamp(11px,2.5vh,16px) 'Noto Sans Thai';min-height:0;display:flex;align-items:center;justify-content:center;gap:6px;line-height:1.1;text-align:center;padding:4px}
-.side .plus{flex:3.4;flex-direction:column;font:800 clamp(26px,7.4vh,48px) 'Prompt';color:#fff;gap:0}
-.side .plus small{font:700 clamp(10px,2.4vh,16px) 'Noto Sans Thai'}
-.side .plus .sh{font-size:clamp(16px,4.6vh,32px)}
-.side .sm{flex:1;background:var(--panel2);border:1px solid var(--line)}
-.side .sm.red{background:#3a1220;border-color:#6b1d36;color:#ffd5df}
-.side[data-t="A"] .plus{background:linear-gradient(180deg,#3b82f6,#1d4ed8);box-shadow:0 5px 0 #1e3a8a}
-.side[data-t="B"] .plus{background:linear-gradient(180deg,#fb4f72,#be123c);box-shadow:0 5px 0 #881337}
-.side .plus:active{transform:translateY(4px);box-shadow:none!important}
-.side[data-t="A"] .sm.mine{background:#122a63;border-color:#2b59c6}
-.side[data-t="B"] .sm.mine{background:#4a1328;border-color:#b3315a}
-.side .sm b{font-family:'Prompt'}
+/* ---------- point history strip ---------- */
+.hs{height:40px;flex:none;display:flex;align-items:center;gap:12px;border-radius:12px;background:linear-gradient(90deg,#08122f,#0b1740);border:2px solid #1b3a9a;padding:0 12px}
+.hs .lab{font:700 20px 'Noto Sans Thai';color:#cfe0ff;white-space:nowrap;flex:none;width:150px}
+.hs .cells{flex:1;min-width:0;display:flex;gap:4px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;align-items:center;height:100%}
+.hs .cells::-webkit-scrollbar{display:none}
+.hs .c{flex:none;min-width:28px;height:26px;border-radius:7px;display:grid;place-items:center;font:700 15px 'Prompt';color:#fff;padding:0 4px}
+.hs .c.A{background:linear-gradient(#2f74ff,#1445c0)}.hs .c.B{background:linear-gradient(#ff3a57,#a2132b)}.hs .c.pre{background:#26335f;color:#9db0dc}
+.hs .none{font:500 18px 'Noto Sans Thai';color:#7f93c6}
+.hs .lg{display:flex;gap:16px;font:600 17px 'Noto Sans Thai';color:#cfe0ff;flex:none}
+.hs .lg i{display:inline-block;width:14px;height:14px;border-radius:4px;margin-right:6px;vertical-align:-2px}
 
-/* bottom bar */
-.bar{display:grid;grid-template-columns:1fr 1.1fr 1.15fr 1.35fr repeat(3,minmax(0,.62fr));gap:6px;min-height:0}
-.box{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:6px 10px;display:flex;flex-direction:column;justify-content:center;gap:4px;min-width:0;min-height:0}
-.box h4{font:600 clamp(10px,2.2vh,14px) 'Noto Sans Thai';color:var(--mute);display:flex;gap:6px;align-items:center}
-.box .val{font:700 clamp(14px,3.6vh,26px) 'Prompt'}
-.stepper{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.stepper button{width:clamp(30px,7.5vh,48px);aspect-ratio:1;border-radius:50%;background:var(--amber);color:#1a1200;font:800 clamp(16px,4vh,26px) 'Prompt';display:grid;place-items:center}
-.svrow{display:flex;align-items:center;gap:8px;background:#06101f;border-radius:10px;padding:clamp(3px,.9vh,7px) 10px;font:700 clamp(11px,2.6vh,17px) 'Noto Sans Thai';min-width:0}
-.svrow i{width:.9em;height:.9em;border-radius:50%;background:var(--a);flex:none}
-.svrow i.b{background:var(--b)}
-.svrow span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.swap{background:#1d3f9e;border:1px solid #3466e0;border-radius:10px;padding:clamp(4px,1.1vh,8px);font:700 clamp(10px,2.3vh,15px) 'Noto Sans Thai'}
-.start{background:linear-gradient(180deg,#22c55e,#15803d);box-shadow:0 6px 0 #14532d;border-radius:16px;font:800 clamp(14px,3.8vh,26px) 'Prompt';display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
-.start:active{transform:translateY(4px);box-shadow:none}
-.start span{font-size:clamp(18px,5.2vh,36px);line-height:1}
-.statusv{background:#06101f;border-radius:10px;text-align:center;padding:4px;font:700 clamp(12px,3vh,20px) 'Prompt';color:#4ade80}
-.statusv.warn{color:var(--amber)} .statusv.idle{color:var(--mute)}
-.box small{font-size:clamp(9px,2vh,13px);color:var(--mute);text-align:center}
-.act{border-radius:14px;font:700 clamp(10px,2.3vh,15px) 'Noto Sans Thai';display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:4px;line-height:1.1;text-align:center}
-.act span{font-size:clamp(16px,4.2vh,28px)}
-.act.pause{background:linear-gradient(180deg,#3b82f6,#1d4ed8)}
-.act.set{background:linear-gradient(180deg,#fb923c,#c2410c)}
-.act.end{background:linear-gradient(180deg,#f43f5e,#be123c)}
+/* ---------- info strip ---------- */
+.is{height:66px;flex:none;display:flex;align-items:center;gap:0;border-radius:14px;background:linear-gradient(90deg,#08122f,#0b1740);border:2px solid #1b3a9a;padding:0 12px}
+.is .it{display:flex;align-items:center;gap:12px;padding:0 22px;height:44px;border-right:2px solid #1d2f70;flex:none}
+.is .it:last-child{border:0;margin-left:auto;padding-right:6px}
+.is .it:first-child{padding-left:8px}
+.is .lbl{font:600 24px 'Noto Sans Thai';color:#eaf1ff}
+.is .big{font:800 38px 'Prompt';color:var(--lime)}
+.pill{padding:5px 22px;border-radius:99px;font:700 24px 'Noto Sans Thai';background:#1d5fe0;white-space:nowrap;max-width:300px;overflow:hidden;text-overflow:ellipsis}
+.pill.B{background:#d11b38}.pill.none{background:#26335f;color:#9db0dc}
+.setbtns{display:flex;gap:8px}
+.sbtn{width:50px;height:44px;border-radius:11px;background:#16255a;border:2px solid #2b4aa8;font:800 25px 'Prompt';color:#cfe0ff;position:relative}
+.sbtn.view{background:linear-gradient(#2f74ff,#1445c0);border-color:#9cc0ff;color:#fff}
+.sbtn.cur::after{content:"";position:absolute;right:-4px;top:-4px;width:14px;height:14px;border-radius:50%;background:var(--lime);box-shadow:0 0 8px var(--lime)}
+.tm small{display:block;font:500 17px 'Noto Sans Thai';color:#b8c9f5;line-height:1}
+.tm b{font:700 30px/1.1 'Prompt'}
+.stat{display:flex;align-items:center;gap:10px;padding:0 26px;height:48px;border-radius:12px;background:linear-gradient(#1fa14d,#0f7a36);border:2px solid #4ade80;font:700 27px 'Noto Sans Thai'}
+.stat.paused{background:linear-gradient(#c58210,#8a5a08);border-color:#fbbf24}
+.stat.idle{background:linear-gradient(#3a4a7a,#26335f);border-color:#6b7fb8}
 
-/* messages / modal */
-.msg{position:fixed;inset:0;display:none;place-items:center;background:var(--bg);padding:24px;z-index:5;text-align:center;line-height:1.7}
-.msg.on{display:grid}.msg div{max-width:520px;color:#fde68a}
-.toast{position:fixed;left:50%;bottom:calc(var(--bar) + 18px);transform:translateX(-50%);background:#0b1226ee;border:1px solid var(--line);padding:8px 16px;border-radius:99px;font-size:14px;z-index:9;display:none;max-width:92vw;text-align:center}
+/* ---------- panels ---------- */
+.pr{height:262px;flex:none;display:grid;grid-template-columns:490px 310px 327px 1fr;gap:20px}
+.pn{border-radius:16px;border:2px solid #1c40a8;background:linear-gradient(180deg,#0a1640,#071030);padding:10px 14px;display:flex;flex-direction:column;gap:8px;min-width:0;box-shadow:0 0 20px -8px #2a63ff}
+.pn h3{white-space:nowrap;display:flex;align-items:center;gap:12px;font:700 27px 'Noto Sans Thai';height:36px;flex:none}
+.pn h3 em{font-style:normal;font-size:30px}
+.bt{border-radius:12px;font:700 25px 'Noto Sans Thai';display:flex;align-items:center;justify-content:center;gap:10px;color:#fff;border:2px solid #ffffff2a;padding:0 10px;white-space:nowrap}
+.bt:active:not(:disabled){transform:translateY(2px);filter:brightness(1.15)}
+.bt.A{background:linear-gradient(#2f74ff,#0f43c4)}.bt.B{background:linear-gradient(#f0344f,#a1122a)}
+.bt.g{background:linear-gradient(#3a4a8a,#242f66);border-color:#5470c8}
+.bt.go{background:linear-gradient(#22b04e,#0f7a36)}.bt.bl{background:linear-gradient(#2f74ff,#1445c0)}.bt.or{background:linear-gradient(#fb923c,#c2410c)}.bt.ye{background:linear-gradient(#fbbf24,#d99a06);color:#241800}
+.sc{flex:1;display:grid;grid-template-columns:1fr 1fr 74px 1fr 1fr;grid-template-rows:1fr 1fr;gap:8px;min-height:0}
+.sc .bt{font:700 36px 'Prompt'}
+.sc .swp{grid-column:3;grid-row:1/3;flex-direction:column;font:700 17px 'Noto Sans Thai';gap:4px;padding:0 2px}
+.sc .swp svg{width:34px;height:34px}
+.back{height:46px;flex:none;font-size:26px}
+.sh{flex:1;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:62px 1fr;gap:8px;min-height:0}
+.sh .bt{font:700 36px 'Prompt'}
+.sh .cnt{grid-column:1/3;border-radius:12px;background:#050c26;border:2px solid #1b2f78;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0}
+.sh .cnt small{font:500 22px 'Noto Sans Thai';color:#dbe5ff}
+.sh .cnt b{font:800 64px/1.05 'Prompt';color:var(--lime)}
+.sh .cnt b i{font-style:normal;font-weight:500;font-size:34px;color:#7186b8}
+.sv2{flex:1;display:flex;flex-direction:column;gap:8px;min-height:0}
+.sv2 .bt{flex:1;min-height:0;font-size:25px;position:relative}
+.sv2 .bt.sel{outline:3px solid #fff;outline-offset:-5px}
+.sv2 .bt svg{width:30px;height:30px}
+.stp{flex:1;display:flex;flex-direction:column;gap:6px;min-height:0}
+.stp .bt{flex:1;min-height:0;font-size:24px;justify-content:flex-start;padding-left:20px}
+.stp .bt .ic{width:34px;text-align:center;font-size:27px;flex:none}
+
+/* ---------- bottom row ---------- */
+.bm{height:208px;flex:none;display:grid;grid-template-columns:507px 477px 272px 1fr;gap:18px}
+table{width:100%;border-collapse:collapse;font:600 24px 'Noto Sans Thai'}
+th{font:500 21px 'Noto Sans Thai';color:#b8c9f5;padding:6px 4px;text-align:center;border-bottom:1px solid #1f3585}
+td{padding:8px 6px;text-align:center;border-bottom:1px solid #1a2d70}
+td:first-child,th:first-child{text-align:left}
+td:first-child{max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+td:first-child i{display:inline-block;width:9px;height:28px;border-radius:5px;margin-right:10px;vertical-align:middle}
+td.w{color:var(--lime);font:800 32px 'Prompt'}td.n{font:700 32px 'Prompt'}td.x{color:#6a7db0}
+tr:last-child td{border-bottom:0}
+.evh{display:flex;justify-content:space-between;align-items:center}
+.evh button{background:none;color:#9bbcff;font:500 21px 'Noto Sans Thai'}
+.ev{display:flex;flex-direction:column;gap:6px;flex:1;min-height:0;overflow:hidden}
+.ev div{display:flex;gap:16px;font:500 23px 'Noto Sans Thai';padding:6px 8px;border-bottom:1px solid #1a2d70;white-space:nowrap}
+.ev div b{font:500 22px 'Prompt';color:#8da3d8;flex:none}
+.ev div span{overflow:hidden;text-overflow:ellipsis}
+.inf{display:flex;flex-direction:column;gap:8px;font:500 22px 'Noto Sans Thai'}
+.inf div{display:flex;gap:16px}.inf b{font-weight:500;color:#b8c9f5;min-width:94px}
+.art{position:relative}
+.art svg{position:absolute;right:-6px;bottom:-4px;width:240px;height:210px}
+
+/* ---------- overlays ---------- */
+.msg{position:fixed;inset:0;display:none;place-items:center;background:var(--bg);padding:24px;z-index:20;text-align:center;line-height:1.7;font-size:20px}
+.msg.on{display:grid}.msg div{max-width:560px;color:#fde68a}
+.rot{position:fixed;inset:0;display:none;place-items:center;background:#050a1af2;z-index:15;text-align:center;font:700 22px/1.7 'Noto Sans Thai';padding:30px}
+.rot span{display:block;font-size:64px}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#0b1226f2;border:1px solid #2b4aa8;padding:10px 18px;border-radius:99px;font-size:15px;z-index:30;display:none;max-width:92vw;text-align:center}
 .toast.on{display:block}
-.modal{position:fixed;inset:0;background:#000a;display:none;place-items:center;z-index:8;padding:16px}
+.modal{position:fixed;inset:0;background:#000b;display:none;place-items:center;z-index:25;padding:16px}
 .modal.on{display:grid}
-.sheet{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px;width:min(420px,100%);display:flex;flex-direction:column;gap:12px}
-.sheet h3{font:700 18px 'Prompt'}
-.row{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--panel2);border-radius:12px;padding:12px 14px;width:100%;text-align:left}
+.sheet{background:#0b1640;border:2px solid #1c40a8;border-radius:18px;padding:18px;width:min(460px,100%);max-height:86vh;display:flex;flex-direction:column;gap:12px}
+.sheet h3{font:700 20px 'Prompt'}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#12206a;border-radius:12px;padding:12px 14px;width:100%;text-align:left;font-size:16px}
 .row small{color:var(--mute);display:block}
 .sw{width:48px;height:28px;border-radius:99px;background:#334155;position:relative;flex:none}
 .sw::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:.15s}
 .sw.on{background:#16a34a}.sw.on::after{left:23px}
-.close{background:#1e293b;border-radius:12px;padding:12px;font-weight:700}
-
-/* short landscape screens (phones): drop the figures, keep the buttons big */
-@media (max-height:480px) and (orientation:landscape){
-  .figs,.tag{display:none}
-  .side .plus .sh,.side .plus small{display:none}
-  .side .plus{font-size:clamp(26px,9vh,40px)}
-  .side{gap:4px;padding:4px}
-  .hint{display:none}
-}
-
-/* portrait phones: stack everything */
-@media (orientation:portrait){
-  :root{--hdr:44px;--brd:auto;--bar:auto}
-  html,body{overflow:auto}
-  #app{height:auto;min-height:100dvh;grid-template-rows:var(--hdr) auto auto}
-  .title span,.title .cup{display:none}
-  .stage{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:8px;background:var(--bg);border:0;overflow:visible}
-  .scene,.tag,.figs{display:none}
-  .board{position:static;transform:none;width:auto;grid-column:1/-1;grid-template-columns:1fr 1fr;height:auto}
-  .mid{grid-column:1/-1;order:3;justify-content:center;padding:8px;border:0;border-top:1px solid var(--line)}
-  .big{width:64px;font-size:34px}
-  .team{padding:8px 10px;min-height:52px}
-  .who strong{white-space:normal}.avs{display:none}.team.r{text-align:right}
-  .side{position:static;width:auto;height:330px}
-  .side .plus{font-size:44px}
-  .hint{grid-column:1/-1;position:static;transform:none;background:none}
-  .bar{grid-template-columns:1fr 1fr 1fr}
-  .bar .box{grid-column:span 3}.bar .start{grid-column:span 3;min-height:84px}
-  .act{min-height:68px}
-  .toast{bottom:20px}
-  #fsBtn{display:none}
-}
+.close{background:#1e293b;border-radius:12px;padding:12px;font-weight:700;font-size:16px}
+.evlist{overflow:auto;display:flex;flex-direction:column;gap:2px;font-size:15px}
+.evlist div{display:flex;gap:12px;padding:6px 4px;border-bottom:1px solid #1a2d70}.evlist b{font-weight:500;color:#8da3d8;flex:none}
+@media (orientation:portrait) and (max-width:700px){.rot{display:grid}}
 </style>
 </head>
 <body>
-<div id="app">
-  <header class="top">
-    <div class="brand"><i>🏸</i><span>Match<b>ON</b></span></div>
-    <div class="title"><span class="cup">🏆</span><div><strong id="tname">การแข่งขัน</strong><span id="tsub">สนาม –</span></div></div>
-    <div class="pill" id="livepill"><span class="dot"></span><span id="livetxt">OFFLINE</span></div>
-    <div class="pill"><span>🕒</span><span id="clock" class="num">--:--:--</span></div>
-    <button class="ibtn" id="fsBtn" aria-label="เต็มจอ" title="เต็มจอ">⛶</button>
-    <button class="ibtn" id="gear" aria-label="ตั้งค่า" title="ตั้งค่า">⚙️</button>
+<div id="wrap"><div id="cv">
+
+  <header class="hd">
+    <div class="logo"><img src="img/matchon-logo.png" alt="MatchON"><small>Badminton Live Score</small></div>
+    <div class="vdiv"></div>
+    <div class="ttl"><span class="cup">🏆</span><div><strong id="tname">การแข่งขัน</strong><span id="tsub">สนามที่ –</span></div></div>
+    <div class="livep idle" id="livep"><i></i><span id="livetxt">OFFLINE</span></div>
+    <div class="vdiv"></div>
+    <div class="clk"><svg viewBox="0 0 24 24" fill="none" stroke="#9fb5f5" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2" stroke-linecap="round"/></svg><span class="num" id="clock">--:--:--</span></div>
+    <div class="vdiv"></div>
+    <button class="ib" id="fsBtn" title="เต็มจอ" aria-label="เต็มจอ">⛶</button>
+    <button class="ib" id="gear" title="ตั้งค่า" aria-label="ตั้งค่า">⚙</button>
   </header>
 
-  <main class="stage" id="stage">
-    <svg class="scene" id="scene" viewBox="0 0 1000 540" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
-      <defs>
-        <linearGradient id="bgG" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#070d24"/><stop offset="1" stop-color="#12306b"/></linearGradient>
-        <linearGradient id="flG" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#0c7a44"/><stop offset="1" stop-color="#09562e"/></linearGradient>
-        <radialGradient id="spG"><stop offset="0" stop-color="#fff" stop-opacity=".9"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
-        <pattern id="crowd" width="9" height="9" patternUnits="userSpaceOnUse"><rect width="9" height="9" fill="#0b1536"/><circle cx="4.5" cy="4.5" r="2.6" fill="#1b2a5a"/><circle cx="1" cy="8" r="1.4" fill="#26396f"/></pattern>
-        <pattern id="mesh" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M0 0H10V10" fill="none" stroke="#e5ecff" stroke-opacity=".5" stroke-width="1"/></pattern>
-      </defs>
-      <rect width="1000" height="540" fill="url(#bgG)"/>
-      <rect y="70" width="1000" height="170" fill="url(#crowd)" opacity=".9"/>
-      <g fill="url(#spG)"><circle cx="110" cy="20" r="46"/><circle cx="330" cy="14" r="40"/><circle cx="560" cy="14" r="40"/><circle cx="790" cy="16" r="42"/><circle cx="930" cy="26" r="36"/></g>
-      <g id="boards"></g>
-      <polygon points="150,290 850,290 1000,540 0,540" fill="url(#flG)"/>
-      <g fill="none" stroke="#fff" stroke-width="3" opacity=".9">
-        <polygon points="200,296 800,296 940,530 60,530"/>
-        <line x1="212" y1="318" x2="788" y2="318"/><line x1="86" y1="500" x2="914" y2="500"/>
-        <line x1="500" y1="296" x2="500" y2="530"/>
-        <line x1="352" y1="318" x2="262" y2="500"/><line x1="648" y1="318" x2="738" y2="500"/>
-      </g>
-      <rect x="70" y="214" width="860" height="88" fill="url(#mesh)"/>
-      <rect x="70" y="208" width="860" height="9" fill="#f1f5ff"/>
-      <rect x="494" y="196" width="12" height="276" rx="5" fill="#1e40af"/>
-      <rect x="486" y="448" width="28" height="26" rx="4" fill="#0f2a73"/>
-      <g class="figs" id="figs"></g>
-    </svg>
-    <div class="tag a" id="tag1"></div><div class="tag a" id="tag2"></div><div class="tag b" id="tag3"></div><div class="tag b" id="tag4"></div>
+  <section class="bd">
+    <div class="tc" id="tcL" data-side="L"><span class="sv" id="svL"></span><h2 id="hL"></h2><div class="ph" id="phL"></div><div class="nm" id="nmL"></div></div>
+    <div class="cn">
+      <div class="cat" id="cat"></div>
+      <div class="sb L" id="sbL"><div class="n num" id="nL">0</div><div class="l" id="lL">คะแนนปัจจุบัน</div></div>
+      <div class="mid"><div class="s">SET</div><div class="w num" id="won">0 - 0</div><div class="st" id="midst">กำลังแข่งขัน</div></div>
+      <div class="sb R" id="sbR"><div class="n num" id="nR">0</div><div class="l" id="lR">คะแนนปัจจุบัน</div></div>
+    </div>
+    <div class="tc" id="tcR" data-side="R"><span class="sv" id="svR"></span><h2 id="hR"></h2><div class="ph" id="phR"></div><div class="nm" id="nmR"></div></div>
+  </section>
 
-    <section class="board">
-      <div class="team" id="teamL"><div class="avs" id="avL"></div><div class="who"><strong id="nL"></strong><span id="cL"></span></div><span class="srv" id="srvL">🏸</span></div>
-      <div class="mid">
-        <div class="big" id="bigL">0</div>
-        <div class="setinfo"><small id="setlab">เซตที่ 1</small><b class="num" id="setsWon">0 - 0</b><div class="chip" id="chip"></div></div>
-        <div class="big" id="bigR">0</div>
+  <section class="hs"><div class="lab" id="hsLab">สถิติเซต 1</div><div class="cells" id="cells"></div><div class="lg"><span><i id="lgA" style="background:#2f74ff"></i><b id="lgAn" style="font-weight:600"></b></span><span><i id="lgB" style="background:#ff3a57"></i><b id="lgBn" style="font-weight:600"></b></span></div></section>
+
+  <section class="is">
+    <div class="it"><span id="icShuttle"></span><span class="lbl">ลูกขนไก่</span><span class="big num" id="shBig">0</span></div>
+    <div class="it"><span id="icServer"></span><span class="lbl">ผู้เสิร์ฟ</span><span class="pill none" id="svPill">–</span></div>
+    <div class="it"><span style="font-size:32px">🏆</span><span class="lbl">เซตที่</span><div class="setbtns" id="setbtns"></div></div>
+    <div class="it tm"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#9fb5f5" stroke-width="1.8"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 13.5V9M9.5 3h5M18.5 6l1.4-1.4" stroke-linecap="round"/></svg><div><small>เวลาการแข่งขัน</small><b class="num" id="timer">00:00:00</b></div></div>
+    <div class="it"><div class="stat idle" id="stat"><span>🏁</span><span id="statTxt">–</span></div></div>
+  </section>
+
+  <section class="pr">
+    <div class="pn"><h3><em style="color:#ffd23a">★</em>ให้คะแนน</h3>
+      <div class="sc" id="sc">
+        <button class="bt" data-p="1" data-s="L" id="pl1">+1</button><button class="bt" data-p="-1" data-s="L" id="mi1">-1</button>
+        <button class="bt g swp" id="swapSide"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h12l-3-3M17 17H5l3 3"/></svg>สลับข้าง</button>
+        <button class="bt" data-p="1" data-s="R" id="pr1">+1</button><button class="bt" data-p="-1" data-s="R" id="mr1">-1</button>
+        <button class="bt" data-p="2" data-s="L" id="pl2">+2</button><button class="bt" data-p="-2" data-s="L" id="mi2">-2</button>
+        <button class="bt" data-p="2" data-s="R" id="pr2">+2</button><button class="bt" data-p="-2" data-s="R" id="mr2">-2</button>
       </div>
-      <div class="team r" id="teamR"><div class="avs" id="avR"></div><div class="who"><strong id="nR"></strong><span id="cR"></span></div><span class="srv" id="srvR">🏸</span></div>
-    </section>
+      <button class="bt g back" id="undo">↩ ย้อนกลับ</button>
+    </div>
+    <div class="pn"><h3><span id="icBall"></span>นับลูกแบด</h3>
+      <div class="sh"><button class="bt g" id="shInc">+1</button><button class="bt g" id="shDec">-1</button>
+        <div class="cnt"><small>ลูกที่</small><b class="num"><span id="shNum">0</span> <i>/ 21</i></b></div></div>
+    </div>
+    <div class="pn"><h3><span style="font-size:30px">🔄</span>ผู้เสิร์ฟ</h3>
+      <div class="sv2"><button class="bt A" id="srvA"></button><button class="bt B" id="srvB"></button><button class="bt g" id="srvSwap"><span style="font-size:28px">🔁</span>สลับผู้เสิร์ฟ</button></div>
+    </div>
+    <div class="pn"><h3><em style="color:#ffc933">⚑</em>สถานะการแข่งขัน</h3>
+      <div class="stp">
+        <button class="bt go" id="endMatch"><span class="ic">🏁</span>จบการแข่งขัน</button>
+        <button class="bt go" id="pp"><span class="ic" id="ppIc">▶</span><span id="ppTxt">เริ่มเกม</span></button>
+        <button class="bt or" id="endSet"><span class="ic">⏭</span>จบเซต</button>
+        <button class="bt ye" id="reset"><span class="ic">⚠</span>ยกเลิก/รีเซ็ต</button>
+      </div>
+    </div>
+  </section>
 
-    <aside class="side" id="sideL">
-      <button class="plus" id="plusL"><span class="sh">🏸</span><span>+1</span><small id="plusLn"></small></button>
-      <button class="sm" id="minL">−1</button>
-      <button class="sm mine" id="contL">🔄 +1 ต่อเนื่อง <b id="streakL"></b></button>
-      <button class="sm red" id="undoL">✕ ยกเลิกแต้ม</button>
-    </aside>
-    <aside class="side" id="sideR">
-      <button class="plus" id="plusR"><span class="sh">🏸</span><span>+1</span><small id="plusRn"></small></button>
-      <button class="sm" id="minR">−1</button>
-      <button class="sm mine" id="contR">🔄 +1 ต่อเนื่อง <b id="streakR"></b></button>
-      <button class="sm red" id="undoR">✕ ยกเลิกแต้ม</button>
-    </aside>
-    <div class="hint" id="hint"></div>
-  </main>
+  <section class="bm">
+    <div class="pn"><h3>สรุปคะแนน (Sets)</h3>
+      <table><thead><tr><th></th><th>Set 1</th><th>Set 2</th><th>Set 3</th></tr></thead><tbody id="sumBody"></tbody></table></div>
+    <div class="pn"><div class="evh"><h3><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#9fb5f5" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2" stroke-linecap="round"/></svg>เหตุการณ์ล่าสุด</h3><button id="evAll">ดูทั้งหมด ›</button></div>
+      <div class="ev" id="evBox"></div></div>
+    <div class="pn"><h3><span style="font-size:28px">ⓘ</span>ข้อมูลการแข่งขัน</h3>
+      <div class="inf"><div><b>ประเภท :</b><span id="iCat">–</span></div><div><b>รอบ :</b><span id="iRound">–</span></div><div><b>สนาม :</b><span id="iCourt">–</span></div></div></div>
+    <div class="art" id="art"></div>
+  </section>
 
-  <footer class="bar">
-    <div class="box"><h4>🏸 ลูกขนไก่ที่ใช้</h4>
-      <div class="stepper"><button id="shDec">−</button><span class="val num" id="shuttle">0</span><button id="shInc">+</button></div></div>
-    <div class="box"><h4>🙋 ผู้เสิร์ฟ</h4><div class="svrow"><i id="svDot"></i><span id="server">–</span></div><button class="swap" id="swapServe">⇄ เปลี่ยนผู้เสิร์ฟ</button></div>
-    <button class="start" id="start"><span>▶</span><b id="startTxt">เริ่มเกม</b></button>
-    <div class="box"><h4>🏆 สถานะการแข่งขัน</h4><div class="statusv" id="state">–</div><small id="since"></small></div>
-    <button class="act pause" id="pause"><span>⏸</span>พักการแข่งขัน</button>
-    <button class="act set" id="endSet"><span>🏁</span>จบเซต</button>
-    <button class="act end" id="endMatch"><span>🏆</span>จบการแข่งขัน</button>
-  </footer>
-</div>
+</div></div>
 
 <div class="msg" id="msg"><div id="msgTxt"></div></div>
+<div class="rot"><div><span>📱↻</span>หมุนจอเป็นแนวนอน<br>เพื่อใช้หน้ากรรมการ</div></div>
 <div class="toast" id="toast"></div>
 <div class="modal" id="modal"><div class="sheet">
   <h3>ตั้งค่า</h3>
-  <button class="row" id="optFlip" style="width:100%;text-align:left"><div>สลับฝั่งซ้าย-ขวา<small>ให้ตรงกับที่กรรมการนั่งดูสนาม</small></div><span class="sw" id="swFlip"></span></button>
-  <button class="row" id="optWake" style="width:100%;text-align:left"><div>เปิดหน้าจอค้างไว้<small>กันจอดับระหว่างแมตช์</small></div><span class="sw" id="swWake"></span></button>
+  <button class="row" id="optFlip"><div>สลับข้างซ้าย-ขวา<small>ให้ตรงกับที่กรรมการนั่งดูสนาม</small></div><span class="sw" id="swFlip"></span></button>
+  <button class="row" id="optWake"><div>เปิดหน้าจอค้างไว้<small>กันจอดับระหว่างแมตช์</small></div><span class="sw" id="swWake"></span></button>
   <button class="close" id="closeModal">ปิด</button>
 </div></div>
+<div class="modal" id="evModal"><div class="sheet"><h3>เหตุการณ์ทั้งหมด</h3><div class="evlist" id="evList"></div><button class="close" id="closeEv">ปิด</button></div></div>
 
 <script type="module">
 import * as Live from './js/live.js';
@@ -263,11 +280,32 @@ const liveId = q.get('live');
 const secret = new URLSearchParams(location.hash.slice(1)).get('k');
 const LOCAL_KEY = 'MATCHON_LOCAL_DB_V1';
 const PREF = 'matchon.referee.prefs';
+const MAXSET = 3, SHUTTLE_CAP = 21;
 
 let court = null, canWrite = false, online = false, note = '';
+let viewSet = null;              // set shown on screen; null = follow the set being played
 let prefs = { flip: false, wake: false };
 try { Object.assign(prefs, JSON.parse(localStorage.getItem(PREF) || '{}')); } catch {}
 const savePrefs = () => { try { localStorage.setItem(PREF, JSON.stringify(prefs)); } catch {} };
+
+/* ---------------- canvas scaling ---------------- */
+function fit() {
+  const W = innerWidth, H = innerHeight;
+  let s = Math.min(W / 1536, H / 1024);
+  if (s < 0.5 && W > H) s = W / 1536;          // phones: fit the width and scroll down
+  $('wrap').style.width = 1536 * s + 'px'; $('wrap').style.height = 1024 * s + 'px';
+  $('cv').style.transform = `scale(${s})`;
+  document.documentElement.style.overflowY = 1024 * s > H + 1 ? 'auto' : 'hidden';
+}
+addEventListener('resize', fit); fit();
+
+/* ---------------- icons ---------------- */
+// shuttlecock, drawn upright and tilted 45 degrees
+const shuttle = (size = 30, tilt = true, color = '#fff') => `<svg width="${size}" height="${size}" viewBox="0 0 32 32" style="${tilt ? 'transform:rotate(45deg)' : ''}">
+  <path d="M11.5 22 L5.5 6 Q16 1.5 26.5 6 L20.5 22 Z" fill="${color}" fill-opacity=".92"/>
+  <path d="M16 22 L9 5M16 22 L16 3.5M16 22 L23 5M13 22 L6.8 6.5M19 22 L25.2 6.5" stroke="#7d8db8" stroke-width=".9" fill="none"/>
+  <path d="M5.5 6 Q16 1.5 26.5 6" stroke="#4f6bd0" stroke-width="1.6" fill="none"/>
+  <ellipse cx="16" cy="25" rx="5" ry="4.3" fill="#f3e3c4" stroke="#b79a64" stroke-width=".8"/></svg>`;
 
 /* ---------------- data layer ---------------- */
 const local = {
@@ -282,47 +320,41 @@ const local = {
 };
 const ensure = (c) => {
   c.log = Array.isArray(c.log) ? c.log : [];
+  c.events = Array.isArray(c.events) ? c.events : [];
   c.scores = c.scores || [[0, 0], [0, 0], [0, 0]];
   if (!Number.isInteger(c.activeSet) || c.activeSet < 0) { let l = 0; c.scores.forEach((s, i) => { if (s[0] || s[1]) l = i; }); c.activeSet = l; }
   return c;
 };
 
 /* ---------------- game logic ---------------- */
-const MAXSET = 3;
-const idx = (c) => ensure(c).activeSet;
 const T = (t) => (t === 'A' ? 0 : 1);
-const started = (c) => !!c.startedAt || c.scores.some((s) => s[0] || s[1]);
-const setWinner = (s) => {
-  const [a, b] = s, hi = Math.max(a, b), lead = Math.abs(a - b);
-  if ((hi >= 21 && lead >= 2) || hi >= 30) return a > b ? 'A' : 'B';
-  return '';
+const OTHER = (t) => (t === 'A' ? 'B' : 'A');
+const act = (c) => ensure(c).activeSet;
+const began = (c) => !!c.startedAt || c.scores.some((s) => s[0] || s[1]);
+const players = (c, t) => String(t === 'A' ? c.teamA : c.teamB || '');
+const clubOf = (c, t) => (t === 'A' ? c.clubA : c.clubB);
+const teamName = (c, t) => { const k = clubOf(c, t); return k && k !== '-' ? k : players(c, t); };
+const names = (c, t) => players(c, t).split('/').map((p) => p.trim()).filter(Boolean);
+// who is serving: the saved value, otherwise the last scorer, otherwise team A once the game has started
+const server = (c) => c.server === 'A' || c.server === 'B' ? c.server : (c.log.length ? c.log[c.log.length - 1][0] : (began(c) ? 'A' : ''));
+const setWinner = (s) => { const hi = Math.max(s[0], s[1]), lead = Math.abs(s[0] - s[1]); return (hi >= 21 && lead >= 2) || hi >= 30 ? (s[0] > s[1] ? 'A' : 'B') : ''; };
+function setsWon(c) { const cur = act(c); let a = 0, b = 0; c.scores.forEach((s, i) => { if (i < cur) { if (s[0] > s[1]) a++; else if (s[1] > s[0]) b++; } }); return [a, b]; }
+const pushEv = (c, txt) => { c.events.push({ at: Date.now(), txt }); if (c.events.length > 40) c.events.splice(0, c.events.length - 40); };
+
+const addPoints = (t, n) => (c) => {
+  ensure(c); const i = act(c);
+  for (let k = 0; k < n; k++) { c.scores[i][T(t)] += 1; c.log.push(t + i); }
+  c.server = t;
+  pushEv(c, `คะแนน ${teamName(c, t)} ${c.scores[i][T(t)]} - ${c.scores[i][T(OTHER(t))]}`);
 };
-function setsWon(c, includeCurrent) {
-  const cur = idx(c); let a = 0, b = 0;
-  c.scores.forEach((s, i) => {
-    if (i < cur || (includeCurrent && i === cur && (s[0] || s[1]))) { if (s[0] > s[1]) a++; else if (s[1] > s[0]) b++; }
-  });
-  return [a, b];
-}
-function setPointChip(c) {
-  const s = c.scores[idx(c)], [a, b] = s;
-  if (setWinner(s)) return 'ครบแต้ม กดจบเซต';
-  const hi = Math.max(a, b);
-  if (hi >= 20 && Math.abs(a - b) >= 1) return 'เซตพอยท์ ' + (a > b ? 'ฝั่ง ' + 'A' : 'ฝั่ง B');
-  return '';
-}
-const addPoint = (t) => (c) => {
-  ensure(c); const i = idx(c);
-  if (!c.startedAt) c.startedAt = Date.now();
-  c.paused = false;
-  c.scores[i][T(t)] += 1; c.server = t; c.log.push(t + i);
-};
-const minus = (t) => (c) => {
-  ensure(c); const i = idx(c);
-  if (c.scores[i][T(t)] > 0) {
-    c.scores[i][T(t)] -= 1;
-    const k = c.log.lastIndexOf(t + i); if (k >= 0) c.log.splice(k, 1);
+const subPoints = (t, n) => (c) => {
+  ensure(c); const i = act(c); let took = 0;
+  for (let k = 0; k < n; k++) {
+    if (c.scores[i][T(t)] <= 0) break;
+    c.scores[i][T(t)] -= 1; took++;
+    const at = c.log.lastIndexOf(t + i); if (at >= 0) c.log.splice(at, 1);
   }
+  if (took) pushEv(c, `แก้คะแนน ${teamName(c, t)} -${took} (${c.scores[i][0]} - ${c.scores[i][1]})`);
 };
 const undo = (c) => {
   ensure(c);
@@ -331,210 +363,211 @@ const undo = (c) => {
   if (c.scores[i][T(t)] > 0) c.scores[i][T(t)] -= 1;
   c.activeSet = i;
   const prev = c.log[c.log.length - 1]; if (prev) c.server = prev[0];
+  pushEv(c, `ย้อนกลับ แต้มล่าสุดของ ${teamName(c, t)}`);
 };
-
-/* ---------------- scene (stylised court with players) ---------------- */
-function streak(c, t) {
-  let n = 0; const i = idx(c);
-  for (let k = c.log.length - 1; k >= 0; k--) { if (c.log[k][0] === t && Number(c.log[k][1]) === i) n++; else break; }
-  return n;
-}
-const firstNames = (name) => String(name || '').split('/').map((p) => p.replace(/^คุณ\s*/, '').trim()).filter(Boolean);
-function figure(x, y, sc, dir, color) {
-  return `<g transform="translate(${x} ${y}) scale(${sc * dir} ${sc})">
-    <ellipse cx="0" cy="3" rx="40" ry="8" fill="#000" opacity=".28"/>
-    <rect x="-17" y="-112" width="13" height="108" rx="6" fill="#e8b98f"/><rect x="4" y="-112" width="13" height="108" rx="6" fill="#e8b98f"/>
-    <ellipse cx="-10" cy="-3" rx="19" ry="8" fill="#f8fafc"/><ellipse cx="12" cy="-3" rx="19" ry="8" fill="#f8fafc"/>
-    <path d="M-27 -156 h54 l5 56 h-27 l-5 -24 l-5 24 h-27 z" fill="#101523"/>
-    <rect x="-28" y="-252" width="56" height="112" rx="16" fill="${color}"/>
-    <rect x="-8" y="-262" width="16" height="16" rx="6" fill="#e8b98f"/>
-    <circle cx="0" cy="-284" r="25" fill="#e8b98f"/><path d="M-25 -286 a25 24 0 0 1 50 0 q-25 -10 -50 0z" fill="#171717"/>
-    <line x1="20" y1="-226" x2="62" y2="-186" stroke="#e8b98f" stroke-width="13" stroke-linecap="round"/>
-    <line x1="62" y1="-186" x2="96" y2="-216" stroke="#c9d1e3" stroke-width="5" stroke-linecap="round"/>
-    <ellipse cx="110" cy="-232" rx="19" ry="28" transform="rotate(38 110 -232)" fill="#ffffff10" stroke="#e5ecff" stroke-width="4"/>
-  </g>`;
-}
-function boardsSvg() {
-  let out = '';
-  for (let k = 0; k < 6; k++) out += `<g><rect x="${k * 168 - 4}" y="238" width="164" height="50" fill="#0a1a4a" stroke="#2c4a9a" stroke-width="2"/><text x="${k * 168 + 78}" y="272" text-anchor="middle" font-family="Prompt,sans-serif" font-weight="800" font-size="24" fill="#fff">Match<tspan fill="#34d399">ON</tspan></text></g>`;
-  return out;
-}
-let boardsDone = false;
-function drawScene(c, v) {
-  if (!boardsDone) { $('boards').innerHTML = boardsSvg(); boardsDone = true; }
-  const COL = { A: '#2563eb', B: '#e11d48' };
-  let svg = '';
-  const tags = { 1: ['', 0, 0], 2: ['', 0, 0], 3: ['', 0, 0], 4: ['', 0, 0] };
-  const place = (side, k) => {
-    const t = v[side], names = firstNames(nameOf(c, t)), dir = side === 'L' ? 1 : -1, col = COL[t];
-    const spots = names.length > 1 ? [[side === 'L' ? 250 : 750, 505, 0.74], [side === 'L' ? 380 : 620, 420, 0.58]] : [[side === 'L' ? 300 : 700, 470, 0.68]];
-    spots.slice().reverse().forEach(([x, y, sc], r) => { svg += figure(x, y, sc, dir, col); });
-    spots.forEach(([x, y, sc], r) => {
-      const tg = $('tag' + (k + r)); tg.textContent = names[r] || '';
-      tg.className = 'tag ' + (t === 'A' ? 'a' : 'b'); tg.dataset.x = x; tg.dataset.y = y - 330 * sc; tg.dataset.on = names[r] ? '1' : '';
-    });
-    if (spots.length === 1) { const tg = $('tag' + (k + 1)); tg.textContent = ''; tg.dataset.on = ''; }
-  };
-  place('L', 1); place('R', 3);
-  $('figs').innerHTML = svg;
-  positionTags();
-}
-// tags live in HTML (crisp text); map scene coordinates to the stage with the same "slice" maths as the SVG
-function positionTags() {
-  const st = $('stage'), W = st.clientWidth, H = st.clientHeight;
-  if (!W || !H) return;
-  const k = Math.max(W / 1000, H / 540), offX = (W - 1000 * k) / 2, offY = H - 540 * k;
-  [1, 2, 3, 4].forEach((n) => {
-    const tg = $('tag' + n);
-    if (!tg.dataset.on) { tg.style.display = 'none'; return; }
-    tg.style.display = '';
-    tg.style.left = (offX + Number(tg.dataset.x) * k) + 'px';
-    tg.style.top = (offY + Number(tg.dataset.y) * k - 12) + 'px';
-  });
-}
-window.addEventListener('resize', positionTags);
-
-/* ---------------- fullscreen ---------------- */
-const fsEl = document.documentElement;
-const fsOn = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
-async function toggleFullscreen() {
-  try {
-    if (fsOn()) { (document.exitFullscreen || document.webkitExitFullscreen).call(document); return; }
-    const req = fsEl.requestFullscreen || fsEl.webkitRequestFullscreen;
-    if (!req) return toast('iPhone ยังไม่รองรับเต็มจอบนเบราว์เซอร์ ให้กดปุ่มแชร์ แล้วเลือก "เพิ่มไปยังหน้าจอโฮม" จะเปิดแบบเต็มจอได้');
-    await req.call(fsEl);
-    try { await screen.orientation.lock('landscape'); } catch { /* not supported or not allowed */ }
-  } catch (e) { toast('เปิดเต็มจอไม่สำเร็จ: ' + (e.message || e)); }
-}
-function syncFs() { $('fsBtn').textContent = fsOn() ? '🗗' : '⛶'; $('fsBtn').title = fsOn() ? 'ออกจากเต็มจอ' : 'เต็มจอ'; setTimeout(positionTags, 150); }
-['fullscreenchange', 'webkitfullscreenchange'].forEach((ev) => document.addEventListener(ev, syncFs));
-$('fsBtn').onclick = toggleFullscreen;
-document.addEventListener('dblclick', (e) => { if (!e.target.closest('button')) toggleFullscreen(); });
+const playPause = (c) => {
+  ensure(c); const now = Date.now();
+  if (!began(c)) { c.startedAt = now; c.paused = false; pushEv(c, 'เริ่มการแข่งขัน'); }
+  else if (!c.startedAt) { c.startedAt = now; c.paused = true; c.pausedAt = now; pushEv(c, 'พักการแข่งขัน'); }
+  else if (c.paused) { c.pausedTotal = (c.pausedTotal || 0) + (now - (c.pausedAt || now)); c.pausedAt = 0; c.paused = false; pushEv(c, 'เล่นต่อ'); }
+  else { c.paused = true; c.pausedAt = now; pushEv(c, 'พักการแข่งขัน'); }
+};
+const endSetMut = (c) => { ensure(c); const i = act(c); pushEv(c, `จบเซต ${i + 1}: ${c.scores[i][0]} - ${c.scores[i][1]}`); c.activeSet = Math.min(MAXSET - 1, i + 1); };
 
 /* ---------------- rendering ---------------- */
-const view = () => (prefs.flip ? { L: 'B', R: 'A' } : { L: 'A', R: 'B' });
-const nameOf = (c, t) => (t === 'A' ? c.teamA : c.teamB);
-const clubOf = (c, t) => (t === 'A' ? c.clubA : c.clubB);
-const initials = (name) => String(name || '?').split('/').map((p) => p.replace(/^คุณ\s*/, '').trim()).filter(Boolean).slice(0, 2).map((p) => Array.from(p)[0] || '?');
-const fmtTime = (ms) => new Date(ms).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
-const toast = (t) => { const el = $('toast'); el.textContent = t; el.classList.add('on'); clearTimeout(toast.k); toast.k = setTimeout(() => el.classList.remove('on'), 2200); };
+const side = () => (prefs.flip ? { L: 'B', R: 'A' } : { L: 'A', R: 'B' });
+const hms = (ms) => { const s = Math.max(0, Math.floor(ms / 1000)); return [Math.floor(s / 3600), Math.floor(s / 60) % 60, s % 60].map((x) => String(x).padStart(2, '0')).join(':'); };
+const clockTxt = (ms) => new Date(ms).toLocaleTimeString('th-TH', { hour12: false });
+const toast = (t) => { const el = $('toast'); el.textContent = t; el.classList.add('on'); clearTimeout(toast.k); toast.k = setTimeout(() => el.classList.remove('on'), 2600); };
 const showMsg = (t) => { $('msgTxt').textContent = t; $('msg').classList.add('on'); };
+const esc = (s) => String(s).replace(/[&<>"]/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]));
+const safeUrl = (u) => (/^(https?:|data:image\/|img\/)/.test(u || '') ? u : '');
+
+function elapsed(c) {
+  if (!c.startedAt) return 0;
+  const end = c.paused && c.pausedAt ? c.pausedAt : Date.now();
+  return end - c.startedAt - (c.pausedTotal || 0);
+}
 
 function draw() {
   if (!courtNo) return showMsg('ลิงก์นี้ไม่ระบุคอร์ต ให้สแกน QR จากหน้า "สายแข่ง & คอร์ทสด" ของแต่ละคอร์ต');
   if (!court) return showMsg(liveId ? 'กำลังเชื่อมต่อ… ถ้านานเกิน 10 วินาทีให้ตรวจอินเทอร์เน็ต หรือผู้จัดยังไม่ได้เปิดข้อมูลคอร์ตนี้' : 'ไม่พบข้อมูลคอร์ตนี้ในเครื่องนี้ ให้สแกน QR ใหม่จากหน้าผู้จัด');
   $('msg').classList.remove('on');
-  const c = ensure(court), v = view(), i = idx(c);
-  const liveMatch = c.status === 'LIVE', begun = started(c), running = liveMatch && begun && !c.paused;
-  const [wa, wb] = setsWon(c, false);
+  const c = ensure(court), v = side(), a = act(c);
+  if (viewSet === a) viewSet = null;
+  const vi = viewSet === null ? a : viewSet, viewingLive = vi === a;
+  const live = c.status === 'LIVE', begun = began(c), running = live && begun && !c.paused;
+  const sv = server(c);
+  const [wa, wb] = setsWon(c);
+  const [roundTxt, catTxt] = String(c.round || '').split('•').map((x) => x.trim());
 
+  // header
   $('tname').textContent = c.tournament || 'การแข่งขันแบดมินตัน';
-  $('tsub').textContent = 'สนามที่ ' + courtNo + ' | ' + new Date().toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' });
-  $('livepill').className = 'pill' + (running ? ' live' : '');
-  $('livetxt').textContent = running ? 'LIVE' : liveMatch ? (c.paused ? 'PAUSED' : 'READY') : 'IDLE';
+  $('tsub').textContent = 'สนามที่ ' + courtNo + '  |  วันที่ ' + new Date().toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' });
+  $('livep').className = 'livep' + (running ? '' : live && begun ? ' paused' : ' idle');
+  $('livetxt').textContent = running ? 'LIVE' : live && begun ? 'PAUSED' : live ? 'READY' : 'IDLE';
 
-  for (const side of ['L', 'R']) {
-    const t = v[side], players = nameOf(c, t), club = clubOf(c, t);
-    const hasClub = club && club !== '-';
-    $('n' + side).textContent = hasClub ? club : players;
-    $('c' + side).textContent = hasClub ? players : '';
-    $('av' + side).innerHTML = initials(players).map((x) => `<div class="av">${x}</div>`).join('');
-    $('team' + side).dataset.t = t; $('side' + side).dataset.t = t;
-    $('big' + side).className = 'big ' + (t === 'A' ? 'a' : 'b');
-    $('big' + side).textContent = c.scores[i][T(t)];
-    $('plus' + side + 'n').textContent = hasClub ? club : players;
-    $('srv' + side).classList.toggle('on', c.server === t);
-    const run = streak(c, t);
-    $('streak' + side).textContent = run > 1 ? '×' + run : '';
+  // team cards + big scores (sides follow the "swap sides" setting)
+  for (const sd of ['L', 'R']) {
+    const t = v[sd], ns = names(c, t), photos = (t === 'A' ? c.photoA : c.photoB) || [];
+    $('tc' + sd).dataset.t = t; $('sb' + sd).dataset.t = t;
+    $('h' + sd).textContent = teamName(c, t);
+    $('nm' + sd).textContent = ns.join('  /  ');
+    $('ph' + sd).innerHTML = (ns.length ? ns : ['']).slice(0, 2).map((n, r) => {
+      const u = safeUrl(photos[r]);
+      return `<div class="pic">${u ? `<img src="${esc(u)}" alt="${esc(n)}">` : r + 1}</div>`;
+    }).join('');
+    $('n' + sd).textContent = c.scores[vi][T(t)];
+    $('l' + sd).textContent = viewingLive ? 'คะแนนปัจจุบัน' : 'คะแนนเซตที่ ' + (vi + 1);
+    $('sv' + sd).classList.toggle('on', sv === t);
+    $('sv' + sd).innerHTML = shuttle(30, true);
   }
-  drawScene(c, v);
-  $('setlab').textContent = 'เซตที่ ' + (i + 1);
+  $('cat').textContent = catTxt || '';
   const wl = v.L === 'A' ? wa : wb, wr = v.L === 'A' ? wb : wa;
-  $('setsWon').textContent = wl + ' - ' + wr;
-  $('chip').textContent = setPointChip(c);
-  $('shuttle').textContent = c.shuttleUsed;
-  $('server').textContent = c.server ? nameOf(c, c.server) : 'ยังไม่ระบุ';
-  $('svDot').className = c.server === 'B' ? 'b' : '';
+  $('won').innerHTML = `<b>${wl}</b> <b>-</b> ${wr}`;
+  $('midst').textContent = !viewingLive ? 'กำลังดูเซตที่ ' + (vi + 1) : !live ? 'คอร์ตว่าง' : c.paused ? 'พักการแข่งขัน' : !begun ? 'พร้อมเริ่ม' : 'กำลังแข่งขัน';
 
-  $('startTxt').textContent = !begun ? 'เริ่มเกม' : c.paused ? 'เล่นต่อ' : 'กำลังแข่ง';
-  const st = $('state');
-  st.className = 'statusv' + (!liveMatch ? ' idle' : c.paused ? ' warn' : !begun ? ' idle' : '');
-  st.textContent = !liveMatch ? 'คอร์ตว่าง' : c.paused ? 'พักการแข่งขัน' : !begun ? 'พร้อมเริ่ม' : 'กำลังแข่งขัน';
-  $('since').textContent = c.startedAt ? 'เริ่มแข่ง ' + fmtTime(c.startedAt) + ' น.' : '';
-  $('pause').lastChild.textContent = c.paused ? 'เล่นต่อ' : 'พักการแข่งขัน';
-  $('hint').textContent = !liveMatch ? 'รอผู้จัดเรียกคู่ลงสนาม' : !begun ? 'กด "เริ่มเกม" เพื่อเริ่มนับแต้ม' : c.paused ? 'พักการแข่งขัน กด "เล่นต่อ"' : '';
+  // point history of the viewed set
+  const sc = c.scores[vi], cnt = { A: 0, B: 0 };
+  const entries = c.log.filter((e) => Number(e[1]) === vi);
+  const missing = sc[0] + sc[1] - entries.length;
+  let cells = missing > 0 ? `<span class="c pre" title="แต้มก่อนเริ่มบันทึก">+${missing}</span>` : '';
+  entries.forEach((e) => { const t = e[0]; cnt[t] += 1; cells += `<span class="c ${t}">${cnt[t]}</span>`; });
+  $('hsLab').textContent = 'สถิติเซต ' + (vi + 1);
+  $('cells').innerHTML = cells || '<span class="none">ยังไม่มีแต้มในเซตนี้</span>';
+  $('lgAn').textContent = teamName(c, 'A'); $('lgBn').textContent = teamName(c, 'B');
+  const cl = $('cells'); cl.scrollLeft = viewingLive ? cl.scrollWidth : 0;
 
-  ['plusL', 'plusR', 'minL', 'minR', 'contL', 'contR', 'undoL', 'undoR', 'shInc', 'shDec', 'swapServe', 'endSet'].forEach((id) => { $(id).disabled = !(canWrite && liveMatch && begun && !c.paused); });
-  // "+1 ต่อเนื่อง" is for the team that is already serving (it keeps the serve and extends its run)
-  for (const side of ['L', 'R']) $('cont' + side).disabled = $('cont' + side).disabled || c.server !== v[side];
-  $('start').disabled = !(canWrite && liveMatch && (!begun || c.paused));
-  $('pause').disabled = !(canWrite && liveMatch && begun);
-  $('endMatch').disabled = !(canWrite && liveMatch && begun);
-  $('undoL').disabled = $('undoR').disabled = $('undoL').disabled || !c.log.length;
+  // info strip
+  $('icShuttle').innerHTML = shuttle(40, false, '#e6ecff');
+  $('icBall').innerHTML = shuttle(34, false, '#e6ecff');
+  $('icServer').innerHTML = shuttle(40, true, '#fff');
+  $('shBig').textContent = c.shuttleUsed;
+  const svp = $('svPill'); svp.className = 'pill ' + (sv ? sv : 'none'); svp.textContent = sv ? teamName(c, sv) : 'ยังไม่ระบุ';
+  $('setbtns').innerHTML = [0, 1, 2].map((i) => `<button class="sbtn${i === vi ? ' view' : ''}${i === a ? ' cur' : ''}" data-set="${i}">${i + 1}</button>`).join('');
+  $('timer').textContent = hms(elapsed(c));
+  const stt = !live ? 'คอร์ตว่าง' : c.paused ? 'พักการแข่งขัน' : !begun ? 'พร้อมเริ่ม' : 'กำลังแข่งขัน';
+  $('stat').className = 'stat' + (!live || (!begun && !c.paused) ? ' idle' : c.paused ? ' paused' : '');
+  $('statTxt').textContent = stt;
 
-  const net = !liveId ? 'โหมดในเครื่อง' : online ? '' : 'ออฟไลน์ ระบบจะส่งเมื่อกลับมาออนไลน์';
-  const line = [note, net].filter(Boolean).join(' · ');
-  if (line) $('hint').textContent = (line + (($('hint').textContent) ? ' · ' + $('hint').textContent : ''));
+  // score pad: buttons follow the sides
+  const colorOf = (sd) => v[sd];
+  for (const id of ['pl1', 'mi1', 'pl2', 'mi2']) { $(id).dataset.s = 'L'; }
+  ['pl1', 'mi1', 'pl2', 'mi2'].forEach((id) => { $(id).className = 'bt ' + colorOf('L'); });
+  ['pr1', 'mr1', 'pr2', 'mr2'].forEach((id) => { $(id).className = 'bt ' + colorOf('R'); });
+  $('swapSide').className = 'bt g swp';
+  $('shNum').textContent = c.shuttleUsed;
+  const sa = $('srvA'), sb = $('srvB');
+  sa.innerHTML = `<span>${esc(teamName(c, 'A'))}</span>${sv === 'A' ? shuttle(30, true) : ''}`; sa.classList.toggle('sel', sv === 'A');
+  sb.innerHTML = `<span>${esc(teamName(c, 'B'))}</span>${sv === 'B' ? shuttle(30, true) : ''}`; sb.classList.toggle('sel', sv === 'B');
+
+  // one button for start / pause / resume
+  const pp = $('pp');
+  if (!begun) { pp.className = 'bt go'; $('ppIc').textContent = '▶'; $('ppTxt').textContent = 'เริ่มเกม'; }
+  else if (c.paused) { pp.className = 'bt go'; $('ppIc').textContent = '▶'; $('ppTxt').textContent = 'เล่นต่อ'; }
+  else { pp.className = 'bt bl'; $('ppIc').textContent = '⏸'; $('ppTxt').textContent = 'พักการแข่งขัน'; }
+
+  // enable / disable
+  const score = canWrite && running && viewingLive, play = canWrite && running;
+  ['pl1', 'mi1', 'pl2', 'mi2', 'pr1', 'mr1', 'pr2', 'mr2', 'endSet'].forEach((id) => { $(id).disabled = !score; });
+  $('undo').disabled = !(score && c.log.length);
+  ['shInc', 'shDec', 'srvA', 'srvB', 'srvSwap'].forEach((id) => { $(id).disabled = !play; });
+  $('pp').disabled = !(canWrite && live);
+  $('endMatch').disabled = !(canWrite && live && begun);
+  $('reset').disabled = !(canWrite && live);
+  $('swapSide').disabled = false;
+
+  // sets summary
+  $('sumBody').innerHTML = ['A', 'B'].map((t) => `<tr><td><i style="background:${t === 'A' ? '#2f74ff' : '#ff3a57'}"></i>${esc(teamName(c, t))}</td>` +
+    [0, 1, 2].map((i) => {
+      const s = c.scores[i], played = i < a || s[0] || s[1] || (i === a && began(c));
+      if (!played) return '<td class="x">-</td>';
+      const win = (i < a || setWinner(s)) && ((t === 'A' && s[0] > s[1]) || (t === 'B' && s[1] > s[0]));
+      return `<td class="${win ? 'w' : 'n'}">${s[T(t)]}</td>`;
+    }).join('') + '</tr>').join('');
+
+  // recent events
+  const evs = c.events.slice(-3).reverse();
+  $('evBox').innerHTML = evs.length ? evs.map((e) => `<div><b>${clockTxt(e.at)}</b><span>${esc(e.txt)}</span></div>`).join('') : '<div><span style="color:#7f93c6">ยังไม่มีเหตุการณ์</span></div>';
+  $('iCat').textContent = catTxt || '–'; $('iRound').textContent = roundTxt || '–'; $('iCourt').textContent = 'สนามที่ ' + courtNo;
   $('swFlip').classList.toggle('on', prefs.flip); $('swWake').classList.toggle('on', prefs.wake);
+  if (note) toast(note), note = '';
 }
 
 /* ---------------- writes ---------------- */
 async function commit(mutate, extraLocal) {
-  if (!canWrite) return;
+  if (!canWrite) return false;
   if (liveId) {
     try { await Live.updateCourt(liveId, courtNo, mutate); }
     catch (e) {
-      note = e.code === 'PERMISSION_DENIED' ? 'รหัสถูกเปลี่ยนแล้วหรือไม่มีสิทธิ์ ให้ขอ QR ใหม่จากผู้จัด' : 'ส่งไม่สำเร็จ: ' + (e.code || e.message);
-      if (e.code === 'PERMISSION_DENIED') canWrite = false;
-      return draw();
+      if (e.code === 'PERMISSION_DENIED') { canWrite = false; note = 'รหัสถูกเปลี่ยนแล้วหรือไม่มีสิทธิ์ ให้ขอ QR ใหม่จากผู้จัด'; }
+      else note = 'ส่งไม่สำเร็จ: ' + (e.code || e.message);
+      draw(); return false;
     }
   } else { local.edit(mutate, extraLocal); court = local.court(); }
-  note = '';
-  draw();
+  draw(); return true;
 }
 const vibe = () => { try { navigator.vibrate && navigator.vibrate(18); } catch {} };
 
-const sideTeam = (side) => view()[side];
-for (const side of ['L', 'R']) {
-  $('plus' + side).onclick = () => { vibe(); commit(addPoint(sideTeam(side))); };
-  $('min' + side).onclick = () => commit(minus(sideTeam(side)));
-  $('cont' + side).onclick = () => { vibe(); commit(addPoint(sideTeam(side))); };
-  $('undo' + side).onclick = () => commit(undo);
+// after a point: if the set is won, offer to move to the next set
+async function maybeEndSet() {
+  const c = court && ensure(court), i = c && act(c);
+  if (!c || i >= MAXSET - 1 || !setWinner(c.scores[i])) return;
+  if (confirm(`เซตที่ ${i + 1} จบแล้ว (${c.scores[i][0]} - ${c.scores[i][1]})\nไปเซตถัดไปเลยไหม?`)) await commit(endSetMut);
 }
-$('swapServe').onclick = () => commit((c) => { c.server = c.server === 'A' ? 'B' : 'A'; });
-$('shInc').onclick = () => commit((c) => { c.shuttleUsed += 1; });
-$('shDec').onclick = () => commit((c) => { if (c.shuttleUsed > 0) c.shuttleUsed -= 1; });
-$('start').onclick = () => { requestWake(); commit((c) => { ensure(c); if (!c.startedAt) c.startedAt = Date.now(); c.paused = false; }); };
-$('pause').onclick = () => commit((c) => { c.paused = !c.paused; });
 
+$('sc').addEventListener('click', async (e) => {
+  const b = e.target.closest('button[data-p]'); if (!b || b.disabled) return;
+  const t = side()[b.dataset.s], n = Number(b.dataset.p);
+  vibe();
+  if (n > 0) { if (await commit(addPoints(t, n))) maybeEndSet(); }
+  else commit(subPoints(t, -n));
+});
+$('undo').onclick = () => commit(undo);
+$('swapSide').onclick = () => { prefs.flip = !prefs.flip; savePrefs(); draw(); };
+$('shInc').onclick = () => commit((c) => { ensure(c); c.shuttleUsed += 1; pushEv(c, `ลูกที่ ${c.shuttleUsed} ${teamName(c, server(c) || 'A')}`); });
+$('shDec').onclick = () => commit((c) => { if (c.shuttleUsed > 0) c.shuttleUsed -= 1; });
+$('srvA').onclick = () => commit((c) => { ensure(c); c.server = 'A'; pushEv(c, 'ผู้เสิร์ฟ: ' + teamName(c, 'A')); });
+$('srvB').onclick = () => commit((c) => { ensure(c); c.server = 'B'; pushEv(c, 'ผู้เสิร์ฟ: ' + teamName(c, 'B')); });
+$('srvSwap').onclick = () => commit((c) => { ensure(c); c.server = OTHER(server(c) || 'A'); pushEv(c, 'ผู้เสิร์ฟ: ' + teamName(c, c.server)); });
+$('pp').onclick = () => { requestWake(); commit(playPause); };
 $('endSet').onclick = () => {
-  const c = ensure(court), i = idx(c);
+  const c = ensure(court), i = act(c);
   if (i >= MAXSET - 1) return toast('นี่คือเซตสุดท้าย กด "จบการแข่งขัน"');
   if (!setWinner(c.scores[i]) && !confirm('คะแนนยังไม่ถึงเกณฑ์จบเซต (21 แต้ม ห่าง 2) จบเซตนี้เลยไหม?')) return;
-  commit((x) => { ensure(x); x.activeSet = Math.min(MAXSET - 1, idx(x) + 1); });
+  commit(endSetMut);
 };
+$('setbtns').addEventListener('click', (e) => { const b = e.target.closest('[data-set]'); if (b) { viewSet = Number(b.dataset.set); draw(); } });
 
+const wipe = (x) => {
+  x.scores = [[0, 0], [0, 0], [0, 0]]; x.shuttleUsed = 0; x.activeSet = 0; x.server = ''; x.paused = false;
+  x.startedAt = 0; x.pausedAt = 0; x.pausedTotal = 0; x.log = []; x.events = [];
+};
+$('reset').onclick = () => {
+  if (!confirm('ยกเลิก/รีเซ็ตแมตช์นี้?\nคะแนน เซต ลูกแบด และประวัติเหตุการณ์จะถูกล้างทั้งหมด (ทีมยังคงอยู่)')) return;
+  viewSet = null; commit((c) => { ensure(c); wipe(c); pushEv(c, 'รีเซ็ตแมตช์'); });
+};
 $('endMatch').onclick = async () => {
-  const c = ensure(court);
-  const [a, b] = setsWon(c, true);
+  const c = ensure(court), cur = act(c);
+  let a = 0, b = 0;
+  c.scores.forEach((s, i) => { if (i <= cur && (s[0] || s[1])) { if (s[0] > s[1]) a++; else if (s[1] > s[0]) b++; } });
   const aWin = a !== b ? a > b : c.scores.reduce((n, s) => n + s[0] - s[1], 0) >= 0;
-  if (!confirm(`จบการแข่งขัน?\nเซตที่ชนะ ${a} - ${b}  ผู้ชนะ ${aWin ? c.teamA : c.teamB}`)) return;
+  if (!confirm(`จบการแข่งขัน?\nเซตที่ชนะ ${a} - ${b}  ผู้ชนะ ${teamName(c, aWin ? 'A' : 'B')}`)) return;
+  const label = (t) => `${players(c, t)} (${clubOf(c, t)})`;
   const done = {
     courtNo, slot: 'c' + courtNo,
     code: c.matchCode || ('M-' + Math.floor(105 + Math.random() * 80)),
     round: c.round,
-    winner: aWin ? `${c.teamA} (${c.clubA})` : `${c.teamB} (${c.clubB})`,
-    loser: aWin ? `${c.teamB} (${c.clubB})` : `${c.teamA} (${c.clubA})`,
+    winner: label(aWin ? 'A' : 'B'), loser: label(aWin ? 'B' : 'A'),
     scoreText: c.scores.filter((s, i) => i === 0 || s[0] > 0 || s[1] > 0).map((s) => s[0] + '-' + s[1]).join(', '),
     shuttleUsed: c.shuttleUsed,
     time: new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' น.',
   };
   const reset = (x) => {
-    x.status = 'READY'; x.matchCode = ''; x.round = 'คอร์ทว่าง (พร้อมเรียกคู่ถัดไป)';
-    x.teamA = 'รอเรียกคู่แข่งขัน'; x.clubA = '-'; x.teamB = 'รอเรียกคู่แข่งขัน'; x.clubB = '-';
-    x.scores = [[0, 0], [0, 0], [0, 0]]; x.shuttleUsed = 0; x.activeSet = -1;
-    x.server = ''; x.paused = false; x.startedAt = 0; x.log = [];
+    wipe(x); x.status = 'READY'; x.matchCode = ''; x.round = 'คอร์ทว่าง (พร้อมเรียกคู่ถัดไป)';
+    x.teamA = 'รอเรียกคู่แข่งขัน'; x.clubA = '-'; x.teamB = 'รอเรียกคู่แข่งขัน'; x.clubB = '-'; x.activeSet = -1; x.photoA = []; x.photoB = [];
   };
+  viewSet = null;
   if (liveId) {
     try { await Live.addCompleted(liveId, done); }
     catch (e) { note = e.code === 'PERMISSION_DENIED' ? 'รหัสถูกเปลี่ยนแล้ว ให้ขอ QR ใหม่จากผู้จัด' : 'บันทึกผลไม่สำเร็จ: ' + (e.code || e.message); return draw(); }
@@ -544,19 +577,46 @@ $('endMatch').onclick = async () => {
   }
 };
 
-/* ---------------- settings, clock, wake lock ---------------- */
-let wakeLock = null;
-async function requestWake() {
-  if (!prefs.wake || !('wakeLock' in navigator)) return;
-  try { wakeLock = await navigator.wakeLock.request('screen'); } catch {}
-}
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') requestWake(); });
+/* ---------------- events dialog, settings, fullscreen, wake lock ---------------- */
+$('evAll').onclick = () => {
+  const c = court && ensure(court); if (!c) return;
+  $('evList').innerHTML = c.events.length ? c.events.slice().reverse().map((e) => `<div><b>${clockTxt(e.at)}</b><span>${esc(e.txt)}</span></div>`).join('') : '<div>ยังไม่มีเหตุการณ์</div>';
+  $('evModal').classList.add('on');
+};
+$('closeEv').onclick = () => $('evModal').classList.remove('on');
 $('gear').onclick = () => $('modal').classList.add('on');
 $('closeModal').onclick = () => $('modal').classList.remove('on');
 $('optFlip').onclick = () => { prefs.flip = !prefs.flip; savePrefs(); draw(); };
+let wakeLock = null;
+async function requestWake() { if (!prefs.wake || !('wakeLock' in navigator)) return; try { wakeLock = await navigator.wakeLock.request('screen'); } catch {} }
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') requestWake(); });
 $('optWake').onclick = () => { prefs.wake = !prefs.wake; savePrefs(); if (prefs.wake) requestWake(); else { try { wakeLock && wakeLock.release(); } catch {} } draw(); };
-setInterval(() => { $('clock').textContent = new Date().toLocaleTimeString('th-TH', { hour12: false }); }, 1000);
-$('clock').textContent = new Date().toLocaleTimeString('th-TH', { hour12: false });
+
+const fsEl = document.documentElement;
+const fsOn = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
+async function toggleFullscreen() {
+  try {
+    if (fsOn()) { (document.exitFullscreen || document.webkitExitFullscreen).call(document); return; }
+    const req = fsEl.requestFullscreen || fsEl.webkitRequestFullscreen;
+    if (!req) return toast('iPhone ยังไม่รองรับเต็มจอบนเบราว์เซอร์ ให้กดปุ่มแชร์ แล้วเลือก "เพิ่มไปยังหน้าจอโฮม" จะเปิดแบบเต็มจอได้');
+    await req.call(fsEl);
+    try { await screen.orientation.lock('landscape'); } catch { /* not allowed on this device */ }
+  } catch (e) { toast('เปิดเต็มจอไม่สำเร็จ: ' + (e.message || e)); }
+}
+const syncFs = () => { $('fsBtn').textContent = fsOn() ? '🗗' : '⛶'; setTimeout(fit, 150); };
+['fullscreenchange', 'webkitfullscreenchange'].forEach((ev) => document.addEventListener(ev, syncFs));
+$('fsBtn').onclick = toggleFullscreen;
+
+// decorative shuttle (bottom right)
+$('art').innerHTML = `<svg viewBox="0 0 240 210"><defs><linearGradient id="gl" x1="0" x2="1"><stop offset="0" stop-color="#2a63ff" stop-opacity="0"/><stop offset="1" stop-color="#7a4dff" stop-opacity=".9"/></linearGradient></defs>
+  <path d="M0 200 Q120 170 240 60" stroke="url(#gl)" stroke-width="14" fill="none" stroke-linecap="round" opacity=".55"/>
+  <g transform="translate(150 20) rotate(35 40 80)">${shuttle(120, false, '#f4f7ff').replace('<svg width="120" height="120"', '<svg x="0" y="0" width="120" height="150"').replace('viewBox="0 0 32 32"', 'viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet"')}</g></svg>`;
+
+setInterval(() => {
+  $('clock').textContent = clockTxt(Date.now());
+  if (court) $('timer').textContent = hms(elapsed(ensure(court)));
+}, 1000);
+$('clock').textContent = clockTxt(Date.now());
 if (prefs.wake) requestWake();
 
 /* ---------------- start ---------------- */
@@ -568,7 +628,7 @@ if (liveId) {
     else if (r.error === 'nokey' || r.error === 'badkey') note = 'ลิงก์ไม่มีรหัสของคอร์ตนี้ ดูอย่างเดียว ให้สแกน QR ใหม่';
     draw();
   });
-  Live.watchConnection((on) => { online = on; draw(); });
+  Live.watchConnection((on) => { online = on; if (!on) toast('ออฟไลน์ ระบบจะส่งข้อมูลเมื่อกลับมาออนไลน์'); });
   Live.watchCourt(liveId, courtNo, (c) => { court = c; draw(); });
 } else {
   canWrite = true; court = local.court();
