@@ -216,7 +216,29 @@ td:first-child{max-width:150px}
 .pic .ball svg{width:34px;height:34px}
 .ph.canswap .pic{cursor:pointer}
 .ttl strong{font-size:24px}.ttl span{font-size:20px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
-</style>
+
+/* ---- v3 ---- */
+.sb{width:calc(50% - 90px)}
+.sb.L{clip-path:polygon(0 0,100% 0,calc(100% - 26px) 100%,0 100%)}
+.sb.R{clip-path:polygon(26px 0,100% 0,100% 100%,0 100%)}
+.mid .w{font-size:64px}.mid .s{font-size:32px}
+.tc .ph{align-items:flex-start;gap:16px;padding:12px 0 0}
+.pw{display:flex;flex-direction:column;align-items:center;gap:4px;width:176px}
+.pw .pnm{font:600 25px/1.2 'Noto Sans Thai';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:176px;text-align:center}
+.pic .real{position:absolute;left:0;right:0;bottom:0;padding:14px 4px 5px;border-radius:0 0 10px 10px;background:linear-gradient(transparent,#000a);font:600 19px/1.15 'Noto Sans Thai';text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;z-index:2}
+.pic .pi{font-size:70px}
+.sc{display:grid;grid-template-columns:1fr 170px 1fr;grid-template-rows:146px 1fr;gap:12px;align-content:start;justify-items:center;padding-top:18px}
+.sc>.bt{width:176px;font:800 76px 'Prompt'}
+#pl1,#pr1{height:146px}
+#mi1,#mr1{height:84px;align-self:start;font-size:42px}
+.mc{grid-column:2;grid-row:1/3;display:flex;flex-direction:column;gap:12px;width:100%;align-self:stretch;padding-bottom:12px}
+.mc{align-self:start;padding-bottom:0}.mc .bt{flex:none;height:146px;flex-direction:column;font:700 21px 'Noto Sans Thai';gap:6px;grid-area:auto}
+.mc .bt svg{width:38px;height:38px}
+.stp{display:grid;grid-template-columns:1fr;grid-template-rows:repeat(4,1fr);gap:12px;height:auto}
+.rad{display:flex;align-items:center;gap:10px;padding:8px 0;font-size:16px;flex-wrap:wrap}
+.rad input{width:20px;height:20px;accent-color:#2f74ff}
+.rad small{width:100%;margin-left:30px}
+#srvSwap{height:100px!important}</style>
 </head>
 <body>
 <div id="wrap"><div id="cv">
@@ -234,14 +256,14 @@ td:first-child{max-width:150px}
   </header>
 
   <section class="bd">
-    <div class="tc" id="tcL" data-side="L"><h2 id="hL"></h2><div class="ph" id="phL"></div><div class="nm" id="nmL"></div></div>
+    <div class="tc" id="tcL" data-side="L"><h2 id="hL"></h2><div class="ph" id="phL"></div></div>
     <div class="cn">
       <div class="cat" id="cat"></div>
       <div class="sb L" id="sbL"><div class="n num" id="nL">0</div><div class="l" id="lL">คะแนนปัจจุบัน</div></div>
-      <div class="mid"><div class="s">SET</div><div class="w num" id="won">0 - 0</div><div class="st" id="midst">กำลังแข่งขัน</div></div>
+      <div class="mid"><div class="s" id="setlab">SET 1</div><div class="w num" id="won">0 - 0</div><div class="st" id="midst">กำลังแข่งขัน</div></div>
       <div class="sb R" id="sbR"><div class="n num" id="nR">0</div><div class="l" id="lR">คะแนนปัจจุบัน</div></div>
     </div>
-    <div class="tc" id="tcR" data-side="R"><h2 id="hR"></h2><div class="ph" id="phR"></div><div class="nm" id="nmR"></div></div>
+    <div class="tc" id="tcR" data-side="R"><h2 id="hR"></h2><div class="ph" id="phR"></div></div>
   </section>
 
   <section class="hs"><div class="setbtns" id="setbtns"></div><div class="cells" id="cells"></div>
@@ -249,29 +271,27 @@ td:first-child{max-width:150px}
 
   <section class="mr">
     <div class="pn"><div class="evh"><h3>สรุปคะแนน (Sets)</h3>
-      <div class="shc"><span id="icBall"></span><button class="bt g" id="shDec">-</button><b class="num" id="shNum">0</b><button class="bt g" id="shInc">+</button></div></div>
-      <table><thead><tr><th></th><th>Set 1</th><th>Set 2</th><th>Set 3</th></tr></thead><tbody id="sumBody"></tbody></table></div>
-    <div class="pn"><h3><em style="color:#ffd23a">★</em>ให้คะแนน</h3>
+      <div class="shc"><span id="icBall"></span><button class="bt g" id="shDec">-</button><b class="num" id="shNum">1</b><button class="bt g" id="shInc">+</button></div></div>
+      <table><thead><tr><th></th><th>Set 1</th><th>Set 2</th><th>Set 3</th></tr></thead><tbody id="sumBody"></tbody></table>
+      <button class="bt g" id="evAll" style="margin-top:auto;height:60px;font-size:24px">เหตุการณ์ทั้งหมด</button></div>
+    <div class="pn">
       <div class="sc" id="sc">
         <button class="bt" data-p="1" data-s="L" id="pl1">+1</button>
-        <button class="bt g swp" id="swapSide"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h12l-3-3M17 17H5l3 3"/></svg>สลับข้าง</button>
+        <div class="mc"><button class="bt g swp" id="swapSide"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h12l-3-3M17 17H5l3 3"/></svg>สลับข้าง</button>
+          <button class="bt g swp" id="srvSwap"><span id="icSrv"></span>สลับเสิร์ฟ</button></div>
         <button class="bt" data-p="1" data-s="R" id="pr1">+1</button>
         <button class="bt" data-p="-1" data-s="L" id="mi1">-1</button>
         <button class="bt" data-p="-1" data-s="R" id="mr1">-1</button>
       </div>
       <button class="bt g back" id="undo">↩ ย้อนกลับ</button>
     </div>
-    <div class="pn"><div class="evh"><h3><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#9fb5f5" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2" stroke-linecap="round"/></svg>เหตุการณ์ล่าสุด</h3><button id="evAll">ดูทั้งหมด ›</button></div>
-      <div class="ev" id="evBox"></div></div>
+    <div class="stp">
+      <button class="bt go" id="pp"><span class="ic" id="ppIc">▶</span><span id="ppTxt">เริ่มเกม</span></button>
+      <button class="bt or" id="endSet"><span class="ic">⏭</span>จบเซต</button>
+      <button class="bt go" id="endMatch"><span class="ic">🏁</span>จบการแข่งขัน</button>
+      <button class="bt ye" id="reset"><span class="ic">⚠</span>ยกเลิก/รีเซ็ต</button>
+    </div>
   </section>
-
-  <section class="stp">
-    <button class="bt go" id="pp"><span class="ic" id="ppIc">▶</span><span id="ppTxt">เริ่มเกม</span></button>
-    <button class="bt or" id="endSet"><span class="ic">⏭</span>จบเซต</button>
-    <button class="bt go" id="endMatch"><span class="ic">🏁</span>จบการแข่งขัน</button>
-    <button class="bt ye" id="reset"><span class="ic">⚠</span>ยกเลิก/รีเซ็ต</button>
-  </section>
-
 </div></div>
 
 <div class="msg" id="msg"><div id="msgTxt"></div></div>
@@ -281,6 +301,9 @@ td:first-child{max-width:150px}
   <h3>ตั้งค่า</h3>
   <button class="row" id="optFlip"><div>สลับข้างซ้าย-ขวา<small>ให้ตรงกับที่กรรมการนั่งดูสนาม</small></div><span class="sw" id="swFlip"></span></button>
   <button class="row" id="optWake"><div>เปิดหน้าจอค้างไว้<small>กันจอดับระหว่างแมตช์</small></div><span class="sw" id="swWake"></span></button>
+  <div class="row" style="display:block"><div style="margin-bottom:8px">การแสดงผลเต็มจอ</div>
+    <label class="rad"><input type="radio" name="fitmode" value="fit"> Fit screen <small>เห็นทั้งหน้า คงสัดส่วน อาจมีขอบดำ</small></label>
+    <label class="rad"><input type="radio" name="fitmode" value="fill"> Fill screen <small>ขยายเต็มจอ ไม่มีขอบ สัดส่วนอาจยืด</small></label></div>
   <button class="close" id="closeModal">ปิด</button>
 </div></div>
 <div class="modal" id="evModal"><div class="sheet"><h3>เหตุการณ์ทั้งหมด</h3><div class="evlist" id="evList"></div><button class="close" id="closeEv">ปิด</button></div></div>
@@ -299,18 +322,19 @@ const MAXSET = 3, SHUTTLE_CAP = 21;
 
 let court = null, canWrite = false, online = false, note = '';
 let viewSet = null;              // set shown on screen; null = follow the set being played
-let prefs = { flip: false, wake: false };
+let prefs = { flip: false, wake: false, fit: 'fit' };
 try { Object.assign(prefs, JSON.parse(localStorage.getItem(PREF) || '{}')); } catch {}
 const savePrefs = () => { try { localStorage.setItem(PREF, JSON.stringify(prefs)); } catch {} };
 
 /* ---------------- canvas scaling ---------------- */
 function fit() {
   const W = innerWidth, H = innerHeight;
-  let s = Math.min(W / 1536, H / 1024);
-  if (s < 0.5 && W > H) s = W / 1536;          // phones: fit the width and scroll down
-  $('wrap').style.width = 1536 * s + 'px'; $('wrap').style.height = 1024 * s + 'px';
-  $('cv').style.transform = `scale(${s})`;
-  document.documentElement.style.overflowY = 1024 * s > H + 1 ? 'auto' : 'hidden';
+  let sx, sy;
+  if (prefs.fit === 'fill') { sx = W / 1536; sy = H / 1024; }          // stretch to fill the whole screen
+  else { sx = sy = Math.min(W / 1536, H / 1024); }                      // keep proportions, whole page visible
+  $('wrap').style.width = 1536 * sx + 'px'; $('wrap').style.height = 1024 * sy + 'px';
+  $('cv').style.transform = `scale(${sx},${sy})`;
+  document.documentElement.style.overflowY = 'hidden';
 }
 addEventListener('resize', fit); fit();
 
@@ -382,7 +406,7 @@ const undo = (c) => {
 };
 const playPause = (c) => {
   ensure(c); const now = Date.now();
-  if (!began(c)) { c.startedAt = now; c.paused = false; pushEv(c, 'เริ่มการแข่งขัน'); }
+  if (!began(c)) { c.startedAt = now; c.paused = false; if (!c.shuttleUsed) c.shuttleUsed = 1; pushEv(c, 'เริ่มการแข่งขัน'); }
   else if (!c.startedAt) { c.startedAt = now; c.paused = true; c.pausedAt = now; pushEv(c, 'พักการแข่งขัน'); }
   else if (c.paused) { c.pausedTotal = (c.pausedTotal || 0) + (now - (c.pausedAt || now)); c.pausedAt = 0; c.paused = false; pushEv(c, 'เล่นต่อ'); }
   else { c.paused = true; c.pausedAt = now; pushEv(c, 'พักการแข่งขัน'); }
@@ -438,17 +462,17 @@ function draw() {
     const serverSlot = sv === t && slots.length === 2 ? (pts % 2 === 0 ? 1 : 0) : (sv === t ? 0 : -1);
     $('tc' + sd).dataset.t = t; $('sb' + sd).dataset.t = t;
     $('h' + sd).textContent = teamName(c, t);
-    $('nm' + sd).textContent = slots.map((k) => ns[k] || '').join('  /  ');
     $('ph' + sd).dataset.t = t;
     $('ph' + sd).classList.toggle('canswap', !begun && canWrite && slots.length === 2);
+    const real = (t === 'A' ? c.realA : c.realB) || [];
     $('ph' + sd).innerHTML = slots.map((k, pos) => {
       const u = safeUrl(photos[k]);
-      return `<div class="pic"><div class="pi">${u ? `<img src="${esc(u)}" alt="${esc(ns[k] || '')}">` : k + 1}</div>${pos === serverSlot ? `<span class="ball">${shuttle(34, true)}</span>` : ''}</div>`;
+      return `<div class="pw"><div class="pic"><div class="pi">${u ? `<img src="${esc(u)}" alt="${esc(ns[k] || '')}">` : k + 1}</div>${real[k] ? `<div class="real">${esc(real[k])}</div>` : ''}${pos === serverSlot ? `<span class="ball">${shuttle(34, true)}</span>` : ''}</div><div class="pnm">${esc(ns[k] || '')}</div></div>`;
     }).join('');
     $('n' + sd).textContent = c.scores[vi][T(t)];
     $('l' + sd).textContent = viewingLive ? 'คะแนนปัจจุบัน' : 'คะแนนเซตที่ ' + (vi + 1);
   }
-  $('cat').textContent = catTxt || '';
+  $('cat').textContent = catTxt || ''; $('setlab').textContent = 'SET ' + (vi + 1);
   const wl = v.L === 'A' ? wa : wb, wr = v.L === 'A' ? wb : wa;
   $('won').innerHTML = `<b>${wl}</b> <b>-</b> ${wr}`;
   $('midst').textContent = !viewingLive ? 'กำลังดูเซตที่ ' + (vi + 1) : !live ? 'คอร์ตว่าง' : c.paused ? 'พักการแข่งขัน' : !begun ? 'พร้อมเริ่ม' : 'กำลังแข่งขัน';
@@ -462,7 +486,8 @@ function draw() {
   const cl = $('cells'); cl.scrollLeft = viewingLive ? cl.scrollWidth : 0;
   $('setbtns').innerHTML = [0, 1, 2].map((i) => `<button class="sbtn${i === vi ? ' view' : ''}${i === a ? ' cur' : ''}" data-set="${i}">${i + 1}</button>`).join('');
   $('timer').textContent = hms(elapsed(c));
-  $('icBall').innerHTML = shuttle(36, false, '#e6ecff');
+  $('icBall').innerHTML = shuttle(36, false, '#e6ecff'); $('icSrv').innerHTML = shuttle(34, true, '#fff');
+  $('srvSwap').disabled = !(canWrite && live);
 
   // score pad: buttons follow the sides
   ['pl1', 'mi1'].forEach((id) => { $(id).className = 'bt ' + v.L; });
@@ -496,8 +521,6 @@ function draw() {
     }).join('') + '</tr>').join('');
 
   // recent events
-  const evs = c.events.slice(-7).reverse();
-  $('evBox').innerHTML = evs.length ? evs.map((e) => `<div><b>${clockTxt(e.at)}</b><span>${esc(e.txt)}</span></div>`).join('') : '<div><span style="color:#7f93c6">ยังไม่มีเหตุการณ์</span></div>';
   $('swFlip').classList.toggle('on', prefs.flip); $('swWake').classList.toggle('on', prefs.wake);
   if (note) toast(note), note = '';
 }
@@ -532,13 +555,14 @@ $('sc').addEventListener('click', async (e) => {
   else commit(subPoints(t, -n));
 });
 for (const sd of ['L', 'R']) $('ph' + sd).addEventListener('click', (e) => {
-  if (!e.target.closest('.pic')) return;
+  if (!e.target.closest('.pw')) return;
   const c = court && ensure(court); if (!c || began(c) || !canWrite) return;
   const t = $('ph' + sd).dataset.t;
   commit((x) => { if (t === 'A') x.swapA = !x.swapA; else x.swapB = !x.swapB; });
 });
 $('undo').onclick = () => commit(undo);
 $('swapSide').onclick = () => { prefs.flip = !prefs.flip; savePrefs(); draw(); };
+$('srvSwap').onclick = () => commit((c) => { ensure(c); c.server = c.server === 'A' ? 'B' : c.server === 'B' ? 'A' : (server(c) === 'A' ? 'B' : 'A'); pushEv(c, 'ผู้เสิร์ฟ: ' + teamName(c, c.server)); });
 $('shInc').onclick = () => commit((c) => { ensure(c); c.shuttleUsed += 1; pushEv(c, `ลูกที่ ${c.shuttleUsed} ${teamName(c, server(c) || 'A')}`); });
 $('shDec').onclick = () => commit((c) => { if (c.shuttleUsed > 0) c.shuttleUsed -= 1; });
 $('pp').onclick = () => { requestWake(); commit(playPause); };
@@ -551,7 +575,7 @@ $('endSet').onclick = () => {
 $('setbtns').addEventListener('click', (e) => { const b = e.target.closest('[data-set]'); if (b) { viewSet = Number(b.dataset.set); draw(); } });
 
 const wipe = (x) => {
-  x.scores = [[0, 0], [0, 0], [0, 0]]; x.shuttleUsed = 0; x.activeSet = 0; x.server = ''; x.swapA = false; x.swapB = false; x.paused = false;
+  x.scores = [[0, 0], [0, 0], [0, 0]]; x.shuttleUsed = 1; x.activeSet = 0; x.server = ''; x.swapA = false; x.swapB = false; x.paused = false;
   x.startedAt = 0; x.pausedAt = 0; x.pausedTotal = 0; x.log = []; x.events = [];
 };
 $('reset').onclick = () => {
@@ -597,6 +621,7 @@ $('evAll').onclick = () => {
 $('closeEv').onclick = () => $('evModal').classList.remove('on');
 $('gear').onclick = () => $('modal').classList.add('on');
 $('closeModal').onclick = () => $('modal').classList.remove('on');
+document.querySelectorAll('input[name=fitmode]').forEach((r) => { r.checked = r.value === prefs.fit; r.onchange = () => { prefs.fit = r.value; savePrefs(); fit(); }; });
 $('optFlip').onclick = () => { prefs.flip = !prefs.flip; savePrefs(); draw(); };
 let wakeLock = null;
 async function requestWake() { if (!prefs.wake || !('wakeLock' in navigator)) return; try { wakeLock = await navigator.wakeLock.request('screen'); } catch {} }

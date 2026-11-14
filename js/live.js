@@ -51,6 +51,8 @@ export function canon(c) {
     pausedTotal: num(c.pausedTotal),
     swapA: !!c.swapA,
     swapB: !!c.swapB,
+    realA: strs(c.realA, 2),
+    realB: strs(c.realB, 2),
     photoA: strs(c.photoA, 2),
     photoB: strs(c.photoB, 2),
     events: evs(c.events),
