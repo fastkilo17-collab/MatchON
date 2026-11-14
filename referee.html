@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#070d1f">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>MatchON กรรมการ</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700;800&family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet">
@@ -11,89 +14,102 @@
 :root{
   --bg:#070d1f; --panel:#0e1730; --panel2:#142040; --line:#26345c; --ink:#f3f6ff; --mute:#93a2c8;
   --a:#2563eb; --a2:#1d4ed8; --a-glow:#3b82f6; --b:#e11d48; --b2:#be123c; --b-glow:#fb7185;
-  --go:#16a34a; --go2:#15803d; --amber:#f59e0b; --lime:#d6f23d;
-  --hdr:clamp(38px,8vh,58px); --brd:clamp(58px,14vh,100px); --bar:clamp(66px,18vh,124px);
+  --amber:#f59e0b; --lime:#d6f23d;
+  --hdr:clamp(38px,8vh,58px); --brd:clamp(56px,14vh,96px); --bar:clamp(66px,18vh,124px);
+  --sidew:clamp(104px,15vw,176px);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;background:var(--bg);color:var(--ink);font-family:'Noto Sans Thai','Prompt',sans-serif;overflow:hidden}
 button{font:inherit;color:inherit;border:0;cursor:pointer;touch-action:manipulation;user-select:none}
 button:disabled{opacity:.38;cursor:not-allowed}
 .num{font-family:'Prompt',sans-serif;font-variant-numeric:tabular-nums}
-#app{height:100dvh;display:grid;grid-template-rows:var(--hdr) var(--brd) 1fr var(--bar);gap:6px;padding:max(6px,env(safe-area-inset-top)) max(8px,env(safe-area-inset-right)) max(6px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left));
-  background:radial-gradient(1200px 500px at 50% -10%,#16275a 0,transparent 60%),var(--bg)}
+#app{height:100dvh;display:grid;grid-template-rows:var(--hdr) 1fr var(--bar);gap:6px;background:var(--bg);
+  padding:max(6px,env(safe-area-inset-top)) max(8px,env(safe-area-inset-right)) max(6px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left))}
 
 /* top bar */
-.top{display:flex;align-items:center;gap:12px;background:linear-gradient(180deg,#0f1a3a,#0a1230);border:1px solid var(--line);border-radius:12px;padding:0 12px;min-width:0}
-.brand{display:flex;align-items:center;gap:8px;font:800 clamp(15px,3.4vh,22px) 'Prompt';white-space:nowrap}
-.brand i{width:clamp(22px,5vh,32px);aspect-ratio:1;border-radius:9px;background:linear-gradient(135deg,#34d399,#0d9488);display:grid;place-items:center;font-style:normal;font-size:clamp(12px,3vh,18px)}
+.top{display:flex;align-items:center;gap:10px;background:linear-gradient(180deg,#0f1a3a,#0a1230);border:1px solid var(--line);border-radius:12px;padding:0 10px 0 0;min-width:0;overflow:hidden}
+.brand{display:flex;align-items:center;gap:8px;height:100%;padding:0 26px 0 12px;background:#050a1a;clip-path:polygon(0 0,100% 0,calc(100% - 18px) 100%,0 100%);font:800 clamp(15px,3.4vh,22px) 'Prompt';white-space:nowrap;margin-right:-8px}
+.brand i{font-style:normal;font-size:clamp(16px,3.8vh,26px)}
 .brand b{color:#34d399}
-.title{flex:1;min-width:0;text-align:center;line-height:1.2}
-.title strong{display:block;font:700 clamp(12px,2.6vh,17px) 'Noto Sans Thai';white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.title{flex:1;min-width:0;display:flex;align-items:center;justify-content:center;gap:10px}
+.title .cup{font-size:clamp(18px,4.4vh,30px)}
+.title div{line-height:1.2;text-align:center;min-width:0}
+.title strong{display:block;font:700 clamp(12px,2.7vh,18px) 'Noto Sans Thai';white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .title span{font-size:clamp(10px,2.1vh,13px);color:var(--mute)}
-.pill{display:flex;align-items:center;gap:7px;padding:0 12px;height:70%;border-radius:99px;background:#0a1230;border:1px solid var(--line);font:700 clamp(11px,2.4vh,15px) 'Prompt';white-space:nowrap}
+.pill{display:flex;align-items:center;gap:7px;padding:0 12px;height:72%;border-radius:99px;background:#0a1230;border:1px solid var(--line);font:700 clamp(11px,2.4vh,15px) 'Prompt';white-space:nowrap}
 .dot{width:.8em;height:.8em;border-radius:50%;background:#64748b}
 .live .dot{background:#ef4444;box-shadow:0 0 10px #ef4444;animation:blink 1.2s infinite}
 @keyframes blink{50%{opacity:.35}}
-.gear{width:clamp(30px,6.5vh,42px);aspect-ratio:1;border-radius:50%;background:transparent;font-size:clamp(16px,3.6vh,24px)}
+.ibtn{width:clamp(30px,6.5vh,42px);aspect-ratio:1;border-radius:50%;background:transparent;font-size:clamp(16px,3.6vh,24px);display:grid;place-items:center;flex:none}
+.ibtn:active{background:#ffffff18}
 
-/* scoreboard */
-.board{display:grid;grid-template-columns:1fr auto 1fr;align-items:stretch;gap:8px;min-height:0}
-.team{display:flex;align-items:center;gap:10px;padding:0 12px;border-radius:12px;background:linear-gradient(180deg,#0f1a3a,#0a1230);border:1px solid var(--line);min-width:0;position:relative;overflow:hidden}
-.team::before{content:"";position:absolute;inset:0 auto 0 0;width:5px;background:var(--c)}
+/* stage: the scene fills it, everything else floats on top */
+.stage{position:relative;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:linear-gradient(#0a1230,#0b1a44 55%,#0a5a31 55%);min-height:0}
+.scene{position:absolute;inset:0;width:100%;height:100%}
+.tag{position:absolute;transform:translateX(-50%);padding:2px 12px;border-radius:7px;font:700 clamp(10px,2.4vh,17px) 'Noto Sans Thai';color:#fff;white-space:nowrap;box-shadow:0 2px 8px #0008}
+.tag.a{background:var(--a)}.tag.b{background:var(--b)}
+.hint{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);padding:3px 14px;border-radius:99px;background:#000a;font-size:clamp(10px,2.2vh,14px);color:#d1fae5;white-space:nowrap;max-width:90%;overflow:hidden;text-overflow:ellipsis}
+.hint:empty{display:none}
+
+/* scoreboard (floating) */
+.board{position:absolute;top:8px;left:50%;transform:translateX(-50%);width:min(calc(100% - 16px),1180px);height:var(--brd);display:grid;grid-template-columns:1fr auto 1fr;gap:0;align-items:stretch;
+  background:linear-gradient(180deg,#0d1838ee,#08102aee);border:1px solid var(--line);border-radius:16px;backdrop-filter:blur(4px);overflow:hidden}
+.team{display:flex;align-items:center;gap:10px;padding:0 14px;min-width:0;position:relative}
+.team::before{content:"";position:absolute;inset:8px auto 8px 0;width:5px;border-radius:5px;background:var(--c)}
 .team.r{flex-direction:row-reverse;text-align:right}
-.team.r::before{inset:0 0 0 auto}
+.team.r::before{inset:8px 0 8px auto}
 .team[data-t="A"]{--c:var(--a)} .team[data-t="B"]{--c:var(--b)}
 .avs{display:flex;flex:none}
-.av{width:clamp(28px,7.5vh,52px);aspect-ratio:1;border-radius:50%;display:grid;place-items:center;font:700 clamp(12px,3vh,20px) 'Prompt';background:#1c2b57;border:2px solid var(--c);margin-left:-8px}
+.av{width:clamp(28px,8vh,56px);aspect-ratio:1;border-radius:50%;display:grid;place-items:center;font:700 clamp(12px,3.2vh,22px) 'Prompt';background:#1c2b57;border:2px solid #cfe0ff;margin-left:-6px}
 .av:first-child{margin-left:0}
-.team.r .av{margin-left:0;margin-right:-8px}.team.r .av:first-child{margin-right:0}
-.who{min-width:0;line-height:1.15}
-.who strong{display:block;font:700 clamp(12px,2.8vh,19px) 'Noto Sans Thai';overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.who span{font-size:clamp(10px,2.1vh,13px);color:var(--mute);display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.srv{font-size:clamp(14px,3.4vh,22px);color:var(--lime);visibility:hidden;flex:none}
-.srv.on{visibility:visible;animation:blink 1.2s infinite}
-.mid{display:grid;grid-template-columns:auto auto auto;align-items:center;gap:clamp(6px,1.5vw,16px);padding:0 clamp(8px,1.6vw,18px);border-radius:14px;background:#0a1230;border:1px solid var(--line)}
-.big{width:clamp(44px,12vh,86px);aspect-ratio:1;border-radius:50%;display:grid;place-items:center;font:800 clamp(24px,7.5vh,52px) 'Prompt';color:#fff}
-.big.a{background:radial-gradient(circle at 30% 25%,var(--a-glow),var(--a2));box-shadow:0 0 18px #2563eb88}
-.big.b{background:radial-gradient(circle at 30% 25%,var(--b-glow),var(--b2));box-shadow:0 0 18px #e11d4888}
-.setinfo{text-align:center;line-height:1.1}
-.setinfo small{display:block;font-size:clamp(10px,2.2vh,14px);color:var(--mute)}
-.setinfo b{font:700 clamp(15px,4vh,28px) 'Prompt'}
+.team.r .av{margin-left:0;margin-right:-6px}.team.r .av:first-child{margin-right:0}
+.who{min-width:0;line-height:1.15;flex:1}
+.who strong{display:block;font:700 clamp(13px,3.2vh,24px) 'Noto Sans Thai';overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.who span{font-size:clamp(10px,2.3vh,16px);color:var(--mute);display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.srv{flex:none;width:clamp(18px,4vh,28px);aspect-ratio:1;border-radius:50%;background:#16a34a;display:none;place-items:center;font-size:clamp(10px,2.4vh,16px);box-shadow:0 0 12px #22c55e}
+.srv.on{display:grid;animation:blink 1.4s infinite}
+.mid{display:grid;grid-template-columns:auto auto auto;align-items:center;gap:clamp(6px,1.4vw,18px);padding:0 clamp(8px,1.4vw,20px);background:#050a1acc;border-inline:1px solid var(--line)}
+.big{width:clamp(44px,12vh,88px);aspect-ratio:1;border-radius:50%;display:grid;place-items:center;font:800 clamp(24px,7.4vh,54px) 'Prompt';color:#fff;border:3px solid #ffffff55}
+.big.a{background:radial-gradient(circle at 30% 25%,var(--a-glow),var(--a2));box-shadow:0 0 18px #2563eb99}
+.big.b{background:radial-gradient(circle at 30% 25%,var(--b-glow),var(--b2));box-shadow:0 0 18px #e11d4899}
+.setinfo{text-align:center;line-height:1.1;min-width:clamp(58px,9vw,96px)}
+.setinfo small{display:block;font:600 clamp(10px,2.3vh,15px) 'Noto Sans Thai';color:#dbe5ff}
+.setinfo b{font:700 clamp(15px,4.2vh,30px) 'Prompt'}
 .chip{display:inline-block;margin-top:2px;padding:1px 8px;border-radius:99px;background:var(--amber);color:#111;font:700 clamp(9px,1.9vh,12px) 'Prompt'}
 .chip:empty{display:none}
 
-/* stage */
-.stage{display:grid;grid-template-columns:clamp(104px,17vw,190px) 1fr clamp(104px,17vw,190px);gap:8px;min-height:0}
-.side{display:flex;flex-direction:column;gap:6px;padding:6px;border-radius:14px;background:var(--panel);border:1px solid var(--line);min-height:0}
-.side button{border-radius:12px;font:700 clamp(11px,2.5vh,16px) 'Noto Sans Thai';min-height:0;display:flex;align-items:center;justify-content:center;gap:6px;flex-direction:column;line-height:1.1;text-align:center;padding:4px}
-.side .plus{flex:3.2;font:800 clamp(24px,7vh,46px) 'Prompt';color:#fff}
-.side .plus small{font:700 clamp(10px,2.4vh,15px) 'Noto Sans Thai';opacity:.95}
-.side .plus .sh{font-size:clamp(16px,4.4vh,30px)}
+/* side score pads (floating over the scene) */
+.side{position:absolute;top:calc(var(--brd) + 18px);bottom:8px;width:var(--sidew);display:flex;flex-direction:column;gap:6px;padding:6px;border-radius:16px;
+  background:linear-gradient(180deg,#0c1737d8,#08102ad8);border:1px solid var(--line);min-height:0}
+#sideL{left:8px}#sideR{right:8px}
+.side button{border-radius:12px;font:700 clamp(11px,2.5vh,16px) 'Noto Sans Thai';min-height:0;display:flex;align-items:center;justify-content:center;gap:6px;line-height:1.1;text-align:center;padding:4px}
+.side .plus{flex:3.4;flex-direction:column;font:800 clamp(26px,7.4vh,48px) 'Prompt';color:#fff;gap:0}
+.side .plus small{font:700 clamp(10px,2.4vh,16px) 'Noto Sans Thai'}
+.side .plus .sh{font-size:clamp(16px,4.6vh,32px)}
 .side .sm{flex:1;background:var(--panel2);border:1px solid var(--line)}
 .side .sm.red{background:#3a1220;border-color:#6b1d36;color:#ffd5df}
-.side[data-t="A"] .plus{background:linear-gradient(180deg,#3b82f6,#1d4ed8);box-shadow:0 6px 0 #1e3a8a}
-.side[data-t="B"] .plus{background:linear-gradient(180deg,#fb4f72,#be123c);box-shadow:0 6px 0 #881337}
+.side[data-t="A"] .plus{background:linear-gradient(180deg,#3b82f6,#1d4ed8);box-shadow:0 5px 0 #1e3a8a}
+.side[data-t="B"] .plus{background:linear-gradient(180deg,#fb4f72,#be123c);box-shadow:0 5px 0 #881337}
 .side .plus:active{transform:translateY(4px);box-shadow:none!important}
 .side[data-t="A"] .sm.mine{background:#122a63;border-color:#2b59c6}
 .side[data-t="B"] .sm.mine{background:#4a1328;border-color:#b3315a}
-
-.court{position:relative;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:#0b6b3a;min-height:0}
-.court svg{width:100%;height:100%;display:block}
-.tag{position:absolute;padding:2px 10px;border-radius:6px;font:700 clamp(10px,2.3vh,15px) 'Noto Sans Thai';color:#fff;white-space:nowrap}
-.tag.a{background:var(--a);left:6%;top:8%}.tag.b{background:var(--b);right:6%;bottom:8%}
-.hint{position:absolute;inset:auto 0 6px 0;text-align:center;font-size:clamp(10px,2.2vh,14px);color:#d1fae5}
+.side .sm b{font-family:'Prompt'}
 
 /* bottom bar */
-.bar{display:grid;grid-template-columns:1fr 1fr 1.15fr 1.35fr repeat(3,minmax(0,.62fr));gap:6px;min-height:0}
+.bar{display:grid;grid-template-columns:1fr 1.1fr 1.15fr 1.35fr repeat(3,minmax(0,.62fr));gap:6px;min-height:0}
 .box{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:6px 10px;display:flex;flex-direction:column;justify-content:center;gap:4px;min-width:0;min-height:0}
 .box h4{font:600 clamp(10px,2.2vh,14px) 'Noto Sans Thai';color:var(--mute);display:flex;gap:6px;align-items:center}
 .box .val{font:700 clamp(14px,3.6vh,26px) 'Prompt'}
-.step{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.step button{width:clamp(30px,7.5vh,48px);aspect-ratio:1;border-radius:50%;background:var(--amber);color:#1a1200;font:800 clamp(16px,4vh,26px) 'Prompt';display:grid;place-items:center}
-.swap{background:#1d3f9e;border:1px solid #3466e0;border-radius:10px;padding:clamp(4px,1.2vh,9px);font:700 clamp(10px,2.3vh,15px) 'Noto Sans Thai'}
+.stepper{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.stepper button{width:clamp(30px,7.5vh,48px);aspect-ratio:1;border-radius:50%;background:var(--amber);color:#1a1200;font:800 clamp(16px,4vh,26px) 'Prompt';display:grid;place-items:center}
+.svrow{display:flex;align-items:center;gap:8px;background:#06101f;border-radius:10px;padding:clamp(3px,.9vh,7px) 10px;font:700 clamp(11px,2.6vh,17px) 'Noto Sans Thai';min-width:0}
+.svrow i{width:.9em;height:.9em;border-radius:50%;background:var(--a);flex:none}
+.svrow i.b{background:var(--b)}
+.svrow span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.swap{background:#1d3f9e;border:1px solid #3466e0;border-radius:10px;padding:clamp(4px,1.1vh,8px);font:700 clamp(10px,2.3vh,15px) 'Noto Sans Thai'}
 .start{background:linear-gradient(180deg,#22c55e,#15803d);box-shadow:0 6px 0 #14532d;border-radius:16px;font:800 clamp(14px,3.8vh,26px) 'Prompt';display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
 .start:active{transform:translateY(4px);box-shadow:none}
-.start span{font-size:clamp(18px,5vh,34px);line-height:1}
+.start span{font-size:clamp(18px,5.2vh,36px);line-height:1}
 .statusv{background:#06101f;border-radius:10px;text-align:center;padding:4px;font:700 clamp(12px,3vh,20px) 'Prompt';color:#4ade80}
 .statusv.warn{color:var(--amber)} .statusv.idle{color:var(--mute)}
 .box small{font-size:clamp(9px,2vh,13px);color:var(--mute);text-align:center}
@@ -106,50 +122,49 @@ button:disabled{opacity:.38;cursor:not-allowed}
 /* messages / modal */
 .msg{position:fixed;inset:0;display:none;place-items:center;background:var(--bg);padding:24px;z-index:5;text-align:center;line-height:1.7}
 .msg.on{display:grid}.msg div{max-width:520px;color:#fde68a}
-.toast{position:fixed;left:50%;bottom:calc(var(--bar) + 18px);transform:translateX(-50%);background:#0b1226ee;border:1px solid var(--line);padding:8px 16px;border-radius:99px;font-size:14px;z-index:9;display:none}
+.toast{position:fixed;left:50%;bottom:calc(var(--bar) + 18px);transform:translateX(-50%);background:#0b1226ee;border:1px solid var(--line);padding:8px 16px;border-radius:99px;font-size:14px;z-index:9;display:none;max-width:92vw;text-align:center}
 .toast.on{display:block}
 .modal{position:fixed;inset:0;background:#000a;display:none;place-items:center;z-index:8;padding:16px}
 .modal.on{display:grid}
 .sheet{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px;width:min(420px,100%);display:flex;flex-direction:column;gap:12px}
 .sheet h3{font:700 18px 'Prompt'}
-.row{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--panel2);border-radius:12px;padding:12px 14px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--panel2);border-radius:12px;padding:12px 14px;width:100%;text-align:left}
 .row small{color:var(--mute);display:block}
 .sw{width:48px;height:28px;border-radius:99px;background:#334155;position:relative;flex:none}
 .sw::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:.15s}
-.sw.on{background:var(--go)}.sw.on::after{left:23px}
+.sw.on{background:#16a34a}.sw.on::after{left:23px}
 .close{background:#1e293b;border-radius:12px;padding:12px;font-weight:700}
 
-/* short landscape screens (phones): drop decoration so the buttons keep their size */
+/* short landscape screens (phones): drop the figures, keep the buttons big */
 @media (max-height:480px) and (orientation:landscape){
-  .side .plus .sh, .side .plus small{display:none}
+  .figs,.tag{display:none}
+  .side .plus .sh,.side .plus small{display:none}
   .side .plus{font-size:clamp(26px,9vh,40px)}
   .side{gap:4px;padding:4px}
   .hint{display:none}
 }
 
-/* portrait phones: stack */
+/* portrait phones: stack everything */
 @media (orientation:portrait){
   :root{--hdr:44px;--brd:auto;--bar:auto}
-  #app{height:auto;min-height:100dvh;grid-template-rows:var(--hdr) auto auto auto}
   html,body{overflow:auto}
-  .who strong{white-space:normal}
-  .who{flex:1}
-  .avs{display:none}
-  .team.r{text-align:right}
-  .side{min-height:0}
-  .board{grid-template-columns:1fr 1fr;grid-template-rows:auto auto}
-  .mid{grid-column:1/-1;order:3;justify-content:center;padding:8px}
+  #app{height:auto;min-height:100dvh;grid-template-rows:var(--hdr) auto auto}
+  .title span,.title .cup{display:none}
+  .stage{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:8px;background:var(--bg);border:0;overflow:visible}
+  .scene,.tag,.figs{display:none}
+  .board{position:static;transform:none;width:auto;grid-column:1/-1;grid-template-columns:1fr 1fr;height:auto}
+  .mid{grid-column:1/-1;order:3;justify-content:center;padding:8px;border:0;border-top:1px solid var(--line)}
   .big{width:64px;font-size:34px}
   .team{padding:8px 10px;min-height:52px}
-  .stage{grid-template-columns:1fr 1fr}
-  .court{display:none}
-  .side{height:330px}
-  .side .plus{min-height:120px;font-size:44px}.side .sm{min-height:44px;font-size:14px}
+  .who strong{white-space:normal}.avs{display:none}.team.r{text-align:right}
+  .side{position:static;width:auto;height:330px}
+  .side .plus{font-size:44px}
+  .hint{grid-column:1/-1;position:static;transform:none;background:none}
   .bar{grid-template-columns:1fr 1fr 1fr}
   .bar .box{grid-column:span 3}.bar .start{grid-column:span 3;min-height:84px}
   .act{min-height:68px}
-  .title span{display:none}
   .toast{bottom:20px}
+  #fsBtn{display:none}
 }
 </style>
 </head>
@@ -157,55 +172,70 @@ button:disabled{opacity:.38;cursor:not-allowed}
 <div id="app">
   <header class="top">
     <div class="brand"><i>🏸</i><span>Match<b>ON</b></span></div>
-    <div class="title"><strong id="tname">การแข่งขัน</strong><span id="tsub">สนาม –</span></div>
+    <div class="title"><span class="cup">🏆</span><div><strong id="tname">การแข่งขัน</strong><span id="tsub">สนาม –</span></div></div>
     <div class="pill" id="livepill"><span class="dot"></span><span id="livetxt">OFFLINE</span></div>
     <div class="pill"><span>🕒</span><span id="clock" class="num">--:--:--</span></div>
-    <button class="gear" id="gear" aria-label="ตั้งค่า">⚙️</button>
+    <button class="ibtn" id="fsBtn" aria-label="เต็มจอ" title="เต็มจอ">⛶</button>
+    <button class="ibtn" id="gear" aria-label="ตั้งค่า" title="ตั้งค่า">⚙️</button>
   </header>
 
-  <section class="board">
-    <div class="team" id="teamL"><div class="avs" id="avL"></div><div class="who"><strong id="nL"></strong><span id="cL"></span></div><span class="srv" id="srvL">🏸</span></div>
-    <div class="mid">
-      <div class="big" id="bigL">0</div>
-      <div class="setinfo"><small id="setlab">เซตที่ 1</small><b class="num" id="setsWon">0 - 0</b><div class="chip" id="chip"></div></div>
-      <div class="big" id="bigR">0</div>
-    </div>
-    <div class="team r" id="teamR"><div class="avs" id="avR"></div><div class="who"><strong id="nR"></strong><span id="cR"></span></div><span class="srv" id="srvR">🏸</span></div>
-  </section>
+  <main class="stage" id="stage">
+    <svg class="scene" id="scene" viewBox="0 0 1000 540" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+      <defs>
+        <linearGradient id="bgG" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#070d24"/><stop offset="1" stop-color="#12306b"/></linearGradient>
+        <linearGradient id="flG" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#0c7a44"/><stop offset="1" stop-color="#09562e"/></linearGradient>
+        <radialGradient id="spG"><stop offset="0" stop-color="#fff" stop-opacity=".9"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+        <pattern id="crowd" width="9" height="9" patternUnits="userSpaceOnUse"><rect width="9" height="9" fill="#0b1536"/><circle cx="4.5" cy="4.5" r="2.6" fill="#1b2a5a"/><circle cx="1" cy="8" r="1.4" fill="#26396f"/></pattern>
+        <pattern id="mesh" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M0 0H10V10" fill="none" stroke="#e5ecff" stroke-opacity=".5" stroke-width="1"/></pattern>
+      </defs>
+      <rect width="1000" height="540" fill="url(#bgG)"/>
+      <rect y="70" width="1000" height="170" fill="url(#crowd)" opacity=".9"/>
+      <g fill="url(#spG)"><circle cx="110" cy="20" r="46"/><circle cx="330" cy="14" r="40"/><circle cx="560" cy="14" r="40"/><circle cx="790" cy="16" r="42"/><circle cx="930" cy="26" r="36"/></g>
+      <g id="boards"></g>
+      <polygon points="150,290 850,290 1000,540 0,540" fill="url(#flG)"/>
+      <g fill="none" stroke="#fff" stroke-width="3" opacity=".9">
+        <polygon points="200,296 800,296 940,530 60,530"/>
+        <line x1="212" y1="318" x2="788" y2="318"/><line x1="86" y1="500" x2="914" y2="500"/>
+        <line x1="500" y1="296" x2="500" y2="530"/>
+        <line x1="352" y1="318" x2="262" y2="500"/><line x1="648" y1="318" x2="738" y2="500"/>
+      </g>
+      <rect x="70" y="214" width="860" height="88" fill="url(#mesh)"/>
+      <rect x="70" y="208" width="860" height="9" fill="#f1f5ff"/>
+      <rect x="494" y="196" width="12" height="276" rx="5" fill="#1e40af"/>
+      <rect x="486" y="448" width="28" height="26" rx="4" fill="#0f2a73"/>
+      <g class="figs" id="figs"></g>
+    </svg>
+    <div class="tag a" id="tag1"></div><div class="tag a" id="tag2"></div><div class="tag b" id="tag3"></div><div class="tag b" id="tag4"></div>
 
-  <main class="stage">
+    <section class="board">
+      <div class="team" id="teamL"><div class="avs" id="avL"></div><div class="who"><strong id="nL"></strong><span id="cL"></span></div><span class="srv" id="srvL">🏸</span></div>
+      <div class="mid">
+        <div class="big" id="bigL">0</div>
+        <div class="setinfo"><small id="setlab">เซตที่ 1</small><b class="num" id="setsWon">0 - 0</b><div class="chip" id="chip"></div></div>
+        <div class="big" id="bigR">0</div>
+      </div>
+      <div class="team r" id="teamR"><div class="avs" id="avR"></div><div class="who"><strong id="nR"></strong><span id="cR"></span></div><span class="srv" id="srvR">🏸</span></div>
+    </section>
+
     <aside class="side" id="sideL">
       <button class="plus" id="plusL"><span class="sh">🏸</span><span>+1</span><small id="plusLn"></small></button>
       <button class="sm" id="minL">−1</button>
-      <button class="sm mine" id="srvBtnL">🏸 ให้เสิร์ฟ</button>
+      <button class="sm mine" id="contL">🔄 +1 ต่อเนื่อง <b id="streakL"></b></button>
       <button class="sm red" id="undoL">✕ ยกเลิกแต้ม</button>
     </aside>
-    <div class="court">
-      <svg viewBox="0 0 440 200" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-        <defs><linearGradient id="g" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#0f7a43"/><stop offset="1" stop-color="#0a5a31"/></linearGradient></defs>
-        <rect width="440" height="200" fill="url(#g)"/>
-        <g fill="none" stroke="#fff" stroke-width="2" opacity=".9">
-          <rect x="30" y="20" width="380" height="160"/><line x1="30" y1="34" x2="410" y2="34"/><line x1="30" y1="166" x2="410" y2="166"/>
-          <line x1="104" y1="20" x2="104" y2="180"/><line x1="336" y1="20" x2="336" y2="180"/><line x1="104" y1="100" x2="220" y2="100"/><line x1="220" y1="100" x2="336" y2="100"/>
-        </g>
-        <line x1="220" y1="14" x2="220" y2="186" stroke="#e2e8f0" stroke-width="4"/>
-        <circle id="srvDot" cx="150" cy="70" r="7" fill="#d6f23d" stroke="#365314" stroke-width="2"/>
-      </svg>
-      <div class="tag a" id="tagL"></div><div class="tag b" id="tagR"></div>
-      <div class="hint" id="hint"></div>
-    </div>
     <aside class="side" id="sideR">
       <button class="plus" id="plusR"><span class="sh">🏸</span><span>+1</span><small id="plusRn"></small></button>
       <button class="sm" id="minR">−1</button>
-      <button class="sm mine" id="srvBtnR">🏸 ให้เสิร์ฟ</button>
+      <button class="sm mine" id="contR">🔄 +1 ต่อเนื่อง <b id="streakR"></b></button>
       <button class="sm red" id="undoR">✕ ยกเลิกแต้ม</button>
     </aside>
+    <div class="hint" id="hint"></div>
   </main>
 
   <footer class="bar">
     <div class="box"><h4>🏸 ลูกขนไก่ที่ใช้</h4>
-      <div class="step"><button id="shDec">−</button><span class="val num" id="shuttle">0</span><button id="shInc">+</button></div></div>
-    <div class="box"><h4>🙋 ผู้เสิร์ฟ</h4><div class="val" id="server" style="font-size:clamp(12px,3vh,20px)">–</div><button class="swap" id="swapServe">⇄ เปลี่ยนผู้เสิร์ฟ</button></div>
+      <div class="stepper"><button id="shDec">−</button><span class="val num" id="shuttle">0</span><button id="shInc">+</button></div></div>
+    <div class="box"><h4>🙋 ผู้เสิร์ฟ</h4><div class="svrow"><i id="svDot"></i><span id="server">–</span></div><button class="swap" id="swapServe">⇄ เปลี่ยนผู้เสิร์ฟ</button></div>
     <button class="start" id="start"><span>▶</span><b id="startTxt">เริ่มเกม</b></button>
     <div class="box"><h4>🏆 สถานะการแข่งขัน</h4><div class="statusv" id="state">–</div><small id="since"></small></div>
     <button class="act pause" id="pause"><span>⏸</span>พักการแข่งขัน</button>
@@ -303,6 +333,84 @@ const undo = (c) => {
   const prev = c.log[c.log.length - 1]; if (prev) c.server = prev[0];
 };
 
+/* ---------------- scene (stylised court with players) ---------------- */
+function streak(c, t) {
+  let n = 0; const i = idx(c);
+  for (let k = c.log.length - 1; k >= 0; k--) { if (c.log[k][0] === t && Number(c.log[k][1]) === i) n++; else break; }
+  return n;
+}
+const firstNames = (name) => String(name || '').split('/').map((p) => p.replace(/^คุณ\s*/, '').trim()).filter(Boolean);
+function figure(x, y, sc, dir, color) {
+  return `<g transform="translate(${x} ${y}) scale(${sc * dir} ${sc})">
+    <ellipse cx="0" cy="3" rx="40" ry="8" fill="#000" opacity=".28"/>
+    <rect x="-17" y="-112" width="13" height="108" rx="6" fill="#e8b98f"/><rect x="4" y="-112" width="13" height="108" rx="6" fill="#e8b98f"/>
+    <ellipse cx="-10" cy="-3" rx="19" ry="8" fill="#f8fafc"/><ellipse cx="12" cy="-3" rx="19" ry="8" fill="#f8fafc"/>
+    <path d="M-27 -156 h54 l5 56 h-27 l-5 -24 l-5 24 h-27 z" fill="#101523"/>
+    <rect x="-28" y="-252" width="56" height="112" rx="16" fill="${color}"/>
+    <rect x="-8" y="-262" width="16" height="16" rx="6" fill="#e8b98f"/>
+    <circle cx="0" cy="-284" r="25" fill="#e8b98f"/><path d="M-25 -286 a25 24 0 0 1 50 0 q-25 -10 -50 0z" fill="#171717"/>
+    <line x1="20" y1="-226" x2="62" y2="-186" stroke="#e8b98f" stroke-width="13" stroke-linecap="round"/>
+    <line x1="62" y1="-186" x2="96" y2="-216" stroke="#c9d1e3" stroke-width="5" stroke-linecap="round"/>
+    <ellipse cx="110" cy="-232" rx="19" ry="28" transform="rotate(38 110 -232)" fill="#ffffff10" stroke="#e5ecff" stroke-width="4"/>
+  </g>`;
+}
+function boardsSvg() {
+  let out = '';
+  for (let k = 0; k < 6; k++) out += `<g><rect x="${k * 168 - 4}" y="238" width="164" height="50" fill="#0a1a4a" stroke="#2c4a9a" stroke-width="2"/><text x="${k * 168 + 78}" y="272" text-anchor="middle" font-family="Prompt,sans-serif" font-weight="800" font-size="24" fill="#fff">Match<tspan fill="#34d399">ON</tspan></text></g>`;
+  return out;
+}
+let boardsDone = false;
+function drawScene(c, v) {
+  if (!boardsDone) { $('boards').innerHTML = boardsSvg(); boardsDone = true; }
+  const COL = { A: '#2563eb', B: '#e11d48' };
+  let svg = '';
+  const tags = { 1: ['', 0, 0], 2: ['', 0, 0], 3: ['', 0, 0], 4: ['', 0, 0] };
+  const place = (side, k) => {
+    const t = v[side], names = firstNames(nameOf(c, t)), dir = side === 'L' ? 1 : -1, col = COL[t];
+    const spots = names.length > 1 ? [[side === 'L' ? 250 : 750, 505, 0.74], [side === 'L' ? 380 : 620, 420, 0.58]] : [[side === 'L' ? 300 : 700, 470, 0.68]];
+    spots.slice().reverse().forEach(([x, y, sc], r) => { svg += figure(x, y, sc, dir, col); });
+    spots.forEach(([x, y, sc], r) => {
+      const tg = $('tag' + (k + r)); tg.textContent = names[r] || '';
+      tg.className = 'tag ' + (t === 'A' ? 'a' : 'b'); tg.dataset.x = x; tg.dataset.y = y - 330 * sc; tg.dataset.on = names[r] ? '1' : '';
+    });
+    if (spots.length === 1) { const tg = $('tag' + (k + 1)); tg.textContent = ''; tg.dataset.on = ''; }
+  };
+  place('L', 1); place('R', 3);
+  $('figs').innerHTML = svg;
+  positionTags();
+}
+// tags live in HTML (crisp text); map scene coordinates to the stage with the same "slice" maths as the SVG
+function positionTags() {
+  const st = $('stage'), W = st.clientWidth, H = st.clientHeight;
+  if (!W || !H) return;
+  const k = Math.max(W / 1000, H / 540), offX = (W - 1000 * k) / 2, offY = H - 540 * k;
+  [1, 2, 3, 4].forEach((n) => {
+    const tg = $('tag' + n);
+    if (!tg.dataset.on) { tg.style.display = 'none'; return; }
+    tg.style.display = '';
+    tg.style.left = (offX + Number(tg.dataset.x) * k) + 'px';
+    tg.style.top = (offY + Number(tg.dataset.y) * k - 12) + 'px';
+  });
+}
+window.addEventListener('resize', positionTags);
+
+/* ---------------- fullscreen ---------------- */
+const fsEl = document.documentElement;
+const fsOn = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
+async function toggleFullscreen() {
+  try {
+    if (fsOn()) { (document.exitFullscreen || document.webkitExitFullscreen).call(document); return; }
+    const req = fsEl.requestFullscreen || fsEl.webkitRequestFullscreen;
+    if (!req) return toast('iPhone ยังไม่รองรับเต็มจอบนเบราว์เซอร์ ให้กดปุ่มแชร์ แล้วเลือก "เพิ่มไปยังหน้าจอโฮม" จะเปิดแบบเต็มจอได้');
+    await req.call(fsEl);
+    try { await screen.orientation.lock('landscape'); } catch { /* not supported or not allowed */ }
+  } catch (e) { toast('เปิดเต็มจอไม่สำเร็จ: ' + (e.message || e)); }
+}
+function syncFs() { $('fsBtn').textContent = fsOn() ? '🗗' : '⛶'; $('fsBtn').title = fsOn() ? 'ออกจากเต็มจอ' : 'เต็มจอ'; setTimeout(positionTags, 150); }
+['fullscreenchange', 'webkitfullscreenchange'].forEach((ev) => document.addEventListener(ev, syncFs));
+$('fsBtn').onclick = toggleFullscreen;
+document.addEventListener('dblclick', (e) => { if (!e.target.closest('button')) toggleFullscreen(); });
+
 /* ---------------- rendering ---------------- */
 const view = () => (prefs.flip ? { L: 'B', R: 'A' } : { L: 'A', R: 'B' });
 const nameOf = (c, t) => (t === 'A' ? c.teamA : c.teamB);
@@ -326,28 +434,27 @@ function draw() {
   $('livetxt').textContent = running ? 'LIVE' : liveMatch ? (c.paused ? 'PAUSED' : 'READY') : 'IDLE';
 
   for (const side of ['L', 'R']) {
-    const t = v[side];
-    $('n' + side).textContent = nameOf(c, t);
-    $('c' + side).textContent = clubOf(c, t);
-    $('av' + side).innerHTML = initials(nameOf(c, t)).map((x) => `<div class="av">${x}</div>`).join('');
+    const t = v[side], players = nameOf(c, t), club = clubOf(c, t);
+    const hasClub = club && club !== '-';
+    $('n' + side).textContent = hasClub ? club : players;
+    $('c' + side).textContent = hasClub ? players : '';
+    $('av' + side).innerHTML = initials(players).map((x) => `<div class="av">${x}</div>`).join('');
     $('team' + side).dataset.t = t; $('side' + side).dataset.t = t;
     $('big' + side).className = 'big ' + (t === 'A' ? 'a' : 'b');
     $('big' + side).textContent = c.scores[i][T(t)];
-    $('plus' + side + 'n').textContent = nameOf(c, t);
+    $('plus' + side + 'n').textContent = hasClub ? club : players;
     $('srv' + side).classList.toggle('on', c.server === t);
-    $('tag' + side).textContent = initials(nameOf(c, t)).join(' / ') ? nameOf(c, t) : '';
+    const run = streak(c, t);
+    $('streak' + side).textContent = run > 1 ? '×' + run : '';
   }
-  $('tagL').className = 'tag ' + (v.L === 'A' ? 'a' : 'b'); $('tagR').className = 'tag ' + (v.R === 'A' ? 'a' : 'b');
+  drawScene(c, v);
   $('setlab').textContent = 'เซตที่ ' + (i + 1);
   const wl = v.L === 'A' ? wa : wb, wr = v.L === 'A' ? wb : wa;
   $('setsWon').textContent = wl + ' - ' + wr;
   $('chip').textContent = setPointChip(c);
   $('shuttle').textContent = c.shuttleUsed;
   $('server').textContent = c.server ? nameOf(c, c.server) : 'ยังไม่ระบุ';
-  // server dot on the court graphic
-  const onLeft = c.server ? v.L === c.server : true, evenScore = (c.scores[i][T(c.server || 'A')] % 2) === 0;
-  const dot = $('srvDot'); dot.setAttribute('cx', onLeft ? 160 : 280); dot.setAttribute('cy', evenScore ? (onLeft ? 135 : 65) : (onLeft ? 65 : 135));
-  dot.style.display = c.server ? '' : 'none';
+  $('svDot').className = c.server === 'B' ? 'b' : '';
 
   $('startTxt').textContent = !begun ? 'เริ่มเกม' : c.paused ? 'เล่นต่อ' : 'กำลังแข่ง';
   const st = $('state');
@@ -357,7 +464,9 @@ function draw() {
   $('pause').lastChild.textContent = c.paused ? 'เล่นต่อ' : 'พักการแข่งขัน';
   $('hint').textContent = !liveMatch ? 'รอผู้จัดเรียกคู่ลงสนาม' : !begun ? 'กด "เริ่มเกม" เพื่อเริ่มนับแต้ม' : c.paused ? 'พักการแข่งขัน กด "เล่นต่อ"' : '';
 
-  ['plusL', 'plusR', 'minL', 'minR', 'srvBtnL', 'srvBtnR', 'undoL', 'undoR', 'shInc', 'shDec', 'swapServe', 'endSet'].forEach((id) => { $(id).disabled = !(canWrite && liveMatch && begun && !c.paused); });
+  ['plusL', 'plusR', 'minL', 'minR', 'contL', 'contR', 'undoL', 'undoR', 'shInc', 'shDec', 'swapServe', 'endSet'].forEach((id) => { $(id).disabled = !(canWrite && liveMatch && begun && !c.paused); });
+  // "+1 ต่อเนื่อง" is for the team that is already serving (it keeps the serve and extends its run)
+  for (const side of ['L', 'R']) $('cont' + side).disabled = $('cont' + side).disabled || c.server !== v[side];
   $('start').disabled = !(canWrite && liveMatch && (!begun || c.paused));
   $('pause').disabled = !(canWrite && liveMatch && begun);
   $('endMatch').disabled = !(canWrite && liveMatch && begun);
@@ -389,7 +498,7 @@ const sideTeam = (side) => view()[side];
 for (const side of ['L', 'R']) {
   $('plus' + side).onclick = () => { vibe(); commit(addPoint(sideTeam(side))); };
   $('min' + side).onclick = () => commit(minus(sideTeam(side)));
-  $('srvBtn' + side).onclick = () => commit((c) => { c.server = sideTeam(side); });
+  $('cont' + side).onclick = () => { vibe(); commit(addPoint(sideTeam(side))); };
   $('undo' + side).onclick = () => commit(undo);
 }
 $('swapServe').onclick = () => commit((c) => { c.server = c.server === 'A' ? 'B' : 'A'; });
