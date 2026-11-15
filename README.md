@@ -2,7 +2,8 @@
 
 ระบบจัดแข่งแบดมินตัน: สมัคร ประเมินมือ ตรวจสลิป สายแข่ง และคอร์ตสด
 
-- `index.html` — เว็บแอปใหม่ (หน้าเดียว Tailwind + JS ข้อมูลเก็บในเครื่องผ่าน localStorage ก่อน)
+- `index.html` + `app/` — เว็บแอปหลักใหม่ (ระบบจัดการแข่งขันครบวงจร ต่อ Supabase จริง): Dashboard, รายการแข่งขัน/รุ่น, สมัครแข่ง+สลิป, จัดการนักกีฬา, จัดสาย (Knockout/Round Robin/Group/Group+KO/Swiss), ตารางแข่ง+สนาม, ผลการแข่งขัน, รายงาน (CSV/พิมพ์ PDF), ตั้งค่า. บทบาท: super_admin / organizer / staff / referee / player / ผู้ชม
+- `courts.html` — คอร์ตสด (Firebase) เดิม ไม่เปลี่ยน; `referee.html` — หน้ากรรมการ
 - `v1/` — เวอร์ชันก่อนหน้าที่ต่อ Supabase แล้ว (สมัคร/จ่ายเงิน/ให้คะแนน) เปิดที่ `/v1/`
 - `supabase/` — สคีมาฐานข้อมูลของ v1
 
@@ -10,3 +11,7 @@
 - `js/live.js` ซิงก์คอร์ตและผลแมตช์ผ่าน Firebase โปรเจกต์ `matchon-c5217`
 - `database.rules.json` กฎความปลอดภัย: ทุกคนอ่านคะแนนสดได้ แต่เขียนได้เฉพาะเครื่องที่มีรหัสกรรมการ (รหัสแยกรายคอร์ต อยู่ใน QR ส่วนหลัง `#k=`)
 - ต้องเปิด Authentication → Sign-in method → **Anonymous** และวางกฎใน Realtime Database → Rules
+
+## ฐานข้อมูลแอปหลัก (Supabase `atjxzczutrenphivihyd`)
+ใช้ตารางเดิมของ v1 และเพิ่มส่วนที่ขาดผ่าน migration `002_matchon_v2_extend` – `005_staff_read_slips` (profiles.role, `become_organizer`, `can_manage()`, referees, payments, notifications, category_templates และ RPC `register_team`, `my_registration`, `submit_slip`, `update_partner`, `my_notifications`, `public_entries`)
+การจับคู่ชื่อตารางกับสเปก: teams=registrations, match_entries=matches.reg_a/reg_b, match_schedules=matches.court/scheduled_at, match_scores=matches.sets/cur_a/cur_b, score_events=match_events
