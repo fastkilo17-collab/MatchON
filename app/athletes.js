@@ -7,8 +7,7 @@ export async function athletesPage(root) {
   const t = curT();
   if (!t) return mount(root, html`<div class="card empty">ยังไม่มีรายการแข่งขัน <a href="#/tournaments/new">สร้างรายการ</a></div>`);
   let D = await loadData(t.id);
-  const refs = (await sb.from('referees').select('*').eq('tournament_id', t.id).order('court_no')).data || [];
-  const state = { tab: 'regs', cat: '', status: '', pay: '', q: '', refs };
+  const state = { tab: 'regs', cat: '', status: '', pay: '', q: '' };
 
   const draw = () => {
     const q = state.q.trim().toLowerCase();
@@ -18,8 +17,8 @@ export async function athletesPage(root) {
     const paidSum = list.filter((r) => r.pay_status === 'paid').reduce((n, r) => n + (D.C[r.category_id] || {}).fee, 0);
     mount(root, html`
       <div class="row between"><h2>จัดการนักกีฬา · ${t.name}</h2>
-        <button class="btn sm" id="exp">⬇ ดาวน์โหลดรายชื่อ (CSV)</button></div>
-      <div class="tabs" id="tb">${raw(tabs([['regs', `ผู้สมัคร (${D.regs.length})`], ['players', 'ประวัตินักกีฬา'], ['refs', `กรรมการ (${refs.length})`]], state.tab))}</div>
+        <div class="row"><button class="btn sm primary" id="addreg">＋ เพิ่มผู้สมัคร</button><button class="btn sm" id="simreg">🎲 จำลองผู้สมัคร</button><button class="btn sm" id="exp">⬇ CSV</button></div></div>
+      <div class="tabs" id="tb">${raw(tabs([['regs', `ผู้สมัคร (${D.regs.length})`], ['players', 'ประวัตินักกีฬา']], state.tab))}</div>
       ${state.tab === 'regs' ? html`
         <div class="card stack">
           <div class="grid g4">
@@ -42,7 +41,7 @@ export async function athletesPage(root) {
               ${r.slip_path ? html`<button class="btn sm" data-slip="${r.id}">ดูสลิป</button> ` : ''}
               <button class="btn sm" data-act="${r.id}">จัดการ</button></td></tr>`)}
         </tbody></table></div>` : html`<div class="card empty">ไม่พบผู้สมัครตามเงื่อนไข</div>`}`
-      : state.tab === 'players' ? playersView(D) : refsView(state.refs, D)}
+      : playersView(D)}
       <dialog id="dlg"></dialog>`);
     bind(list);
   };
@@ -61,6 +60,8 @@ export async function athletesPage(root) {
     f('fc', 'cat'); f('fs', 'status'); f('fp', 'pay');
     const q = $('#q', root);
     if (q) q.oninput = () => { state.q = q.value; clearTimeout(bind.t); bind.t = setTimeout(() => { draw(); const n = $('#q', root); n.focus(); n.setSelectionRange(n.value.length, n.value.length); }, 250); };
+    $('#addreg', root).onclick = () => addDialog();
+    $('#simreg', root).onclick = () => simDialog();
     $('#exp', root).onclick = () => {
       const rows = [['รุ่น', 'ชื่อทีม', 'ผู้เล่น 1', 'เบอร์ 1', 'ผู้เล่น 2', 'เบอร์ 2', 'สถานะ', 'ชำระเงิน', 'ค่าสมัคร', 'มือวาง']];
       D.regs.forEach((r) => rows.push([(D.C[r.category_id] || {}).name, teamName(r), r.p1_name, r.p1_phone, r.p2_name, r.p2_phone, REG_STATUS_TH[r.status], PAY_TH[r.pay_status], (D.C[r.category_id] || {}).fee, r.seed]));
@@ -86,23 +87,62 @@ export async function athletesPage(root) {
       });
     }));
     $$('[data-act]', root).forEach((b) => (b.onclick = () => manage(D.E[b.dataset.act])));
-    $$('[data-ref-del]', root).forEach((b) => (b.onclick = () => busy(b, async () => {
-      const { error } = await sb.from('referees').delete().eq('id', b.dataset.refDel); if (error) throw error;
-      state.refs = state.refs.filter((x) => x.id !== b.dataset.refDel); draw();
-    })));
-    const rf = $('#ref-form', root);
-    if (rf) rf.onsubmit = async (e) => {
+  };
+
+  const catOpts = (sel) => D.cats.map((c) => `<option value="${c.id}" ${sel === c.id ? 'selected' : ''}>${esc(c.name)}</option>`).join('');
+  const addDialog = () => {
+    const dlg = $('#dlg', root);
+    const first = state.cat || (D.cats[0] && D.cats[0].id);
+    if (!first) return toast('ยังไม่มีรุ่นแข่งขัน', 'err');
+    mount(dlg, html`<form class="stack" id="af" novalidate><h3>เพิ่มผู้สมัครแทนนักกีฬา</h3>
+      <label class="field"><span>รุ่น</span><select id="ac">${raw(catOpts(first))}</select></label>
+      <div class="grid g2"><label class="field"><span>ชื่อ-สกุล (ผู้เล่น 1)</span><input id="n1"></label><label class="field"><span>ชื่อเล่น</span><input id="k1"></label>
+        <label class="field"><span>เบอร์โทร</span><input id="h1" type="tel"></label><label class="field"><span>ปีเกิด (พ.ศ./ค.ศ.)</span><input id="y1" type="number"></label></div>
+      <div id="p2box" class="grid g2"><label class="field"><span>ชื่อ-สกุล (คู่)</span><input id="n2"></label><label class="field"><span>ชื่อเล่น (คู่)</span><input id="k2"></label>
+        <label class="field"><span>เบอร์โทร (คู่)</span><input id="h2" type="tel"></label><label class="field"><span>ปีเกิด (คู่)</span><input id="y2" type="number"></label></div>
+      <label class="check"><input id="ap" type="checkbox"><span>รับค่าสมัครเงินสดแล้ว</span></label>
+      <div class="row"><button class="btn primary" type="submit">บันทึก</button><button class="btn" type="button" id="cl">ปิด</button></div></form>`);
+    const sync = () => { $('#p2box', dlg).hidden = (D.C[$('#ac', dlg).value] || {}).kind !== 'doubles'; };
+    $('#ac', dlg).onchange = sync; sync();
+    dlg.showModal(); $('#cl', dlg).onclick = () => dlg.close();
+    $('#af', dlg).onsubmit = (e) => {
       e.preventDefault();
-      const row = { tournament_id: t.id, name: $('#rn', root).value.trim(), phone: $('#rp', root).value.trim() || null, court_no: Number($('#rc', root).value) || null };
-      if (!row.name) return toast('กรอกชื่อกรรมการ', 'err');
-      const { data, error } = await sb.from('referees').insert(row).select().single();
-      if (error) return toast(error.message, 'err');
-      state.refs.push(data); draw();
+      busy($('#af button[type=submit]', dlg), async () => {
+        await addReg($('#ac', dlg).value, { name: $('#n1', dlg).value, nick: $('#k1', dlg).value, phone: $('#h1', dlg).value, year: $('#y1', dlg).value },
+          { name: $('#n2', dlg).value, nick: $('#k2', dlg).value, phone: $('#h2', dlg).value, year: $('#y2', dlg).value }, $('#ap', dlg).checked);
+        dlg.close(); toast('เพิ่มผู้สมัครแล้ว'); await reload();
+      });
     };
-    $$('[data-ref-court]', root).forEach((s) => (s.onchange = async () => {
-      const { error } = await sb.from('referees').update({ court_no: Number(s.value) || null }).eq('id', s.dataset.refCourt);
-      toast(error ? error.message : 'มอบหมายสนามแล้ว', error ? 'err' : 'ok');
-    }));
+  };
+  const ce = (y) => { const n = Number(y); return n ? (n > 2400 ? n - 543 : n) : null; };
+  const addReg = async (cat, a, b, paid) => {
+    const mk = (p) => ({ name: (p.name || '').trim(), nick: (p.nick || '').trim(), phone: (p.phone || '').trim(), birth_year: ce(p.year) });
+    const { error } = await sb.rpc('admin_add_registration', { p_tournament: t.id, p_category: cat, p_p1: mk(a), p_p2: mk(b), p_status: 'confirmed', p_paid: !!paid });
+    if (error) throw error;
+  };
+  const FIRST = ['สมชาย', 'สมหญิง', 'ธนากร', 'ปิยะ', 'วีรชัย', 'กมล', 'ศิริพร', 'อนุชา', 'พรทิพย์', 'ณัฐวุฒิ', 'กิตติ', 'จิราพร', 'ชัยวัฒน์', 'นภัส', 'รัชพล', 'สุนิสา', 'ภูริภัทร', 'อรอุมา', 'เจษฎา', 'มนัสนันท์'];
+  const LAST = ['ใจดี', 'แสงทอง', 'พงษ์ไทย', 'เจริญสุข', 'รักษา', 'วงศ์ใหญ่', 'ศรีสุข', 'บุญมา', 'ทองคำ', 'สุขสวัสดิ์', 'มีชัย', 'อินทร์แก้ว'];
+  const NICK = ['บอล', 'ต้น', 'เอ็ม', 'ฟลุ๊ค', 'ปอ', 'มาย', 'นิว', 'กุ้ง', 'โอ๊ต', 'แพร', 'ก้อง', 'ฝน', 'เบสท์', 'อาร์ม', 'ไอซ์'];
+  const pick = (a) => a[Math.floor(Math.random() * a.length)];
+  const fake = () => ({ name: pick(FIRST) + ' ' + pick(LAST), nick: pick(NICK), phone: '08' + String(Math.floor(Math.random() * 1e8)).padStart(8, '0'), year: String(1975 + Math.floor(Math.random() * 35) + 543) });
+  const simDialog = () => {
+    const dlg = $('#dlg', root);
+    if (!D.cats.length) return toast('ยังไม่มีรุ่นแข่งขัน', 'err');
+    mount(dlg, html`<div class="stack"><h3>🎲 จำลองผู้สมัครอัตโนมัติ</h3><p class="muted small">สร้างผู้สมัครสมมติ (อนุมัติแล้ว) เพื่อทดสอบการจับสายและตาราง ลบได้ภายหลังโดยกด "จัดการ → ยกเลิกใบสมัคร"</p>
+      <label class="field"><span>รุ่น</span><select id="sc"><option value="__all">ทุกรุ่น</option>${raw(catOpts(state.cat))}</select></label>
+      <label class="field"><span>จำนวนทีมต่อรุ่น</span><input id="sn" type="number" min="1" max="64" value="8"></label>
+      <label class="check"><input id="sp" type="checkbox" checked><span>ถือว่าชำระเงินแล้ว</span></label>
+      <div class="row"><button class="btn primary" id="go">สร้าง</button><button class="btn" id="cl">ปิด</button></div></div>`);
+    dlg.showModal(); $('#cl', dlg).onclick = () => dlg.close();
+    $('#go', dlg).onclick = () => busy($('#go', dlg), async () => {
+      const n = Math.max(1, Math.min(64, Number($('#sn', dlg).value) || 8));
+      const sel = $('#sc', dlg).value, cats = sel === '__all' ? D.cats : [D.C[sel]];
+      let ok = 0;
+      for (const c of cats) for (let i = 0; i < n; i++) {
+        try { await addReg(c.id, fake(), c.kind === 'doubles' ? fake() : {}, $('#sp', dlg).checked); ok++; } catch (e) { /* duplicate phone etc. */ }
+      }
+      dlg.close(); toast(`สร้างผู้สมัครจำลอง ${ok} ทีม`); await reload();
+    });
   };
 
   const markPaid = async (r, method) => {
@@ -158,17 +198,3 @@ function playersView(D) {
       <td data-l="ปีเกิด">${p.year ? p.year + 543 : '-'}</td><td data-l="รุ่น">${p.cats.join(', ')}</td></tr>`)}</tbody></table></div>` : html`<div class="empty">ยังไม่มีนักกีฬา</div>`}</div>`;
 }
 
-function refsView(refs, D) {
-  const courts = D.courts.length ? D.courts.map((c) => c.no) : [];
-  return html`<div class="card stack"><h3>กรรมการ</h3>
-    ${refs.length ? html`<div class="tw"><table class="t"><thead><tr><th>ชื่อ</th><th>เบอร์</th><th>สนามที่รับผิดชอบ</th><th></th></tr></thead><tbody>
-      ${refs.map((r) => html`<tr><td data-l="ชื่อ">${r.name}</td><td data-l="เบอร์">${r.phone || '-'}</td>
-        <td data-l="สนาม"><select data-ref-court="${r.id}"><option value="">-</option>${courts.map((n) => raw(`<option value="${n}" ${r.court_no === n ? 'selected' : ''}>สนาม ${n}</option>`))}</select></td>
-        <td data-l=""><button class="btn sm danger" data-ref-del="${r.id}">ลบ</button></td></tr>`)}</tbody></table></div>` : html`<div class="empty">ยังไม่มีกรรมการ</div>`}
-    <form id="ref-form" class="grid g4" novalidate>
-      <label class="field"><span>ชื่อกรรมการ</span><input id="rn" maxlength="80"></label>
-      <label class="field"><span>เบอร์โทร</span><input id="rp" type="tel" maxlength="20"></label>
-      <label class="field"><span>สนาม</span><select id="rc"><option value="">-</option>${courts.map((n) => raw(`<option value="${n}">สนาม ${n}</option>`))}</select></label>
-      <div style="align-self:end"><button class="btn primary" type="submit" style="width:100%">เพิ่มกรรมการ</button></div></form>
-    <p class="muted small">กรรมการใช้หน้ากรรมการเดิมผ่านลิงก์/QR ของแต่ละสนามในหน้า Live Score</p></div>`;
-}

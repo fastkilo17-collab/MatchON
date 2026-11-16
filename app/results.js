@@ -43,7 +43,7 @@ export async function resultsPage(root) {
         <div class="row between"><b>${name(D, m.reg_a)}</b><b style="font:800 1.8rem 'Prompt'">${m.cur_a}</b></div>
         <div class="row between"><b>${name(D, m.reg_b)}</b><b style="font:800 1.8rem 'Prompt'">${m.cur_b}</b></div>
         <div class="muted small">${(D.C[m.category_id] || {}).name} · ${m.round_label || ''}${(m.sets || []).length ? ' · เกมที่จบ ' + scoreText({ ...m, status: 'x' }) : ''}</div></div>`)}</div>
-        <p class="muted small">คะแนนสดรายสนามแบบเรียลไทม์ดูได้ที่หน้า <a href="courts.html">Live Score</a></p>`
+        <p class="muted small">คะแนนสดรายสนามแบบเรียลไทม์ดูได้ที่หน้า <a href="#/live">Live Score</a></p>`
         : html`<div class="card empty">ตอนนี้ไม่มีแมตช์ที่กำลังแข่ง</div>`;
     } else {
       body = html`<div class="grid g2">${D.cats.map((c) => {

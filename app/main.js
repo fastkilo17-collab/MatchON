@@ -6,6 +6,8 @@ import { athletesPage } from './athletes.js';
 import { bracketsPage } from './brackets.js';
 import { schedulePage } from './schedule.js';
 import { courtsPage } from './courts.js';
+import { livePage } from './live.js';
+import { staffPage } from './staff.js';
 import { resultsPage } from './results.js';
 import { reportsPage } from './reports.js';
 import { loginPage, settingsPage } from './account.js';
@@ -19,7 +21,7 @@ const NAV = [
   ['brackets', '🧩', 'จัดสายแข่งขัน', MANAGE],
   ['schedule', '🗓', 'ตารางการแข่งขัน', ALL],
   ['courts', '🏟', 'จัดการสนาม', MANAGE],
-  ['referee', '⏱', 'กรรมการและคะแนน', ['referee', ...MANAGE]],
+  ['staff', '⏱', 'กรรมการและสตาฟฟ์', ['referee', ...MANAGE]],
   ['live', '🔴', 'Live Score', ALL],
   ['results', '🥇', 'ผลการแข่งขัน', ALL],
   ['reports', '📈', 'รายงานและสถิติ', MANAGE],
@@ -30,7 +32,7 @@ TITLE.login = 'เข้าสู่ระบบ';
 
 const routes = {
   dashboard, tournaments: tournamentsPage, register: registerHome, my: myPage, athletes: athletesPage, brackets: bracketsPage,
-  schedule: schedulePage, courts: courtsPage, results: resultsPage, reports: reportsPage, settings: settingsPage, login: loginPage,
+  schedule: schedulePage, courts: courtsPage, live: livePage, staff: staffPage, results: resultsPage, reports: reportsPage, settings: settingsPage, login: loginPage,
 };
 const PRIMARY = ['dashboard', 'tournaments', 'register', 'athletes', 'schedule', 'live', 'results'];
 
@@ -42,7 +44,7 @@ const visible = () => NAV.filter(([, , , roles]) => roles.includes(S.role));
 function drawChrome(cur) {
   const items = visible();
   const nav = (k, ic, l) => {
-    const href = k === 'live' ? 'courts.html' : k === 'referee' ? 'courts.html' : `#/${k}`;
+    const href = `#/${k}`;
     return `<a class="nav ${k === cur ? 'on' : ''}" href="${href}"><span class="ic">${ic}</span>${l}</a>`;
   };
   $('#side').innerHTML = `
@@ -54,7 +56,7 @@ function drawChrome(cur) {
     </div>`;
   const prim = items.filter(([k]) => PRIMARY.includes(k)).slice(0, 4);
   $('#tabbar').innerHTML = prim.map(([k, ic, l]) => {
-    const href = k === 'live' ? 'courts.html' : `#/${k}`;
+    const href = `#/${k}`;
     return `<a class="${k === cur ? 'on' : ''}" href="${href}"><span class="ic">${ic}</span>${l.length > 9 ? l.slice(0, 8) + '…' : l}</a>`;
   }).join('') + `<button type="button" id="moreBtn"><span class="ic">☰</span>เมนู</button>`;
   $('#sheetin').innerHTML = items.map(([k, ic, l]) => nav(k, ic, l).replace('class="nav', 'class="nav')).join('') +
@@ -79,7 +81,6 @@ async function navigate() {
   const parts = (location.hash.replace(/^#\/?/, '') || '').split('/').filter(Boolean);
   let key = parts[0] || (canManage() ? 'dashboard' : 'tournaments');
   const params = parts.slice(1);
-  if (key === 'live' || key === 'referee') { location.href = 'courts.html'; return; }
   let view = routes[key];
   if (key === 'tournaments' && params.length) view = tournamentEdit;
   if (key === 'register' && params.length) view = registerPage;

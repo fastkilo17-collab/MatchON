@@ -12,8 +12,14 @@ export async function loginPage(root) {
       <button class="btn primary big" id="go" type="submit">เข้าสู่ระบบ</button>
       <button class="btn" type="button" id="tg">สมัครสมาชิกใหม่</button>
     </form>
+    <div class="row" style="align-items:center"><hr style="flex:1;border:0;border-top:1px solid var(--line)"><span class="muted small">หรือ</span><hr style="flex:1;border:0;border-top:1px solid var(--line)"></div>
+    <button class="btn big" type="button" id="line" style="background:#06c755;border-color:#06c755;color:#fff">เข้าสู่ระบบด้วย LINE</button>
     <p class="muted small">นักกีฬาไม่ต้องสมัครสมาชิกก็สมัครแข่งขันได้ แต่ถ้าสมัครสมาชิกจะเห็นประวัติและแจ้งเตือนทั้งหมดในที่เดียว</p>
   </div>`);
+  $('#line', root).onclick = () => busy($('#line', root), async () => {
+    const { error } = await sb.auth.signInWithOAuth({ provider: 'custom:line', options: { redirectTo: location.origin + location.pathname } });
+    if (error) throw new Error(/provider|unsupported|not enabled/i.test(error.message) ? 'ยังไม่ได้เปิดใช้ LINE Login ในระบบ (ผู้ดูแลต้องตั้งค่า provider custom:line ใน Supabase ก่อน)' : error.message);
+  });
   let signup = false;
   $('#tg', root).onclick = () => {
     signup = !signup;

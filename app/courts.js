@@ -31,7 +31,7 @@ export async function courtsPage(root) {
           <button class="btn sm" data-toggle="${c.id}">${c.status === 'maintenance' ? 'เปิดสนาม' : 'งดใช้'}</button></div>` : ''}</div>`;
     });
     mount(root, html`
-      <div class="row between"><h2>จัดการสนาม</h2><div class="row"><a class="btn sm" href="courts.html">🔴 คอร์ตสด / QR กรรมการ</a>
+      <div class="row between"><h2>จัดการสนาม</h2><div class="row"><a class="btn sm" href="#/live">🔴 Live Score / QR กรรมการ</a>
         ${canManage() ? html`<button class="btn sm" id="addc">＋ เพิ่มสนาม</button>` : ''}</div></div>
       <div class="kpis"><div class="kpi"><small>สนามทั้งหมด</small><b>${D.courts.length}</b></div><div class="kpi"><small>กำลังแข่ง</small><b>${live.length}</b></div>
         <div class="kpi"><small>ว่าง</small><b>${D.courts.filter((c) => c.status === 'available' && !live.some((m) => m.court === c.no)).length}</b></div>
