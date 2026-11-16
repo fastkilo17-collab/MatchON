@@ -1,5 +1,6 @@
+import { openRegEdit } from './regedit.js';
 import {
-  sb, S, curT, loadData, html, raw, mount, $, $$, toast, busy, esc, baht, fmtDate, publicUrl, teamName, people,
+  sb, S, curT, uploadImage, uuid, loadData, html, raw, mount, $, $$, toast, busy, esc, baht, fmtDate, publicUrl, teamName, people,
   REG_STATUS_TH, PAY_TH, KIND_TH, GENDER_TH, tabs, pill, notify, csv, downloadFile,
 } from './core.js';
 
@@ -31,7 +32,7 @@ export async function athletesPage(root) {
         </div>
         ${list.length ? html`<div class="tw"><table class="t"><thead><tr><th>ผู้สมัคร</th><th>รุ่น</th><th>เบอร์</th><th>สถานะ</th><th>ชำระ</th><th>มือวาง</th><th></th></tr></thead><tbody>
           ${list.map((r) => html`<tr>
-            <td data-l="ผู้สมัคร"><b>${teamName(r)}</b><br><span class="muted small">${r.p1_name}${r.p2_name ? ' / ' + r.p2_name : ''}</span></td>
+            <td data-l="ผู้สมัคร"><b>${teamName(r)}</b>${r.club ? html` <span class="pill">${r.club}</span>` : ''}<br><span class="muted small">${r.p1_name}${r.p2_name ? ' / ' + r.p2_name : ''}</span></td>
             <td data-l="รุ่น">${(D.C[r.category_id] || {}).name}</td>
             <td data-l="เบอร์">${r.p1_phone || ''}</td>
             <td data-l="สถานะ">${raw(pill(REG_STATUS_TH[r.status], r.status === 'confirmed' ? 'ok' : r.status === 'cancelled' ? 'err' : 'warn'))}</td>
@@ -100,23 +101,28 @@ export async function athletesPage(root) {
         <label class="field"><span>เบอร์โทร</span><input id="h1" type="tel"></label><label class="field"><span>ปีเกิด (พ.ศ./ค.ศ.)</span><input id="y1" type="number"></label></div>
       <div id="p2box" class="grid g2"><label class="field"><span>ชื่อ-สกุล (คู่)</span><input id="n2"></label><label class="field"><span>ชื่อเล่น (คู่)</span><input id="k2"></label>
         <label class="field"><span>เบอร์โทร (คู่)</span><input id="h2" type="tel"></label><label class="field"><span>ปีเกิด (คู่)</span><input id="y2" type="number"></label></div>
+      <label class="field"><span>ชื่อทีม / ก๊วน / สโมสร</span><input id="cb" maxlength="60"></label>
+      <div class="grid g2"><label class="field"><span>รูปผู้เล่น 1</span><input id="f1" type="file" accept="image/*"></label>
+        <label class="field" id="f2w"><span>รูปคู่</span><input id="f2" type="file" accept="image/*"></label></div>
       <label class="check"><input id="ap" type="checkbox"><span>รับค่าสมัครเงินสดแล้ว</span></label>
       <div class="row"><button class="btn primary" type="submit">บันทึก</button><button class="btn" type="button" id="cl">ปิด</button></div></form>`);
-    const sync = () => { $('#p2box', dlg).hidden = (D.C[$('#ac', dlg).value] || {}).kind !== 'doubles'; };
+    const sync = () => { const d = (D.C[$('#ac', dlg).value] || {}).kind !== 'doubles'; $('#p2box', dlg).hidden = d; $('#f2w', dlg).hidden = d; };
     $('#ac', dlg).onchange = sync; sync();
     dlg.showModal(); $('#cl', dlg).onclick = () => dlg.close();
     $('#af', dlg).onsubmit = (e) => {
       e.preventDefault();
       busy($('#af button[type=submit]', dlg), async () => {
-        await addReg($('#ac', dlg).value, { name: $('#n1', dlg).value, nick: $('#k1', dlg).value, phone: $('#h1', dlg).value, year: $('#y1', dlg).value },
-          { name: $('#n2', dlg).value, nick: $('#k2', dlg).value, phone: $('#h2', dlg).value, year: $('#y2', dlg).value }, $('#ap', dlg).checked);
+        const up = async (id) => { const f = $(id, dlg).files[0]; return f ? uploadImage('photos', `${t.id}/${uuid()}`, f, 800, 0.8) : null; };
+        const ph1 = await up('#f1'), ph2 = (D.C[$('#ac', dlg).value] || {}).kind === 'doubles' ? await up('#f2') : null;
+        await addReg($('#ac', dlg).value, { name: $('#n1', dlg).value, nick: $('#k1', dlg).value, phone: $('#h1', dlg).value, year: $('#y1', dlg).value, photo: ph1, club: $('#cb', dlg).value },
+          { name: $('#n2', dlg).value, nick: $('#k2', dlg).value, phone: $('#h2', dlg).value, year: $('#y2', dlg).value, photo: ph2 }, $('#ap', dlg).checked);
         dlg.close(); toast('เพิ่มผู้สมัครแล้ว'); await reload();
       });
     };
   };
   const ce = (y) => { const n = Number(y); return n ? (n > 2400 ? n - 543 : n) : null; };
   const addReg = async (cat, a, b, paid) => {
-    const mk = (p) => ({ name: (p.name || '').trim(), nick: (p.nick || '').trim(), phone: (p.phone || '').trim(), birth_year: ce(p.year) });
+    const mk = (p) => ({ name: (p.name || '').trim(), nick: (p.nick || '').trim(), phone: (p.phone || '').trim(), birth_year: ce(p.year), photo: p.photo || null, club: p.club || '' });
     const { error } = await sb.rpc('admin_add_registration', { p_tournament: t.id, p_category: cat, p_p1: mk(a), p_p2: mk(b), p_status: 'confirmed', p_paid: !!paid });
     if (error) throw error;
   };
@@ -158,6 +164,7 @@ export async function athletesPage(root) {
     mount(dlg, html`<div class="stack"><h3>${teamName(r)}</h3><div class="muted small">${(D.C[r.category_id] || {}).name} · ${r.p1_phone || ''}</div>
       <div class="grid g2">
         <button class="btn primary" data-a="approve">✔ อนุมัติใบสมัคร</button>
+        <button class="btn" data-a="edit">✏ แก้ไขข้อมูลผู้สมัคร</button>
         <button class="btn" data-a="cash" ${fee ? '' : 'disabled'}>💵 รับเงินสด / ชำระแล้ว</button>
         <button class="btn" data-a="wait">⏳ ย้ายไปรายชื่อสำรอง</button>
         <button class="btn danger" data-a="cancel">✖ ยกเลิกใบสมัคร</button>
@@ -169,6 +176,7 @@ export async function athletesPage(root) {
     $('#savenote', dlg).onclick = () => busy($('#savenote', dlg), async () => { await setReg(r, { note: $('#note', dlg).value.trim() || null }); dlg.close(); await reload(); });
     $$('[data-a]', dlg).forEach((b) => (b.onclick = () => busy(b, async () => {
       const a = b.dataset.a;
+      if (a === 'edit') { openRegEdit(dlg, { ...r, kind: (D.C[r.category_id] || {}).kind }, { mode: 'admin', onSaved: reload }); return; }
       if (a === 'approve') await setReg(r, { status: 'confirmed' }, ['approved', 'อนุมัติใบสมัครแล้ว', `ใบสมัครรุ่น ${(D.C[r.category_id] || {}).name} ได้รับการอนุมัติ`]);
       if (a === 'cash') await markPaid(r, 'cash');
       if (a === 'wait') await setReg(r, { status: 'waitlist' }, ['info', 'อยู่ในรายชื่อสำรอง', 'ผู้จัดจะแจ้งเมื่อมีที่ว่าง']);

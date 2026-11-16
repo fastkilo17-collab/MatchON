@@ -94,3 +94,30 @@ export const confirmBox = (msg) => window.confirm(msg);
 export async function notify(tournamentId, registrationId, kind, title, body) {
   await sb.from('notifications').insert({ tournament_id: tournamentId, registration_id: registrationId, kind, title, body });
 }
+
+// Every popup gets a close button pinned to the bottom, always visible while the content scrolls.
+(() => {
+  const orig = HTMLDialogElement.prototype.showModal;
+  HTMLDialogElement.prototype.showModal = function () {
+    if (!this.querySelector(':scope > .dlg-body')) {
+      const body = document.createElement('div');
+      body.className = 'dlg-body';
+      while (this.firstChild) body.appendChild(this.firstChild);
+      this.appendChild(body);
+    }
+    this.querySelectorAll(':scope > .dlg-foot').forEach((x) => x.remove());
+    const foot = document.createElement('div');
+    foot.className = 'dlg-foot';
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'btn big'; b.textContent = 'ปิด';
+    b.onclick = () => {
+      const own = this.querySelector('#cl, #cx, [data-close]');
+      if (own && own.onclick) own.onclick(); else this.close();
+      if (this.open) this.close();
+    };
+    foot.appendChild(b);
+    this.appendChild(foot);
+    this.querySelectorAll('#cl, #cx, [data-close]').forEach((x) => { x.style.display = 'none'; });
+    return orig.call(this);
+  };
+})();

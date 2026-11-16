@@ -21,7 +21,7 @@ export async function courtsPage(root) {
       const m = lm || wm;
       const rf = refs.filter((r) => r.court_no === c.no).map((r) => r.name).join(', ');
       return html`<div class="court ${kind}"><h3>สนาม ${c.no} ${raw(`<span class="pill ${kind === 'live' ? 'live' : kind === 'free' ? 'ok' : kind === 'wait' ? 'warn' : 'gray'}">${label}</span>`)}</h3>
-        ${m ? html`<div><b>${name(D, m.reg_a)}</b><br><span class="muted small">vs</span><br><b>${name(D, m.reg_b)}</b></div>
+        ${m ? html`<div>${m.match_no ? html`<span class="pill mn">แมตช์ #${m.match_no}</span><br>` : ''}<b>${name(D, m.reg_a)}</b><br><span class="muted small">vs</span><br><b>${name(D, m.reg_b)}</b></div>
           <div class="muted small">${(D.C[m.category_id] || {}).name} · ${m.round_label || ''}${m.scheduled_at ? ' · ' + fmtTime(m.scheduled_at) : ''}</div>` : html`<div class="muted small">${kind === 'off' ? 'ปิดปรับปรุง' : 'พร้อมเรียกแมตช์ลงสนาม'}</div>`}
         ${rf ? html`<div class="small">กรรมการ: ${rf}</div>` : ''}
         ${canManage() ? html`<div class="row">
@@ -64,7 +64,7 @@ export async function courtsPage(root) {
     $$('[data-call]', root).forEach((b) => (b.onclick = () => {
       const no = Number(b.dataset.call), dlg = $('#cd', root);
       mount(dlg, html`<div class="stack"><h3>เรียกแมตช์ลงสนาม ${no}</h3>
-        ${queue.length ? queue.slice(0, 12).map((m) => html`<button class="btn" data-pick="${m.id}" style="justify-content:space-between;text-align:left"><span>${name(D, m.reg_a)} vs ${name(D, m.reg_b)}<br><small class="muted">${(D.C[m.category_id] || {}).name} · ${m.round_label}</small></span><span>${m.court ? 'สนาม ' + m.court : ''}</span></button>`)
+        ${queue.length ? queue.slice(0, 12).map((m) => html`<button class="btn" data-pick="${m.id}" style="justify-content:space-between;text-align:left"><span>${m.match_no ? '#' + m.match_no + ' ' : ''}${name(D, m.reg_a)} vs ${name(D, m.reg_b)}<br><small class="muted">${(D.C[m.category_id] || {}).name} · ${m.round_label}</small></span><span>${m.court ? 'สนาม ' + m.court : ''}</span></button>`)
           : html`<div class="empty">ไม่มีแมตช์ที่พร้อม (ทีมครบและไม่ติดแข่งอยู่)</div>`}
         <button class="btn" id="cx">ปิด</button></div>`);
       dlg.showModal();
@@ -73,7 +73,7 @@ export async function courtsPage(root) {
         const m = D.matches.find((x) => x.id === p.dataset.pick);
         const now = new Date().toISOString();
         await upd(m.id, { court: no, scheduled_at: now });
-        for (const id of [m.reg_a, m.reg_b]) await notify(t.id, id, 'schedule', 'เรียกลงสนาม', `${m.round_label || 'แมตช์'} กรุณามาที่สนาม ${no}`).catch(() => {});
+        for (const id of [m.reg_a, m.reg_b]) await notify(t.id, id, 'schedule', 'เรียกลงสนาม', `${m.match_no ? '#' + m.match_no + ' ' : ''}${m.round_label || 'แมตช์'} กรุณามาที่สนาม ${no}`).catch(() => {});
         dlg.close(); toast(`เรียกลงสนาม ${no} แล้ว`); await reload();
       })));
     }));

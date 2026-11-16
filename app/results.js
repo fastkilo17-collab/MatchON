@@ -34,15 +34,15 @@ export async function resultsPage(root) {
     let body;
     if (st.tab === 'results') {
       body = html`<div class="card"><div class="row"><label class="field" style="max-width:300px"><span>รุ่น</span><select id="fc"><option value="">ทุกรุ่น</option>${D.cats.map((c) => raw(`<option value="${c.id}" ${st.cat === c.id ? 'selected' : ''}>${esc(c.name)}</option>`))}</select></label></div>
-        ${fin.length ? html`<div class="tw"><table class="t"><thead><tr><th>รุ่น / รอบ</th><th>ผู้ชนะ</th><th>ผู้แพ้</th><th>คะแนน</th></tr></thead><tbody>
-          ${fin.map((m) => html`<tr data-m="${m.id}" style="cursor:${mgr ? 'pointer' : 'default'}"><td data-l="รุ่น">${(D.C[m.category_id] || {}).name}<br><span class="muted small">${m.round_label || ''}</span></td>
+        ${fin.length ? html`<div class="tw"><table class="t"><thead><tr><th>#</th><th>รุ่น / รอบ</th><th>ผู้ชนะ</th><th>ผู้แพ้</th><th>คะแนน</th></tr></thead><tbody>
+          ${fin.map((m) => html`<tr data-m="${m.id}" style="cursor:${mgr ? 'pointer' : 'default'}"><td data-l="#">${m.match_no ?? ''}</td><td data-l="รุ่น">${(D.C[m.category_id] || {}).name}<br><span class="muted small">${m.round_label || ''}</span></td>
             <td data-l="ผู้ชนะ"><b class="ok">${name(D, m.winner)}</b></td><td data-l="ผู้แพ้">${name(D, m.winner === m.reg_a ? m.reg_b : m.reg_a)}</td><td data-l="คะแนน">${scoreText(m)}</td></tr>`)}</tbody></table></div>`
           : html`<div class="empty">ยังไม่มีผลการแข่งขัน</div>`}</div>`;
     } else if (st.tab === 'live') {
       body = live.length ? html`<div class="grid g2">${live.map((m) => html`<div class="card stack"><div class="row between"><span class="pill live">กำลังแข่ง</span><span class="muted small">${m.court ? 'สนาม ' + m.court : ''}</span></div>
         <div class="row between"><b>${name(D, m.reg_a)}</b><b style="font:800 1.8rem 'Prompt'">${m.cur_a}</b></div>
         <div class="row between"><b>${name(D, m.reg_b)}</b><b style="font:800 1.8rem 'Prompt'">${m.cur_b}</b></div>
-        <div class="muted small">${(D.C[m.category_id] || {}).name} · ${m.round_label || ''}${(m.sets || []).length ? ' · เกมที่จบ ' + scoreText({ ...m, status: 'x' }) : ''}</div></div>`)}</div>
+        <div class="muted small">${m.match_no ? '#' + m.match_no + ' · ' : ''}${(D.C[m.category_id] || {}).name} · ${m.round_label || ''}${(m.sets || []).length ? ' · เกมที่จบ ' + scoreText({ ...m, status: 'x' }) : ''}</div></div>`)}</div>
         <p class="muted small">คะแนนสดรายสนามแบบเรียลไทม์ดูได้ที่หน้า <a href="#/live">Live Score</a></p>`
         : html`<div class="card empty">ตอนนี้ไม่มีแมตช์ที่กำลังแข่ง</div>`;
     } else {

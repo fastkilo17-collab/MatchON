@@ -55,7 +55,7 @@ export async function dashboard(root) {
       <div class="card"><h2>ผลการแข่งขันล่าสุด</h2>
         ${recent.length ? recent.map((m) => html`<div style="padding:8px 0;border-bottom:1px solid var(--line)">
             <div class="row between"><b>${teamName(E[m.winner] || E[m.reg_a])}</b><span class="pill ok">${scoreText(m) || 'ชนะ'}</span></div>
-            <div class="muted small">ชนะ ${teamName(E[m.winner === m.reg_a ? m.reg_b : m.reg_a])} · ${m.round_label || ''} · ${tName(m.tournament_id)}</div></div>`)
+            <div class="muted small">ชนะ ${teamName(E[m.winner === m.reg_a ? m.reg_b : m.reg_a])} · ${m.match_no ? '#' + m.match_no + ' ' : ''}${m.round_label || ''} · ${tName(m.tournament_id)}</div></div>`)
           : html`<div class="empty">ยังไม่มีผลการแข่งขัน</div>`}
       </div>
     </div>

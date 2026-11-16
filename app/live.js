@@ -6,6 +6,7 @@ const CODE = (m) => m.id.slice(0, 8);
 const nick = (r, k) => (r && (r[k + '_nick'] || r[k + '_name'])) || '';
 const realN = (r, k) => (r && r[k + '_name']) || '';
 const photo = (r, k) => (r && r[k + '_photo'] ? publicUrl('photos', r[k + '_photo']) : '');
+const MN = (m) => (m && m.match_no ? '#' + m.match_no : '');
 const rand = (n) => Array.from(crypto.getRandomValues(new Uint8Array(n)), (b) => 'abcdefghijkmnpqrstuvwxyz23456789'[b % 32]).join('');
 
 export async function livePage(root) {
@@ -48,7 +49,7 @@ export async function livePage(root) {
   const teamRow = (r, i, v) => {
     const ks = ['p1', 'p2'].filter((k) => r && r[k + '_name']);
     return `<div class="lt"><div class="avs">${ks.map((k) => avatar(r, k)).join('')}</div>
-      <div class="ln"><b>${esc(ks.map((k) => nick(r, k)).join(' / ') || 'รอผลการแข่ง')}</b><small>${esc(ks.map((k) => realN(r, k)).join(' / '))}</small></div>
+      <div class="ln"><b>${esc(ks.map((k) => nick(r, k)).join(' / ') || 'รอผลการแข่ง')}</b><small>${esc(ks.map((k) => realN(r, k)).join(' / '))}${r && r.club ? ' · ' + esc(r.club) : ''}</small></div>
       <div class="lw" title="เซตที่ชนะ">${v.won[i]}</div><div class="lp">${v.cur[i]}</div></div>`;
   };
   const card = (v) => {
@@ -56,13 +57,14 @@ export async function livePage(root) {
     const label = { off: 'งดใช้งาน', live: 'กำลังแข่ง', wait: 'รอแข่ง', free: 'ว่าง' }[kind];
     const ra = m && D.E[m.reg_a], rb = m && D.E[m.reg_b];
     return `<div class="lc ${kind}"><div class="lh"><b>สนาม ${c.no}</b><span class="st ${kind}">${kind === 'live' ? '<i></i>' : ''}${label}</span></div>
-      ${m ? `<div class="chips"><span>${esc(KIND_TH[cat.kind] || '')}</span><span>${esc(cat.name || '')}</span><span>${esc(m.round_label || '')}</span>${cat.level ? `<span>มือ ${esc(cat.level)}</span>` : ''}</div>
+      ${m ? `<div class="chips">${m.match_no ? `<span class="mn">แมตช์ #${m.match_no}</span>` : ''}<span>${esc(KIND_TH[cat.kind] || '')}</span><span>${esc(cat.name || '')}</span><span>${esc(m.round_label || '')}</span>${cat.level ? `<span>มือ ${esc(cat.level)}</span>` : ''}</div>
         <div class="lcols"><span></span><span>เซต</span><span>คะแนน</span></div>${teamRow(ra, 0, v)}${teamRow(rb, 1, v)}
         <div class="lf"><span>${kind === 'live' ? `เซตที่ ${Math.min(v.setNo, cat.best_of || 3)}/${cat.best_of || 3}` : (m.scheduled_at ? 'เวลา ' + fmtTime(m.scheduled_at) : 'รอเริ่ม')}</span>
           <span>${v.sets.map(([x, y]) => `${x}-${y}`).join(' · ')}</span></div>`
         : `<div class="empty small">${kind === 'off' ? 'ปิดปรับปรุง' : 'พร้อมเรียกแมตช์ลงสนาม'}</div>`}
       ${mgr ? `<div class="row" style="margin-top:8px"><button class="btn sm" data-qr="${c.no}">📱 QR กรรมการ</button>
-        ${kind === 'free' || kind === 'wait' ? `<button class="btn sm primary" data-call="${c.no}">📣 เรียกคู่ลงสนาม</button>` : ''}
+        ${kind === 'free' || kind === 'wait' ? `<button class="btn sm ${kind === 'free' ? 'primary' : ''}" data-call="${c.no}">📣 ${kind === 'wait' ? 'เปลี่ยนคู่' : 'เรียกคู่ลงสนาม'}</button>` : ''}
+        ${kind === 'wait' ? `<button class="btn sm primary" data-start="${m.id}">▶ เริ่มแข่ง</button>` : ''}
         ${m ? `<button class="btn sm" data-score="${m.id}">✍ ลงคะแนน</button>` : ''}</div>` : ''}</div>`;
   };
 
@@ -77,6 +79,7 @@ export async function livePage(root) {
     const st = $('#stamp', root); if (st) st.textContent = 'อัปเดต ' + new Date().toLocaleTimeString('th-TH');
     if (!mgr) return;
     $$('[data-qr]', lv).forEach((b) => (b.onclick = () => qrDialog(Number(b.dataset.qr))));
+    $$('[data-start]', lv).forEach((b) => (b.onclick = () => busy(b, async () => startMatch(D.matches.find((m) => m.id === b.dataset.start)))));
     $$('[data-call]', lv).forEach((b) => (b.onclick = () => callDialog(Number(b.dataset.call))));
     $$('[data-score]', lv).forEach((b) => (b.onclick = () => scoreDialog(D.matches.find((m) => m.id === b.dataset.score))));
   };
@@ -88,8 +91,8 @@ export async function livePage(root) {
     const a = D.E[m.reg_a], b = D.E[m.reg_b], ks = (r) => ['p1', 'p2'].filter((k) => r && r[k + '_name']);
     const side = (r) => ({ team: ks(r).map((k) => nick(r, k)).join(' / '), real: ks(r).map((k) => realN(r, k)), ph: ks(r).map((k) => photo(r, k)) });
     const A = side(a), B = side(b);
-    return { courtNo: no, status: 'LIVE', matchCode: CODE(m), round: `${(D.C[m.category_id] || {}).name || ''} ${m.round_label || ''}`.trim(), tournament: t.name,
-      teamA: A.team, clubA: '', teamB: B.team, clubB: '', realA: A.real, realB: B.real, photoA: A.ph, photoB: B.ph, scores: [[0, 0], [0, 0], [0, 0]], shuttleUsed: 1, activeSet: -1 };
+    return { courtNo: no, status: 'LIVE', matchCode: CODE(m), round: `${MN(m)} ${(D.C[m.category_id] || {}).name || ''} ${m.round_label || ''}`.trim(), tournament: t.name,
+      teamA: A.team, clubA: (a && a.club) || '', teamB: B.team, clubB: (b && b.club) || '', realA: A.real, realB: B.real, photoA: A.ph, photoB: B.ph, scores: [[0, 0], [0, 0], [0, 0]], shuttleUsed: 1, activeSet: -1 };
   };
   const pushCourt = async (no, m) => { if (bridgeOn) { try { await FB.writeCourts(cfg.live_id, [courtPayload(no, m)]); } catch (e) { toast('ส่งไปหน้ากรรมการไม่สำเร็จ: ' + (e.code || e.message), 'err'); } } };
 
@@ -119,6 +122,11 @@ export async function livePage(root) {
       catch (e) { toast('ผลจากกรรมการไม่ผ่านกติกา: ' + e.message + ' (ใช้ปุ่ม ลงคะแนน เพื่อแก้)', 'err'); }
     }
   };
+  const ensureCourt = async (no) => {
+    if (fb[no] || !bridgeOn) return;
+    const m = D.matches.find((x) => x.court === no && x.status !== 'finished' && x.reg_a && x.reg_b && (x.status === 'live' || x.status === 'scheduled'));
+    try { await FB.writeCourts(cfg.live_id, [courtPayload(no, m || null)]); } catch (e) { toast('เตรียมสนามให้กรรมการไม่สำเร็จ: ' + (e.code || e.message), 'err'); }
+  };
   const startBridge = async () => {
     try {
       FB = await import('../js/live.js');
@@ -135,6 +143,7 @@ export async function livePage(root) {
       t.live_id = cfg.live_id;
       bridgeOn = true;
       unsubs.push(FB.watchCompleted(cfg.live_id, handleCompleted));
+      for (const c of D.courts) await ensureCourt(c.no);
     } catch (e) { toast('เชื่อมหน้ากรรมการไม่สำเร็จ: ' + (e.message || e), 'err'); }
   };
   const watchPublic = async () => {
@@ -150,9 +159,28 @@ export async function livePage(root) {
     } catch (e) { /* offline or Firebase blocked: Supabase data alone still works */ }
   };
 
+  const startMatch = async (m) => {
+    if (!m) return;
+    const patch = { status: 'live' };
+    const { error } = await sb.from('matches').update(patch).eq('id', m.id);
+    if (error) throw error;
+    Object.assign(m, patch);
+    if (bridgeOn && m.court) {
+      try { await FB.updateCourt(cfg.live_id, m.court, (x) => { if (!x.startedAt) { x.startedAt = Date.now(); x.paused = false; x.shuttleUsed = x.shuttleUsed || 1; x.status = 'LIVE'; } }); } catch { /* referee page not open yet */ }
+    }
+    toast('เริ่มแข่งแล้ว'); await reload();
+  };
+
   // ---------- dialogs ----------
-  const qrDialog = (no) => {
-    if (!bridgeOn || !cfg.keys['c' + no]) return toast('ยังเชื่อมระบบกรรมการไม่เสร็จ ลองใหม่ในอีกสักครู่', 'err');
+  const qrDialog = async (no) => {
+    if (!bridgeOn) await startBridge();
+    if (!bridgeOn) return;
+    if (!cfg.keys['c' + no]) {
+      cfg.keys['c' + no] = rand(24);
+      await sb.rpc('save_live_keys', { p_tournament: t.id, p_keys: cfg.keys });
+      await FB.publishCourtKeys(cfg.live_id, cfg.keys);
+    }
+    await ensureCourt(no);
     const url = new URL('referee.html?court=' + no + '&live=' + cfg.live_id, location.href).href + '#k=' + cfg.keys['c' + no];
     mount(dlg, html`<div class="stack center"><h3>QR กรรมการ · สนาม ${no}</h3><canvas id="qc" style="margin:0 auto;max-width:100%"></canvas>
       <p class="muted small">ให้กรรมการสแกนเพื่อเปิดหน้าให้คะแนนของสนามนี้ (อย่าแชร์ให้ผู้ชม)</p>
@@ -168,20 +196,21 @@ export async function livePage(root) {
     const q = D.matches.filter((m) => m.status === 'scheduled' && m.reg_a && m.reg_b && !playing.has(m.reg_a) && !playing.has(m.reg_b))
       .sort((a, b) => (+new Date(a.scheduled_at || '2999-01-01')) - (+new Date(b.scheduled_at || '2999-01-01')) || a.round - b.round || (a.match_no || 0) - (b.match_no || 0));
     mount(dlg, html`<div class="stack"><h3>เรียกคู่ลงสนาม ${no}</h3><p class="muted small">เลือกแมตช์ใดก็ได้ (ข้ามลำดับได้) แสดงเฉพาะคู่ที่ทีมครบและไม่ติดแข่งอยู่</p>
-      ${q.length ? q.slice(0, 30).map((m, i) => html`<button class="btn" data-pick="${m.id}" style="justify-content:space-between;text-align:left;height:auto;padding:8px 12px"><span><b>${name(D, m.reg_a)}</b> vs <b>${name(D, m.reg_b)}</b><br><small class="muted">${(D.C[m.category_id] || {}).name} · ${m.round_label || ''}</small></span><span class="small">${i === 0 ? 'ถัดไป' : ''}${m.scheduled_at ? ' ' + fmtTime(m.scheduled_at) : ''}${m.court ? ' · สนาม ' + m.court : ''}</span></button>`)
+      ${q.length ? q.slice(0, 30).map((m, i) => html`<button class="btn" data-pick="${m.id}" style="justify-content:space-between;text-align:left;height:auto;padding:8px 12px"><span>${m.match_no ? html`<b class="mn">#${m.match_no}</b> ` : ''}<b>${name(D, m.reg_a)}</b> vs <b>${name(D, m.reg_b)}</b><br><small class="muted">${(D.C[m.category_id] || {}).name} · ${m.round_label || ''}</small></span><span class="small">${i === 0 ? 'ถัดไป' : ''}${m.scheduled_at ? ' ' + fmtTime(m.scheduled_at) : ''}${m.court ? ' · สนาม ' + m.court : ''}</span></button>`)
         : html`<div class="empty">ไม่มีแมตช์ที่พร้อมเรียก</div>`}
       <button class="btn" id="cl">ปิด</button></div>`);
     dlg.showModal();
     $('#cl', dlg).onclick = () => { dlg.close(); draw(); };
     $$('[data-pick]', dlg).forEach((b) => (b.onclick = () => busy(b, async () => {
       const m = D.matches.find((x) => x.id === b.dataset.pick);
-      const patch = { court: no, status: 'live', scheduled_at: new Date().toISOString(), sets: [], cur_a: 0, cur_b: 0 };
+      const patch = { court: no, status: 'scheduled', scheduled_at: new Date().toISOString(), sets: [], cur_a: 0, cur_b: 0 };
+      for (const o of D.matches.filter((x) => x.court === no && x.status === 'scheduled' && x.id !== m.id)) { await sb.from('matches').update({ court: null }).eq('id', o.id); o.court = null; }
       const { error } = await sb.from('matches').update(patch).eq('id', m.id);
       if (error) throw error;
       Object.assign(m, patch);
       for (const id of [m.reg_a, m.reg_b]) await notify(t.id, id, 'schedule', 'เรียกลงสนาม', `${m.round_label || 'แมตช์'} กรุณามาที่สนาม ${no}`).catch(() => {});
       await pushCourt(no, m);
-      dlg.close(); toast(`เรียกลงสนาม ${no} แล้ว`); await reload();
+      dlg.close(); toast(`เรียก ${MN(m)} ลงสนาม ${no} แล้ว กด ▶ เริ่มแข่ง หรือให้กรรมการกดเริ่มในหน้ากรรมการ`); await reload();
     })));
   };
 
@@ -191,7 +220,7 @@ export async function livePage(root) {
     const init = (m.sets || []).map((s) => [String(s[0]), String(s[1])]);
     if (m.cur_a || m.cur_b) init.push([String(m.cur_a), String(m.cur_b)]);
     const rows = Array.from({ length: n }, (_, i) => init[i] || ['', '']);
-    mount(dlg, html`<div class="stack"><h3>ลงบันทึกคะแนน · สนาม ${m.court || '-'}</h3>
+    mount(dlg, html`<div class="stack"><h3>ลงบันทึกคะแนน ${MN(m)} · สนาม ${m.court || '-'}</h3>
       <div class="muted small">${name(D, m.reg_a)} vs ${name(D, m.reg_b)}<br>${c.points || 21} แต้ม ต้องห่าง 2 (สูงสุด ${c.cap || 30}) · ชนะ ${Math.floor(n / 2) + 1} ใน ${n} เซต · ระบบคำนวณเซตให้อัตโนมัติ</div>
       ${rows.map((r, i) => html`<div class="row" data-row="${i}"><span style="width:52px">เซต ${i + 1}</span>
         <input data-v="${i}.0" type="number" inputmode="numeric" min="0" max="${c.cap || 30}" value="${r[0]}" style="width:84px"><span>-</span>
@@ -241,6 +270,7 @@ export async function livePage(root) {
     });
   };
 
+  dlg.addEventListener('close', () => draw());
   draw();
   if (mgr) await startBridge();
   await watchPublic();

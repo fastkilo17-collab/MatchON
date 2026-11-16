@@ -1,3 +1,4 @@
+import { openRegEdit } from './regedit.js';
 import {
   sb, S, html, raw, mount, $, $$, toast, busy, esc, baht, fmtDate, fmtRange, fmtTime, uuid, go, uploadImage, teamName,
   PAY_TH, REG_STATUS_TH, KIND_TH, GENDER_TH, ageProblem, store, MATCH_TH, scoreText,
@@ -41,7 +42,7 @@ export async function registerPage(root, [slug]) {
 
   let prev = {};
   try { prev = JSON.parse(store.get(PLAYER) || '{}'); } catch { /* ignore */ }
-  const F = { step: 1, catIds: [], p1: { name: prev.name || '', nick: prev.nick || '', phone: prev.phone || '', year: prev.year || '' }, p2: { name: '', nick: '', phone: '', year: '' }, video: '', files: {} };
+  const F = { step: 1, catIds: [], p1: { name: prev.name || '', nick: prev.nick || '', phone: prev.phone || '', year: prev.year || '' }, p2: { name: '', nick: '', phone: '', year: '' }, video: '', club: '', files: {} };
   const catById = Object.fromEntries(cats.map((c) => [c.id, c]));
   const doubles = () => F.catIds.some((id) => catById[id].kind === 'doubles');
   const total = () => F.catIds.reduce((n, id) => n + catById[id].fee, 0);
@@ -64,14 +65,16 @@ export async function registerPage(root, [slug]) {
         <label class="field"><span>ชื่อเล่น (แสดงบนจอ)</span><input data-f="p${n}.nick" value="${F['p' + n].nick}" maxlength="40"></label>
         <label class="field"><span>เบอร์โทร${n === 2 ? ' (ไม่บังคับ)' : ''}</span><input data-f="p${n}.phone" type="tel" inputmode="tel" value="${F['p' + n].phone}" maxlength="20"></label>
         <label class="field"><span>ปีเกิด พ.ศ. ${F.catIds.some((id) => catById[id].age_min != null || catById[id].age_max != null) ? '(รุ่นที่เลือกกำหนดอายุ ต้องกรอก)' : '(ไม่บังคับ)'}</span><input data-f="p${n}.year" inputmode="numeric" maxlength="4" placeholder="2538" value="${F['p' + n].year}"></label>
-        <label class="field"><span>รูปนักกีฬา (ไม่บังคับ)</span><input data-file="p${n}" type="file" accept="image/*"></label></div>`;
-      body = html`<h2>2. ข้อมูลนักกีฬา</h2>${person(1, 'ผู้สมัคร')}${doubles() ? person(2, 'คู่ของคุณ') : ''}
+        <label class="field"><span>รูปนักกีฬา (บังคับ)</span><input data-file="p${n}" type="file" accept="image/*"></label></div>`;
+      body = html`<h2>2. ข้อมูลนักกีฬา</h2>
+        <label class="field"><span>ชื่อทีม / ก๊วน / สโมสร</span><input data-f="club" value="${F.club}" maxlength="60" placeholder="เช่น ก๊วนเจอแน่"></label>${person(1, 'ผู้สมัคร')}${doubles() ? person(2, 'คู่ของคุณ') : ''}
         <label class="field"><span>ลิงก์วิดีโอการเล่น (ไม่บังคับ)</span><input data-f="video" type="url" inputmode="url" placeholder="https://youtube.com/…" value="${F.video}"></label>`;
     } else {
       body = html`<h2>3. ตรวจสอบและยืนยัน</h2>
         <div class="card stack">
           ${F.catIds.map((id) => html`<div class="row between"><span>${catById[id].name}</span><b>${catById[id].fee ? baht(catById[id].fee) : 'ฟรี'}</b></div>`)}
           <hr style="border:0;border-top:1px solid var(--line);width:100%">
+          ${F.club.trim() ? html`<div class="row between"><b>ทีม</b><span>${F.club}</span></div>` : ''}
           <div class="row between"><b>ผู้สมัคร</b><span>${F.p1.nick || F.p1.name} · ${F.p1.phone}</span></div>
           ${doubles() ? html`<div class="row between"><b>คู่</b><span>${F.p2.nick || F.p2.name}</span></div>` : ''}
           <div class="row between"><b>รวมค่าสมัคร</b><b style="font-size:1.3rem;color:var(--blue)">${total() ? baht(total()) : 'ฟรี'}</b></div>
@@ -101,6 +104,8 @@ export async function registerPage(root, [slug]) {
     if (F.step === 2) {
       if (!F.p1.name.trim() || !F.p1.phone.trim()) return 'กรอกชื่อและเบอร์โทรของผู้สมัคร';
       if (doubles() && !F.p2.name.trim()) return 'กรอกชื่อคู่ของคุณ';
+      if (!F.files.p1) return 'ต้องใส่รูปนักกีฬา (ผู้สมัคร)';
+      if (doubles() && !F.files.p2) return 'ต้องใส่รูปของคู่ด้วย';
       if (F.video && !/^https?:\/\//i.test(F.video)) return 'ลิงก์วิดีโอต้องขึ้นต้นด้วย http หรือ https';
       for (const [k, y] of [['p1', F.p1.year], ...(doubles() ? [['p2', F.p2.year]] : [])]) {
         if (y && (!Number.isInteger(ce(y)) || ce(y) < 1930 || ce(y) > 2030)) return 'ปีเกิดไม่ถูกต้อง กรอกเป็น พ.ศ. 4 หลัก เช่น 2538';
@@ -122,7 +127,7 @@ export async function registerPage(root, [slug]) {
     if (!$('#consent', root).checked) return toast('กรุณาติ๊กยินยอมการเก็บข้อมูล', 'err');
     await busy($('#next', root), async () => {
       const photo = async (k) => (F.files[k] ? uploadImage('photos', `${t.id}/${uuid()}`, F.files[k], 800, 0.8) : null);
-      const p1 = { name: F.p1.name.trim(), nick: F.p1.nick.trim(), phone: F.p1.phone.trim(), birth_year: ce(F.p1.year), photo: await photo('p1') };
+      const p1 = { name: F.p1.name.trim(), nick: F.p1.nick.trim(), phone: F.p1.phone.trim(), birth_year: ce(F.p1.year), photo: await photo('p1'), club: F.club.trim() };
       const p2 = doubles() ? { name: F.p2.name.trim(), nick: F.p2.nick.trim(), phone: F.p2.phone.trim(), birth_year: ce(F.p2.year), photo: await photo('p2') } : {};
       const made = [];
       for (const id of F.catIds) {
@@ -174,12 +179,13 @@ export async function statusPage(root, [regId, token]) {
           <span class="pill ${r.pay_status === 'paid' ? 'ok' : r.pay_status === 'rejected' ? 'err' : 'warn'}">${PAY_TH[r.pay_status]}</span></div>
         ${ok ? html`<p class="ok"><b>ยืนยันการสมัครเรียบร้อย</b> พบกันวันแข่ง</p>` : ''}
         ${r.status === 'waitlist' ? html`<p>รุ่นนี้เต็มแล้ว คุณอยู่ในรายชื่อสำรอง</p>` : ''}
-        ${r.p2_name && r.status !== 'cancelled' ? html`<button class="btn sm" id="chpartner" style="align-self:flex-start">เปลี่ยนคู่ (ก่อนปิดรับสมัคร)</button>` : ''}
+        ${r.club ? html`<div class="muted">ทีม: ${r.club}</div>` : ''}
+        ${r.status !== 'cancelled' ? html`<button class="btn sm" id="editreg" style="align-self:flex-start">${r.open ? '✏ แก้ไขข้อมูลสมัคร' : 'ปิดรับสมัครแล้ว (แก้ไขไม่ได้)'}</button>` : ''}
       </div>
       ${needsPay ? payCard(r, canPay) : ''}
       <div class="card"><h3>ตารางแข่งของฉัน</h3>
         ${(ms.data || []).length ? (ms.data || []).map((m) => html`<div style="padding:8px 0;border-bottom:1px solid var(--line)">
-          <div class="row between"><b>${m.round_label || ''}</b><span class="pill ${m.status === 'live' ? 'live' : m.status === 'finished' ? 'ok' : 'gray'}">${MATCH_TH[m.status]}</span></div>
+          <div class="row between"><b>${m.match_no ? '#' + m.match_no + ' · ' : ''}${m.round_label || ''}</b><span class="pill ${m.status === 'live' ? 'live' : m.status === 'finished' ? 'ok' : 'gray'}">${MATCH_TH[m.status]}</span></div>
           <div>${teamName(E[m.reg_a])} <span class="muted">vs</span> ${teamName(E[m.reg_b])}</div>
           <div class="muted small">${m.court ? 'สนาม ' + m.court : 'ยังไม่กำหนดสนาม'}${m.scheduled_at ? ' · ' + fmtDate(m.scheduled_at) + ' ' + fmtTime(m.scheduled_at) : ''}${scoreText(m) ? ' · ' + scoreText(m) : ''}</div></div>`)
           : html`<div class="empty">ยังไม่มีตารางแข่ง ผู้จัดจะแจ้งเมื่อจัดสายเสร็จ</div>`}
@@ -189,13 +195,10 @@ export async function statusPage(root, [regId, token]) {
           <div class="small">${n.body || ''}</div><div class="muted small">${fmtDate(n.created_at)} ${fmtTime(n.created_at)}</div></div>`)
           : html`<div class="empty">ยังไม่มีการแจ้งเตือน</div>`}
       </div>
-      <dialog id="pd"><form method="dialog" class="stack" id="pf"><h3>เปลี่ยนคู่</h3>
-        <label class="field"><span>ชื่อ-นามสกุลคู่ใหม่</span><input id="n2" maxlength="80"></label>
-        <label class="field"><span>ชื่อเล่น</span><input id="k2" maxlength="40"></label>
-        <label class="field"><span>เบอร์โทร (ไม่บังคับ)</span><input id="h2" type="tel" maxlength="20"></label>
-        <label class="field"><span>ปีเกิด พ.ศ. (ถ้ารุ่นกำหนดอายุ)</span><input id="y2" inputmode="numeric" maxlength="4"></label>
-        <div class="row"><button class="btn primary" id="psave" type="button">บันทึก</button><button class="btn" value="cancel">ยกเลิก</button></div></form></dialog>`);
+      <dialog id="pd"></dialog>`);
 
+    const er = $('#editreg', root);
+    if (er) er.onclick = () => { if (!r.open) return toast('ปิดรับสมัครแล้ว ติดต่อผู้จัดเพื่อแก้ไข', 'err'); openRegEdit($('#pd', root), { ...r, tournament_id: r.tournament_id }, { mode: 'player', token, onSaved: draw }); };
     const cp = $('#chpartner', root);
     if (cp) {
       cp.onclick = () => $('#pd', root).showModal();
