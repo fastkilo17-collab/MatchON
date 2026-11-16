@@ -8,6 +8,7 @@ import { schedulePage } from './schedule.js';
 import { courtsPage } from './courts.js';
 import { livePage } from './live.js';
 import { staffPage } from './staff.js';
+import { rulesPage } from './rules.js';
 import { resultsPage } from './results.js';
 import { reportsPage } from './reports.js';
 import { loginPage, settingsPage } from './account.js';
@@ -18,6 +19,7 @@ const NAV = [
   ['register', '📝', 'สมัครแข่งขัน', ['anon', 'player', 'referee']],
   ['my', '🎫', 'การสมัครของฉัน', ['anon', 'player', 'referee']],
   ['athletes', '👥', 'จัดการนักกีฬา', MANAGE],
+  ['rules', '📏', 'กติกา', MANAGE],
   ['brackets', '🧩', 'จัดสายแข่งขัน', MANAGE],
   ['schedule', '🗓', 'ตารางการแข่งขัน', ALL],
   ['courts', '🏟', 'จัดการสนาม', MANAGE],
@@ -32,7 +34,7 @@ TITLE.login = 'เข้าสู่ระบบ';
 
 const routes = {
   dashboard, tournaments: tournamentsPage, register: registerHome, my: myPage, athletes: athletesPage, brackets: bracketsPage,
-  schedule: schedulePage, courts: courtsPage, live: livePage, staff: staffPage, results: resultsPage, reports: reportsPage, settings: settingsPage, login: loginPage,
+  schedule: schedulePage, courts: courtsPage, live: livePage, rules: rulesPage, staff: staffPage, results: resultsPage, reports: reportsPage, settings: settingsPage, login: loginPage,
 };
 const PRIMARY = ['dashboard', 'tournaments', 'register', 'athletes', 'schedule', 'live', 'results'];
 

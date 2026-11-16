@@ -4,11 +4,24 @@ import { sb, html, raw, mount, $, $$, toast, busy, esc, name, MATCH_TH, notify }
 // A set is valid when the winner reached `points` with a 2-point lead, or hit the cap.
 export function setWinner(a, b, c) {
   const hi = Math.max(a, b), lo = Math.min(a, b);
-  const pts = (c && c.points) || 21, cap = (c && c.cap) || 30;
-  if (hi < pts) return null;
+  const pts = (c && c.points) || 21, deuce = !c || c.deuce !== false;
+  const cap = deuce ? (c && c.cap) || 30 : pts;
+  if (a === b || hi < pts) return null;
   if (hi >= cap) return a > b ? 'a' : 'b';
-  return hi - lo >= 2 && hi >= pts ? (a > b ? 'a' : 'b') : null;
+  return hi - lo >= 2 ? (a > b ? 'a' : 'b') : null;
 }
+
+// Rule set that applies to one match: the category's group-stage or knockout rule, else the category defaults.
+export function ruleFor(D, m) {
+  const cat = D.C[m.category_id] || {};
+  const b = (D.brackets || []).find((x) => x.category_id === cat.id);
+  const fmt = (b && b.format) || cat.format;
+  const ko = m.stage === 'knockout' || (m.stage === 'main' && fmt === 'knockout');
+  const r = (ko ? cat.rule_ko : cat.rule_group) && D.R && D.R[ko ? cat.rule_ko : cat.rule_group];
+  if (r) return { best_of: r.best_of, points: r.points, deuce: r.deuce, cap: r.deuce ? r.cap : r.points, name: r.name };
+  return { best_of: cat.best_of || 3, points: cat.points || 21, deuce: true, cap: cat.cap || 30, name: '' };
+}
+export const ruleText = (r) => `${r.best_of === 1 ? '1 เซต' : `ชนะ ${Math.floor(r.best_of / 2) + 1} ใน ${r.best_of} เซต`} · ${r.points} แต้ม · ${r.deuce ? `ดิวได้ สูงสุด ${r.cap}` : 'ไม่ดิว'}`;
 export function matchWinner(sets, c) {
   const need = Math.floor(((c && c.best_of) || 3) / 2) + 1;
   let a = 0, b = 0;
@@ -24,10 +37,10 @@ async function setSlot(matchId, slot, regId) {
 
 // Save (or clear) a finished result and move the winner to the next round.
 export async function saveResult(D, m, sets) {
-  const c = D.C[m.category_id];
+  const c = ruleFor(D, m);
   const w = sets.length ? matchWinner(sets, c) : null;
   if (sets.length && !w) throw new Error('ผลยังไม่สมบูรณ์ ต้องมีผู้ชนะตามกติกา (เช่น 21 แต้มและห่าง 2)');
-  for (const [x, y] of sets) if (!setWinner(x, y, c)) throw new Error(`เซต ${x}-${y} ไม่ถูกต้องตามกติกา (${c.points} แต้ม ห่าง 2 เพดาน ${c.cap})`);
+  for (const [x, y] of sets) if (!setWinner(x, y, c)) throw new Error(`เซต ${x}-${y} ไม่ถูกต้องตามกติกา (${ruleText(c)})`);
   const winner = w ? (w === 'a' ? m.reg_a : m.reg_b) : null;
   const { error } = await sb.from('matches').update({
     sets, status: w ? 'finished' : 'scheduled', winner, cur_a: 0, cur_b: 0, updated_at: new Date().toISOString(),
@@ -46,7 +59,7 @@ export async function saveResult(D, m, sets) {
 export function openMatchDialog(root, D, m, { locked = false, onDone } = {}) {
   let dlg = $('#mdlg', root);
   if (!dlg) { dlg = document.createElement('dialog'); dlg.id = 'mdlg'; root.appendChild(dlg); }
-  const c = D.C[m.category_id] || { best_of: 3, points: 21, cap: 30 };
+  const c = ruleFor(D, m);
   const sets = m.sets || [];
   const slots = Array.from({ length: c.best_of }, (_, i) => sets[i] || ['', '']);
   const teams = D.regs.filter((r) => r.category_id === m.category_id && r.status !== 'cancelled');
@@ -56,7 +69,7 @@ export function openMatchDialog(root, D, m, { locked = false, onDone } = {}) {
     ${canSwap ? html`<div class="grid g2"><label class="field"><span>ทีม A</span>${sel('ta', m.reg_a)}</label><label class="field"><span>ทีม B</span>${sel('tb', m.reg_b)}</label></div>
       <button class="btn sm" id="swapt">บันทึกการเปลี่ยนทีม</button>`
       : html`<div class="row between"><b>${name(D, m.reg_a)}</b><span class="muted">vs</span><b>${name(D, m.reg_b)}</b></div>`}
-    ${m.reg_a && m.reg_b ? html`<div class="stack"><b>ผลคะแนนรายเกม <span class="muted small">(${c.points} แต้ม ห่าง 2 เพดาน ${c.cap})</span></b>
+    ${m.reg_a && m.reg_b ? html`<div class="stack"><b>ผลคะแนนรายเกม <span class="muted small">(${ruleText(c)})</span></b>
       ${slots.map((s, i) => html`<div class="row"><span style="width:56px">เกม ${i + 1}</span>
         <input data-s="${i}.0" type="number" min="0" max="${c.cap}" value="${s[0]}" style="width:90px"> <span>-</span>
         <input data-s="${i}.1" type="number" min="0" max="${c.cap}" value="${s[1]}" style="width:90px"></div>`)}

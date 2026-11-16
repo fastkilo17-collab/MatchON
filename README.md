@@ -13,5 +13,5 @@
 - ต้องเปิด Authentication → Sign-in method → **Anonymous** และวางกฎใน Realtime Database → Rules
 
 ## ฐานข้อมูลแอปหลัก (Supabase `atjxzczutrenphivihyd`)
-ใช้ตารางเดิมของ v1 และเพิ่มส่วนที่ขาดผ่าน migration `002` – `007_club_photo_edit` (ชื่อทีม, รูปบังคับ, แก้ไขใบสมัคร), `006_live_staff_adminreg` (006: tournaments.live_id, tournament_live, ensure_live, admin_add_registration, list/add/remove_staff) (profiles.role, `become_organizer`, `can_manage()`, referees, payments, notifications, category_templates และ RPC `register_team`, `my_registration`, `submit_slip`, `update_partner`, `my_notifications`, `public_entries`)
+ใช้ตารางเดิมของ v1 และเพิ่มส่วนที่ขาดผ่าน migration `002` – `008_rule_sets` (ชุดกติกา), `007_club_photo_edit` (ชื่อทีม, รูปบังคับ, แก้ไขใบสมัคร), `006_live_staff_adminreg` (006: tournaments.live_id, tournament_live, ensure_live, admin_add_registration, list/add/remove_staff) (profiles.role, `become_organizer`, `can_manage()`, referees, payments, notifications, category_templates และ RPC `register_team`, `my_registration`, `submit_slip`, `update_partner`, `my_notifications`, `public_entries`)
 การจับคู่ชื่อตารางกับสเปก: teams=registrations, match_entries=matches.reg_a/reg_b, match_schedules=matches.court/scheduled_at, match_scores=matches.sets/cur_a/cur_b, score_events=match_events

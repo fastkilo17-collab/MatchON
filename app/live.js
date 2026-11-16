@@ -1,5 +1,5 @@
 import { sb, S, curT, loadData, html, raw, mount, $, $$, toast, busy, esc, name, fmtTime, canManage, publicUrl, KIND_TH, MATCH_TH, notify } from './core.js';
-import { setWinner, matchWinner, saveResult } from './matchops.js';
+import { setWinner, matchWinner, saveResult, ruleFor, ruleText } from './matchops.js';
 import { qrToCanvas } from '../js/qr.js';
 
 const CODE = (m) => m.id.slice(0, 8);
@@ -29,6 +29,7 @@ export async function livePage(root) {
       .sort((a, b) => (+new Date(a.scheduled_at || 0)) - (+new Date(b.scheduled_at || 0)))[0];
     const m = live || wait || null;
     const cat = m ? D.C[m.category_id] || {} : {};
+    const rule = m ? ruleFor(D, m) : { best_of: 3 };
     let sets = m ? (m.sets || []) : [], cur = m ? [m.cur_a || 0, m.cur_b || 0] : [0, 0];
     const f = fb[c.no];
     if (live && f && f.status === 'LIVE' && f.matchCode === CODE(live)) {
@@ -37,9 +38,9 @@ export async function livePage(root) {
       cur = f.scores[act] || [0, 0];
     }
     const won = [0, 0];
-    sets.forEach(([x, y]) => { const w = setWinner(x, y, cat); if (w === 'a') won[0]++; else if (w === 'b') won[1]++; else if (x !== y) won[x > y ? 0 : 1]++; });
+    sets.forEach(([x, y]) => { const w = setWinner(x, y, rule); if (w === 'a') won[0]++; else if (w === 'b') won[1]++; else if (x !== y) won[x > y ? 0 : 1]++; });
     const kind = c.status === 'maintenance' ? 'off' : live ? 'live' : wait ? 'wait' : 'free';
-    return { c, m, cat, sets, cur, won, kind, setNo: sets.length + 1 };
+    return { c, m, cat, rule, sets, cur, won, kind, setNo: sets.length + 1 };
   };
 
   const avatar = (r, k) => {
@@ -53,13 +54,13 @@ export async function livePage(root) {
       <div class="lw" title="เซตที่ชนะ">${v.won[i]}</div><div class="lp">${v.cur[i]}</div></div>`;
   };
   const card = (v) => {
-    const { c, m, cat, kind } = v;
+    const { c, m, cat, kind, rule } = v;
     const label = { off: 'งดใช้งาน', live: 'กำลังแข่ง', wait: 'รอแข่ง', free: 'ว่าง' }[kind];
     const ra = m && D.E[m.reg_a], rb = m && D.E[m.reg_b];
     return `<div class="lc ${kind}"><div class="lh"><b>สนาม ${c.no}</b><span class="st ${kind}">${kind === 'live' ? '<i></i>' : ''}${label}</span></div>
       ${m ? `<div class="chips">${m.match_no ? `<span class="mn">แมตช์ #${m.match_no}</span>` : ''}<span>${esc(KIND_TH[cat.kind] || '')}</span><span>${esc(cat.name || '')}</span><span>${esc(m.round_label || '')}</span>${cat.level ? `<span>มือ ${esc(cat.level)}</span>` : ''}</div>
         <div class="lcols"><span></span><span>เซต</span><span>คะแนน</span></div>${teamRow(ra, 0, v)}${teamRow(rb, 1, v)}
-        <div class="lf"><span>${kind === 'live' ? `เซตที่ ${Math.min(v.setNo, cat.best_of || 3)}/${cat.best_of || 3}` : (m.scheduled_at ? 'เวลา ' + fmtTime(m.scheduled_at) : 'รอเริ่ม')}</span>
+        <div class="lf"><span>${kind === 'live' ? `เซตที่ ${Math.min(v.setNo, rule.best_of)}/${rule.best_of}` : (m.scheduled_at ? 'เวลา ' + fmtTime(m.scheduled_at) : 'รอเริ่ม')}</span>
           <span>${v.sets.map(([x, y]) => `${x}-${y}`).join(' · ')}</span></div>`
         : `<div class="empty small">${kind === 'off' ? 'ปิดปรับปรุง' : 'พร้อมเรียกแมตช์ลงสนาม'}</div>`}
       ${mgr ? `<div class="row" style="margin-top:8px"><button class="btn sm" data-qr="${c.no}">📱 QR กรรมการ</button>
@@ -215,13 +216,13 @@ export async function livePage(root) {
   };
 
   const scoreDialog = (m) => {
-    const c = D.C[m.category_id] || { best_of: 3, points: 21, cap: 30 };
+    const c = ruleFor(D, m);
     const n = c.best_of || 3;
     const init = (m.sets || []).map((s) => [String(s[0]), String(s[1])]);
     if (m.cur_a || m.cur_b) init.push([String(m.cur_a), String(m.cur_b)]);
     const rows = Array.from({ length: n }, (_, i) => init[i] || ['', '']);
     mount(dlg, html`<div class="stack"><h3>ลงบันทึกคะแนน ${MN(m)} · สนาม ${m.court || '-'}</h3>
-      <div class="muted small">${name(D, m.reg_a)} vs ${name(D, m.reg_b)}<br>${c.points || 21} แต้ม ต้องห่าง 2 (สูงสุด ${c.cap || 30}) · ชนะ ${Math.floor(n / 2) + 1} ใน ${n} เซต · ระบบคำนวณเซตให้อัตโนมัติ</div>
+      <div class="muted small">${name(D, m.reg_a)} vs ${name(D, m.reg_b)}<br>กติกา: ${ruleText(c)} · ระบบคำนวณเซตให้อัตโนมัติ</div>
       ${rows.map((r, i) => html`<div class="row" data-row="${i}"><span style="width:52px">เซต ${i + 1}</span>
         <input data-v="${i}.0" type="number" inputmode="numeric" min="0" max="${c.cap || 30}" value="${r[0]}" style="width:84px"><span>-</span>
         <input data-v="${i}.1" type="number" inputmode="numeric" min="0" max="${c.cap || 30}" value="${r[1]}" style="width:84px"><span class="small" data-r="${i}"></span></div>`)}

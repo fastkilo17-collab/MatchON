@@ -41,18 +41,20 @@ export const curT = () => S.tournaments.find((t) => t.id === S.tid) || null;
 // Everything one tournament page needs. Managers read registrations directly; everyone else gets the public view.
 export async function loadData(tid) {
   const mgr = canManage();
-  const [cats, regs, matches, courts, brackets] = await Promise.all([
+  const [cats, regs, matches, courts, brackets, rules] = await Promise.all([
     sb.from('categories').select('*').eq('tournament_id', tid).order('sort').order('name'),
     mgr ? sb.from('registrations').select('*').eq('tournament_id', tid).order('created_at')
         : sb.rpc('public_entries', { p_tournament: tid }),
     sb.from('matches').select('*').eq('tournament_id', tid).order('round').order('slot'),
     sb.from('courts').select('*').eq('tournament_id', tid).order('no'),
     sb.from('brackets').select('*').eq('tournament_id', tid),
+    sb.from('tournament_rules').select('*').eq('tournament_id', tid).order('created_at'),
   ]);
-  for (const r of [cats, regs, matches, courts, brackets]) if (r.error) throw r.error;
-  const D = { tid, cats: cats.data || [], regs: regs.data || [], matches: matches.data || [], courts: courts.data || [], brackets: brackets.data || [] };
+  for (const r of [cats, regs, matches, courts, brackets, rules]) if (r.error) throw r.error;
+  const D = { tid, cats: cats.data || [], regs: regs.data || [], matches: matches.data || [], courts: courts.data || [], brackets: brackets.data || [], rules: rules.data || [] };
   D.E = Object.fromEntries(D.regs.map((r) => [r.id, r]));
   D.C = Object.fromEntries(D.cats.map((c) => [c.id, c]));
+  D.R = Object.fromEntries(D.rules.map((r) => [r.id, r]));
   return D;
 }
 

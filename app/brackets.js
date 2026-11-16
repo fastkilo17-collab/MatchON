@@ -2,7 +2,7 @@ import {
   sb, S, curT, loadData, html, raw, mount, $, $$, toast, busy, esc, name, uuid, FORMAT_TH, KIND_TH, GENDER_TH,
   buildKnockout, buildRoundRobin, standings, roundLabel, tabs, canManage,
 } from './core.js';
-import { openMatchDialog, matchBox } from './matchops.js';
+import { openMatchDialog, matchBox, ruleFor, ruleText } from './matchops.js';
 
 const shuffle = (a) => { const x = a.slice(); for (let i = x.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [x[i], x[j]] = [x[j], x[i]]; } return x; };
 const GL = (i) => String.fromCharCode(65 + i);
@@ -22,11 +22,11 @@ export async function bracketsPage(root) {
     const teams = D.regs.filter((r) => r.category_id === cat.id && okStatus.includes(r.status));
     const locked = !!(b && b.locked);
     mount(root, html`
-      <div class="row between noprint"><h2>จัดสายการแข่งขัน</h2>
+      <div class="row between noprint"><h2>จัดสายแข่งขัน</h2>
         <div class="row"><button class="btn sm" id="pr">🖨 พิมพ์ / บันทึก PDF</button></div></div>
       <div class="tabs noprint" id="tb">${raw(tabs(D.cats.map((c) => [c.id, esc(c.name)]), st.cat))}</div>
       <div class="card stack">
-        <div class="row between"><div><h3>${cat.name}</h3><div class="muted small">${KIND_TH[cat.kind]} · ${GENDER_TH[cat.gender]} · ${FORMAT_TH[(b && b.format) || cat.format]} · ${cat.best_of === 1 ? '1 เกม' : '1 ใน ' + cat.best_of} · ${cat.points} แต้ม</div></div>
+        <div class="row between"><div><h3>${cat.name}</h3><div class="muted small">${KIND_TH[cat.kind]} · ${GENDER_TH[cat.gender]} · ${FORMAT_TH[(b && b.format) || cat.format]} · ${ruleLine(cat, b)}</div></div>
           <div class="row">${b ? raw(`<span class="pill ${locked ? 'ok' : 'warn'}">${locked ? '🔒 ล็อกสายแล้ว' : 'ร่างสาย (แก้ไขได้)'}</span>`) : ''}</div></div>
         <div class="muted small">ทีมที่ยืนยันแล้ว ${teams.length} ทีม${st.pending ? ' (รวมที่ยังไม่ยืนยัน)' : ''}</div>
         ${canManage() ? controls(cat, b, ms, teams, locked) : ''}
@@ -34,6 +34,12 @@ export async function bracketsPage(root) {
       ${ms.length ? view(cat, b, ms) : html`<div class="card empty">ยังไม่ได้สร้างสายสำหรับรุ่นนี้</div>`}
       <dialog id="mdlg"></dialog>`);
     bind(cat, b, ms, teams, locked);
+  };
+
+  const ruleLine = (cat, b) => {
+    const f = (b && b.format) || cat.format;
+    const g = ruleText(ruleFor(D, { category_id: cat.id, stage: 'group' })), k = ruleText(ruleFor(D, { category_id: cat.id, stage: 'knockout' }));
+    return f === 'knockout' ? k : f === 'group_knockout' ? `กลุ่ม: ${g} · ไขว้สาย: ${k}` : g;
   };
 
   const controls = (cat, b, ms, teams, locked) => {
@@ -53,7 +59,7 @@ export async function bracketsPage(root) {
       <label class="field"><span>ผ่านเข้ารอบ/กลุ่ม</span><input id="ga" type="number" min="1" max="8" value="${(b && b.advance) || 2}"></label>
       <label class="field"><span>การจัดมือวาง</span><select id="gs"><option value="random">สุ่มทั้งหมด</option><option value="seed">ตามมือวางที่กำหนดไว้ (ที่เหลือสุ่ม)</option></select></label>
       <label class="check" style="grid-column:1/-1"><input type="checkbox" id="gp" ${st.pending ? 'checked' : ''}><span>รวมผู้สมัครที่ยังไม่ได้ยืนยันด้วย</span></label>
-      <div style="grid-column:1/-1"><button class="btn primary" id="gen" ${teams.length < 2 ? 'disabled' : ''}>🎲 สร้างสายการแข่งขัน</button></div></div>`;
+      <div style="grid-column:1/-1"><button class="btn primary" id="gen" ${teams.length < 2 ? 'disabled' : ''}>🎲 จัดสายแข่งขัน</button></div></div>`;
   };
 
   const view = (cat, b, ms) => {
@@ -146,7 +152,7 @@ export async function bracketsPage(root) {
       await insertMatches(rows);
       const { error } = await sb.from('brackets').upsert({ tournament_id: t.id, category_id: cat.id, format: fmt, groups: G, advance: adv, seeded, locked: false }, { onConflict: 'category_id' });
       if (error) throw error;
-      toast('สร้างสายแล้ว'); await reload();
+      toast('จัดสายแล้ว'); await reload();
     });
     const setLock = (v) => async () => {
       const { error } = await sb.from('brackets').update({ locked: v }).eq('category_id', cat.id);
