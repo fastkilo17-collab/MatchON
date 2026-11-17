@@ -1,30 +1,31 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="th">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>MatchON</title>
-<meta name="theme-color" content="#0a1f5c">
-<meta name="description" content="ระบบจัดการแข่งขันแบดมินตัน สมัคร จัดสาย จัดตาราง คะแนนสด ครบในที่เดียว">
-<meta property="og:title" content="MatchON ระบบจัดการแข่งขันแบดมินตัน">
-<meta property="og:image" content="img/matchon-poster.jpg">
-<link rel="icon" type="image/png" href="img/matchon-icon.png">
-<link rel="apple-touch-icon" href="img/matchon-icon.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700;800&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="app/app.css">
-<script>try{var t=localStorage.getItem('matchon.theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
-</head>
-<body>
-<div class="shell">
-  <aside class="side" id="side"></aside>
-  <div class="main">
-    <header class="top"><div class="title" id="title">MatchON</div><select id="tsel" aria-label="เลือกรายการแข่งขัน" hidden></select></header>
-    <main class="page" id="app"><div class="empty">กำลังโหลด…</div></main>
-  </div>
-</div>
-<nav class="tabbar" id="tabbar"></nav>
-<div class="sheet" id="sheet"><div class="in" id="sheetin"></div></div>
-<script type="module" src="app/main.js"></script>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>MatchON — ระบบจัดการแข่งขันแบดมินตัน</title>
+    <meta
+      name="description"
+      content="MatchON ระบบจัดการแข่งขันแบดมินตัน สมัคร จัดสาย จัดตาราง คะแนนสด ครบในที่เดียว รองรับการใช้งานบนมือถือ"
+    />
+    <meta property="og:title" content="MatchON — ระบบจัดการแข่งขันแบดมินตัน" />
+    <meta
+      property="og:description"
+      content="MatchON ระบบจัดการแข่งขันแบดมินตัน สมัคร จัดสาย จัดตาราง คะแนนสด ครบในที่เดียว รองรับการใช้งานบนมือถือ"
+    />
+    <meta property="og:type" content="website" />
+    <meta name="theme-color" content="#FFFFFF" />
+    <link rel="icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" href="/favicon.ico" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&family=Prompt:wght@500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="bg-slate-50 text-slate-900 antialiased selection:bg-blue-100 selection:text-blue-900">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
 </html>

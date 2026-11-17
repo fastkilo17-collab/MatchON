@@ -1,17 +1,22 @@
 # MatchON
 
-ระบบจัดแข่งแบดมินตัน: สมัคร ประเมินมือ ตรวจสลิป สายแข่ง และคอร์ตสด
+ระบบจัดการแข่งขันแบดมินตัน (React 19 + Vite + Tailwind 4 + TypeScript) เชื่อมฐานข้อมูล Supabase
 
-- `index.html` + `app/` — เว็บแอปหลักใหม่ (ระบบจัดการแข่งขันครบวงจร ต่อ Supabase จริง): Dashboard, รายการแข่งขัน/รุ่น, สมัครแข่ง+สลิป, จัดการนักกีฬา, จัดสาย (Knockout/Round Robin/Group/Group+KO/Swiss), ตารางแข่ง+สนาม, ผลการแข่งขัน, รายงาน (CSV/พิมพ์ PDF), ตั้งค่า. บทบาท: super_admin / organizer / staff / referee / player / ผู้ชม
-- `courts.html` — คอร์ตสด (Firebase) เดิม ไม่เปลี่ยน; `referee.html` — หน้ากรรมการ
-- `v1/` — เวอร์ชันก่อนหน้าที่ต่อ Supabase แล้ว (สมัคร/จ่ายเงิน/ให้คะแนน) เปิดที่ `/v1/`
-- `supabase/` — สคีมาฐานข้อมูลของ v1
+- เว็บ: https://fastkilo17-collab.github.io/MatchON/
+- ข้อมูล: Supabase (ตาราง/RLS/RPC ใน `supabase/migrations` 001–009)
+- ล็อกอิน: อีเมล/รหัสผ่าน และ LINE (custom OIDC `custom:line`); นักกีฬาสมัครได้โดยไม่ต้องล็อกอิน (ใช้ edit token ในเบราว์เซอร์)
+- `public/` เก็บหน้าเดิม: `referee.html`, `courts.html`, `js/`, `v1/` (Firebase live)
 
-## คะแนนสด (Firebase Realtime Database)
-- `js/live.js` ซิงก์คอร์ตและผลแมตช์ผ่าน Firebase โปรเจกต์ `matchon-c5217`
-- `database.rules.json` กฎความปลอดภัย: ทุกคนอ่านคะแนนสดได้ แต่เขียนได้เฉพาะเครื่องที่มีรหัสกรรมการ (รหัสแยกรายคอร์ต อยู่ใน QR ส่วนหลัง `#k=`)
-- ต้องเปิด Authentication → Sign-in method → **Anonymous** และวางกฎใน Realtime Database → Rules
+## โครงสร้าง
+- `src/lib/supabase.ts` client + อัปโหลดรูป
+- `src/lib/db.ts` โหลดข้อมูล, แปลงฟิลด์, sync แบบ diff (เฉพาะผู้จัด/staff), RPC สมัคร/แก้ไข/สลิป
+- `src/context/MatchONContext.tsx` state ทั้งแอป (โหลดจาก DB, บันทึกอัตโนมัติ, โพลทุก 20 วิ)
+- `src/pages`, `src/components` หน้าจอ
 
-## ฐานข้อมูลแอปหลัก (Supabase `atjxzczutrenphivihyd`)
-ใช้ตารางเดิมของ v1 และเพิ่มส่วนที่ขาดผ่าน migration `002` – `008_rule_sets` (ชุดกติกา), `007_club_photo_edit` (ชื่อทีม, รูปบังคับ, แก้ไขใบสมัคร), `006_live_staff_adminreg` (006: tournaments.live_id, tournament_live, ensure_live, admin_add_registration, list/add/remove_staff) (profiles.role, `become_organizer`, `can_manage()`, referees, payments, notifications, category_templates และ RPC `register_team`, `my_registration`, `submit_slip`, `update_partner`, `my_notifications`, `public_entries`)
-การจับคู่ชื่อตารางกับสเปก: teams=registrations, match_entries=matches.reg_a/reg_b, match_schedules=matches.court/scheduled_at, match_scores=matches.sets/cur_a/cur_b, score_events=match_events
+## รัน / Deploy
+```
+npm install
+npm run dev
+npm run build
+```
+Deploy ผ่าน GitHub Actions (`.github/workflows/pages.yml`) — ตั้ง Settings → Pages → Source: GitHub Actions
