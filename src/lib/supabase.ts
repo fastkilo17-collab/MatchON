@@ -10,7 +10,7 @@ export const sb = createClient(SUPABASE_URL, SUPABASE_KEY, {
 });
 
 export const photoUrl = (path?: string | null): string =>
-  path ? `${SUPABASE_URL}/storage/v1/object/public/photos/${path}` : '';
+  !path ? '' : /^(data:|https?:)/.test(path) ? path : `${SUPABASE_URL}/storage/v1/object/public/photos/${path}`;
 
 // Shrink a photo in the browser before upload (phones produce 5 MB+ images).
 export async function resizeImage(file: File, maxSide = 800, quality = 0.82): Promise<Blob> {
@@ -31,4 +31,11 @@ export async function uploadPhoto(bucket: 'photos' | 'slips', folder: string, fi
   const { error } = await sb.storage.from(bucket).upload(path, blob, { contentType: 'image/jpeg', upsert: false });
   if (error) throw error;
   return path;
+}
+
+// Placeholder avatar (used for simulated athletes).
+export function avatarDataUri(name: string): string {
+  let h = 0;
+  for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96"><rect width="96" height="96" fill="hsl(${h % 360},55%,45%)"/><circle cx="48" cy="38" r="17" fill="rgba(255,255,255,.85)"/><path d="M14 96c0-22 15-36 34-36s34 14 34 36z" fill="rgba(255,255,255,.85)"/></svg>`;
 }

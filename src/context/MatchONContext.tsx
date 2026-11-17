@@ -24,7 +24,7 @@ import {
   shuffle,
   uuid,
 } from '../utils/bracket';
-import { sb } from '../lib/supabase';
+import { avatarDataUri, sb } from '../lib/supabase';
 import {
   EMPTY_DATA,
   loadAll,
@@ -468,8 +468,8 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
               tournamentId: cat.tournament_id,
               categoryId: cat.id,
               club: sampleClubs[Math.floor(Math.random() * sampleClubs.length)],
-              p1: { name: `นักกีฬา ${n1} ทดสอบ ${num}`, nick: `${n1}${num % 10}`, phone: `089${num}1234` },
-              p2: cat.kind === 'doubles' ? { name: `นักกีฬา ${n2} คู่`, nick: `${n2}${num % 7}` } : undefined,
+              p1: { name: `นักกีฬา ${n1} ทดสอบ ${num}`, nick: `${n1}${num % 10}`, phone: `089${num}1234`, photo: avatarDataUri(`${n1}${num}`) },
+              p2: cat.kind === 'doubles' ? { name: `นักกีฬา ${n2} คู่`, nick: `${n2}${num % 7}`, photo: avatarDataUri(`${n2}${num}b`) } : undefined,
               status: 'confirmed',
               paid: true,
             });

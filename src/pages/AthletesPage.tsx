@@ -9,6 +9,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { useMatchON } from '../context/MatchONContext';
+import { photoUrl, uploadPhoto } from '../lib/supabase';
 import type { PayStatus, RegStatus, Registration } from '../types/matchon';
 import {
   baht,
@@ -29,6 +30,7 @@ export function AthletesPage() {
     routeParam,
     addRegistration,
     simulateRegistrations,
+    toast,
     updateRegistration,
   } = useMatchON();
 
@@ -38,6 +40,8 @@ export function AthletesPage() {
   const [selectedReg, setSelectedReg] = useState<Registration | null>(null);
   const [addOpen, setAddOpen] = useState(false);
 
+  const [f1, setF1] = useState<File | null>(null);
+  const [f2, setF2] = useState<File | null>(null);
   const [newReg, setNewReg] = useState({
     category_id: '',
     club: '',
@@ -92,24 +96,41 @@ export function AthletesPage() {
     ]);
   };
 
-  const handleAddSubmit = (e: React.FormEvent) => {
+  const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const cid = newReg.category_id || tCategories[0]?.id;
     if (!cid || !newReg.p1_name.trim()) return;
-    addRegistration(
-      {
-        tournament_id: activeTournament.id,
-        category_id: cid,
-        club: newReg.club.trim(),
-        p1_name: newReg.p1_name.trim(),
-        p1_nick: newReg.p1_nick.trim() || newReg.p1_name.trim().split(' ')[0],
-        p1_phone: newReg.p1_phone.trim(),
-        p2_name: newReg.p2_name.trim() || undefined,
-        p2_nick: newReg.p2_nick.trim() || undefined,
-      },
-      { autoConfirm: true, payStatus: 'paid' },
-    );
+    const hasP2 = !!newReg.p2_name.trim();
+    if (!f1 || (hasP2 && !f2)) {
+      toast('กรุณาแนบรูปนักกีฬาให้ครบ (บังคับ)', 'err');
+      return;
+    }
+    try {
+      const tid = activeTournament.id;
+      const ph1 = await uploadPhoto('photos', tid, f1);
+      const ph2 = hasP2 && f2 ? await uploadPhoto('photos', tid, f2) : null;
+      await addRegistration(
+        {
+          tournament_id: tid,
+          category_id: cid,
+          club: newReg.club.trim(),
+          p1_name: newReg.p1_name.trim(),
+          p1_nick: newReg.p1_nick.trim() || newReg.p1_name.trim().split(' ')[0],
+          p1_phone: newReg.p1_phone.trim(),
+          p1_photo: ph1,
+          p2_name: newReg.p2_name.trim() || undefined,
+          p2_nick: newReg.p2_nick.trim() || undefined,
+          p2_photo: ph2,
+        },
+        { autoConfirm: true, payStatus: 'paid' },
+      );
+    } catch (err: any) {
+      toast(err?.message || 'อัปโหลดรูปไม่สำเร็จ', 'err');
+      return;
+    }
     setAddOpen(false);
+    setF1(null);
+    setF2(null);
     setNewReg({ category_id: '', club: '', p1_name: '', p1_nick: '', p1_phone: '', p2_name: '', p2_nick: '' });
   };
 
@@ -219,6 +240,12 @@ export function AthletesPage() {
                 key={r.id}
                 className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50/70 transition-colors"
               >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="flex -space-x-3 shrink-0">
+                    {[r.p1_photo, r.p2_photo].filter(Boolean).map((ph, i) => (
+                      <img key={i} src={photoUrl(ph)} alt="" className="w-11 h-11 rounded-full object-cover ring-2 ring-white bg-slate-100" />
+                    ))}
+                  </div>
                 <div className="min-w-0 space-y-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-sm font-bold text-slate-900">{teamName(r)}</span>
@@ -259,6 +286,7 @@ export function AthletesPage() {
                       {PAY_TH[r.pay_status]}
                     </span>
                   </div>
+                </div>
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0">
@@ -469,6 +497,14 @@ export function AthletesPage() {
               </label>
             </div>
           )}
+          <label className="flex items-center gap-3 p-3 rounded-xl border border-dashed border-slate-300 cursor-pointer">
+            <span className="text-xs font-semibold text-slate-700">รูปผู้เล่น 1 * {f1 ? '✓ ' + f1.name : '(แตะเพื่อเลือกรูป)'}</span>
+            <input type="file" accept="image/*" className="hidden" onChange={(e) => setF1(e.target.files?.[0] || null)} />
+          </label>
+          <label className="flex items-center gap-3 p-3 rounded-xl border border-dashed border-slate-300 cursor-pointer">
+            <span className="text-xs font-semibold text-slate-700">รูปผู้เล่น 2 (ถ้ามีผู้เล่น 2) * {f2 ? '✓ ' + f2.name : '(แตะเพื่อเลือกรูป)'}</span>
+            <input type="file" accept="image/*" className="hidden" onChange={(e) => setF2(e.target.files?.[0] || null)} />
+          </label>
 
           <button
             type="submit"
