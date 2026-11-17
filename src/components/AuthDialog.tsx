@@ -3,7 +3,7 @@ import { sb } from '../lib/supabase';
 import { useMatchON } from '../context/MatchONContext';
 import { ResponsiveSheet } from './UiKit';
 
-export function AuthDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function AuthDialog({ open, onClose, lineOnly }: { open: boolean; onClose: () => void; lineOnly?: boolean }) {
   const { toast } = useMatchON();
   const [mode, setMode] = useState<'in' | 'up'>('in');
   const [email, setEmail] = useState('');
@@ -49,15 +49,15 @@ export function AuthDialog({ open, onClose }: { open: boolean; onClose: () => vo
         <button type="button" onClick={line} className="w-full min-h-[46px] rounded-xl bg-[#06C755] text-white text-sm font-semibold">
           เข้าสู่ระบบด้วย LINE
         </button>
-        <div className="text-center text-[11px] text-slate-400">หรือใช้อีเมล</div>
-        <input className={inp} type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="อีเมล" autoComplete="email" />
-        <input className={inp} type="password" required minLength={6} value={pw} onChange={(e) => setPw(e.target.value)} placeholder="รหัสผ่าน (6 ตัวขึ้นไป)" autoComplete={mode === 'in' ? 'current-password' : 'new-password'} />
-        <button disabled={busy} className="w-full min-h-[46px] rounded-xl bg-blue-600 text-white text-sm font-semibold">
+        {!lineOnly && <div className="text-center text-[11px] text-slate-400">หรือใช้อีเมล</div>}
+        {!lineOnly && <input className={inp} type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="อีเมล" autoComplete="email" />}
+        {!lineOnly && <input className={inp} type="password" required minLength={6} value={pw} onChange={(e) => setPw(e.target.value)} placeholder="รหัสผ่าน (6 ตัวขึ้นไป)" autoComplete={mode === 'in' ? 'current-password' : 'new-password'} />}
+        {!lineOnly && <button disabled={busy} className="w-full min-h-[46px] rounded-xl bg-blue-600 text-white text-sm font-semibold">
           {busy ? 'กำลังดำเนินการ…' : mode === 'in' ? 'เข้าสู่ระบบ' : 'สมัครสมาชิก'}
-        </button>
-        <button type="button" onClick={() => setMode(mode === 'in' ? 'up' : 'in')} className="w-full text-xs text-blue-700 font-semibold">
+        </button>}
+        {!lineOnly && <button type="button" onClick={() => setMode(mode === 'in' ? 'up' : 'in')} className="w-full text-xs text-blue-700 font-semibold">
           {mode === 'in' ? 'ยังไม่มีบัญชี? สมัครสมาชิก' : 'มีบัญชีแล้ว? เข้าสู่ระบบ'}
-        </button>
+        </button>}
       </form>
     </ResponsiveSheet>
   );
@@ -94,6 +94,21 @@ export function AccountBox() {
         </button>
       )}
       <AuthDialog open={open} onClose={() => setOpen(false)} />
+    </div>
+  );
+}
+
+export function LineLoginCard({ why }: { why: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="max-w-md mx-auto bg-white border border-slate-200/80 rounded-2xl p-6 text-center space-y-3">
+      <div className="text-3xl">🔐</div>
+      <h2 className="font-display text-lg font-bold text-slate-900">เข้าสู่ระบบด้วย LINE ก่อน</h2>
+      <p className="text-sm text-slate-500">{why}</p>
+      <button type="button" onClick={() => setOpen(true)} className="w-full min-h-[48px] rounded-xl bg-[#06C755] text-white text-sm font-semibold">
+        เข้าสู่ระบบด้วย LINE
+      </button>
+      <AuthDialog open={open} onClose={() => setOpen(false)} lineOnly />
     </div>
   );
 }

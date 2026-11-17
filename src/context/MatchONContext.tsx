@@ -17,6 +17,7 @@ import {
   buildKnockout,
   buildRoundRobin,
   computeStandings,
+  matchResult,
   matchWinner,
   planAutoSchedule,
   ruleForMatch,
@@ -89,10 +90,10 @@ interface MatchONContextValue {
   clearBracket: (categoryId: string) => void;
   generateGroupKnockoutStage: (categoryId: string) => void;
   generateNextSwissRound: (categoryId: string) => void;
-  recordMatchSets: (matchId: string, sets: [number, number][], liveCur?: [number, number] | null, silent?: boolean) => void;
+  recordMatchSets: (matchId: string, sets: [number, number][], liveCur?: [number, number] | null, silent?: boolean, force?: boolean) => void;
   adjustLivePoint: (matchId: string, side: 'a' | 'b', delta: 1 | -1) => void;
   updateMatchMeta: (matchId: string, patch: Partial<Match>) => void;
-  runAutoSchedule: (startIso: string, courtNos: number[]) => number;
+  runAutoSchedule: (startIso: string, courtNos: number[], timeOnly?: boolean) => number;
   callMatchToCourt: (matchId: string, courtNo: number) => void;
   toggleCourtMaintenance: (courtId: string) => void;
   addCourt: () => void;
@@ -100,7 +101,9 @@ interface MatchONContextValue {
   deleteRulePreset: (id: string) => void;
   assignCategoryRule: (catId: string, kind: 'group' | 'ko', ruleId: string | null) => void;
   addReferee: (ref: Omit<Referee, 'id'>) => void;
-  updateRefereeCourt: (id: string, courtNo: number | null) => void;
+  updateReferee: (id: string, patch: Partial<Referee>) => void;
+  assignReferee: (refId: string | null, courtNo: number) => void;
+  addStandardRules: () => void;
   deleteReferee: (id: string) => void;
 }
 
@@ -119,6 +122,17 @@ const dataOf = (s: MatchONState): Data => ({
 });
 
 const ACTIVE_KEY = 'matchon.activeTid';
+const DEFAULT_REF_PHONE = '0801234567';
+// one referee per court, created automatically; the organizer edits names / phones later
+function withAutoReferees(referees: Referee[], tid: string, courtCount: number): Referee[] {
+  const have = referees.filter((r) => r.tournament_id === tid).length;
+  if (have >= courtCount) return referees;
+  const add: Referee[] = [];
+  for (let k = have + 1; k <= courtCount; k++) {
+    add.push({ id: uuid(), tournament_id: tid, name: `กรรมการ${k}`, phone: DEFAULT_REF_PHONE, court_no: null });
+  }
+  return [...referees, ...add];
+}
 const INITIAL_STATE: MatchONState = { role: 'player', activeTid: '', ...EMPTY_DATA };
 
 export function MatchONProvider({ children }: { children: React.ReactNode }) {
@@ -153,8 +167,16 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
   const applyLoaded = useCallback((l: Awaited<ReturnType<typeof loadAll>>) => {
     manageable.current = l.manageable;
     profileRef.current = l.profile;
+    // every court gets a referee automatically (managers only)
+    let referees = l.data.referees;
+    for (const t of l.data.tournaments) {
+      if (l.manageable.has(t.id)) {
+        referees = withAutoReferees(referees, t.id, l.data.courts.filter((c) => c.tournament_id === t.id).length);
+      }
+    }
+    const data2 = referees === l.data.referees ? l.data : { ...l.data, referees };
     synced.current = l.data;
-    latest.current = l.data;
+    latest.current = data2;
     setProfile(l.profile);
     setState((prev) => {
       let activeTid = prev.activeTid;
@@ -166,7 +188,7 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
         }
       }
       if (!l.data.tournaments.some((t) => t.id === activeTid)) activeTid = l.data.tournaments[0]?.id || '';
-      return { ...prev, ...l.data, activeTid };
+      return { ...prev, ...data2, activeTid };
     });
   }, []);
 
@@ -345,6 +367,7 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
           activeTid: id,
           tournaments,
           courts: [...otherCourts, ...synced],
+          referees: withAutoReferees(prev.referees, id, desired),
         };
       });
       toast(data.id ? 'บันทึกรายการแข่งขันแล้ว' : 'สร้างรายการแข่งขันใหม่แล้ว');
@@ -749,12 +772,21 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
   );
 
   const recordMatchSets = useCallback(
-    (matchId: string, sets: [number, number][], liveCur?: [number, number] | null, silent?: boolean) => {
+    (matchId: string, sets: [number, number][], liveCur?: [number, number] | null, silent?: boolean, force?: boolean) => {
       setState((prev) => {
         const target = prev.matches.find((m) => m.id === matchId);
         if (!target) return prev;
         const rule = ruleForMatch(target, prev.categories, prev.rules);
-        const mw = matchWinner(sets, rule);
+        const res = matchResult(sets, rule);
+        let mw = res.winner;
+        let finished = res.done;
+        if (force && !finished && sets.length) {
+          // the referee ended the match early: decide by sets won, then by points
+          let wa = 0, wb = 0, pa = 0, pb = 0;
+          for (const [x, y] of sets) { if (x > y) wa++; else if (y > x) wb++; pa += x; pb += y; }
+          mw = wa !== wb ? (wa > wb ? 'a' : 'b') : pa !== pb ? (pa > pb ? 'a' : 'b') : null;
+          finished = true;
+        }
         const winnerId = mw ? (mw === 'a' ? target.reg_a : target.reg_b) : null;
         const now = new Date().toISOString();
 
@@ -763,10 +795,10 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
             return {
               ...m,
               sets,
-              cur_a: mw ? 0 : liveCur?.[0] ?? 0,
-              cur_b: mw ? 0 : liveCur?.[1] ?? 0,
+              cur_a: finished ? 0 : liveCur?.[0] ?? 0,
+              cur_b: finished ? 0 : liveCur?.[1] ?? 0,
               winner: winnerId,
-              status: mw ? ('finished' as const) : ('live' as const),
+              status: finished ? ('finished' as const) : ('live' as const),
               updated_at: now,
             };
           }
@@ -808,9 +840,9 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
           nextSets = [...m.sets, [nextA, nextB]];
           curA = 0;
           curB = 0;
-          const mw = matchWinner(nextSets, rule);
-          if (mw) {
-            winnerId = mw === 'a' ? m.reg_a : m.reg_b;
+          const res = matchResult(nextSets, rule);
+          if (res.done) {
+            winnerId = res.winner === 'a' ? m.reg_a : res.winner === 'b' ? m.reg_b : null;
             status = 'finished';
           }
         }
@@ -857,9 +889,9 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
   );
 
   const runAutoSchedule = useCallback(
-    (startIso: string, courtNos: number[]): number => {
+    (startIso: string, courtNos: number[], timeOnly = false): number => {
       if (!activeTournament) return 0;
-      const plan = planAutoSchedule(tMatches, activeTournament, startIso, courtNos);
+      const plan = planAutoSchedule(tMatches, activeTournament, startIso, courtNos, timeOnly);
       if (!plan.length) {
         toast('ไม่มีแมตช์ที่รอจัดตาราง (หรือจัดครบแล้ว)', 'info');
         return 0;
@@ -868,7 +900,7 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
       setState((prev) => ({
         ...prev,
         matches: prev.matches.map((m) =>
-          map[m.id] ? { ...m, court: map[m.id].court, scheduled_at: map[m.id].scheduled_at } : m,
+          map[m.id] ? { ...m, court: timeOnly ? m.court : map[m.id].court, scheduled_at: map[m.id].scheduled_at } : m,
         ),
       }));
       toast(`จัดตารางอัตโนมัติแล้ว ${plan.length} แมตช์`);
@@ -941,6 +973,7 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
           ...prev.courts,
           { id: uuid(), tournament_id: activeTournament.id, no: nextNo, name: `สนาม ${nextNo}`, status: 'available' },
         ],
+        referees: withAutoReferees(prev.referees, activeTournament.id, current.length + 1),
       };
     });
     toast('เพิ่มสนามใหม่แล้ว');
@@ -996,16 +1029,45 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
     [toast],
   );
 
-  const updateRefereeCourt = useCallback(
-    (id: string, courtNo: number | null) => {
-      setState((prev) => ({
+  const updateReferee = useCallback((id: string, patch: Partial<Referee>) => {
+    setState((prev) => ({ ...prev, referees: prev.referees.map((r) => (r.id === id ? { ...r, ...patch } : r)) }));
+  }, []);
+
+  // a referee takes a court when the organizer picks them for that court's QR (null = special referee, nobody is booked)
+  const assignReferee = useCallback((refId: string | null, courtNo: number) => {
+    setState((prev) => {
+      const tid = prev.activeTid;
+      return {
         ...prev,
-        referees: prev.referees.map((r) => (r.id === id ? { ...r, court_no: courtNo } : r)),
-      }));
-      toast('มอบหมายสนามให้กรรมการแล้ว');
-    },
-    [toast],
-  );
+        referees: prev.referees.map((r) =>
+          r.tournament_id !== tid
+            ? r
+            : r.id === refId
+              ? { ...r, court_no: courtNo }
+              : r.court_no === courtNo
+                ? { ...r, court_no: null }
+                : r,
+        ),
+      };
+    });
+  }, []);
+
+  const addStandardRules = useCallback(() => {
+    if (!activeTournament) return;
+    const tid = activeTournament.id;
+    setState((prev) => {
+      const have = new Set(prev.rules.filter((r) => r.tournament_id === tid).map((r) => r.name));
+      const std: Array<Omit<RulePreset, 'id'>> = [
+        { tournament_id: tid, name: '1 เซต 21 แต้ม', best_of: 1, points: 21, deuce: true, cap: 30 },
+        { tournament_id: tid, name: '2 ใน 3 เซต 21 แต้ม', best_of: 3, points: 21, deuce: true, cap: 30 },
+        { tournament_id: tid, name: '3 ใน 5 เซต 21 แต้ม', best_of: 5, points: 21, deuce: true, cap: 30 },
+        { tournament_id: tid, name: '2 เซต 21 แต้ม (2-0=2, 1-1=1)', best_of: 3, points: 21, deuce: true, cap: 30, play_two: true },
+      ];
+      const add = std.filter((r) => !have.has(r.name)).map((r) => ({ ...r, id: uuid() }));
+      return add.length ? { ...prev, rules: [...prev.rules, ...add] } : prev;
+    });
+    toast('เพิ่มชุดกติกามาตรฐานแล้ว');
+  }, [activeTournament, toast]);
 
   const deleteReferee = useCallback(
     (id: string) => {
@@ -1066,7 +1128,9 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
     deleteRulePreset,
     assignCategoryRule,
     addReferee,
-    updateRefereeCourt,
+    updateReferee,
+    assignReferee,
+    addStandardRules,
     deleteReferee,
   };
 

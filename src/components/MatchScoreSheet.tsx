@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { CheckCircle2, Clock, MapPin, Play, RotateCcw } from 'lucide-react';
 import { useMatchON } from '../context/MatchONContext';
 import type { Match } from '../types/matchon';
-import { matchWinner, ruleForMatch, ruleText, setWinner, teamName } from '../utils/bracket';
+import { matchResult, ruleForMatch, ruleText, setWinner, teamName } from '../utils/bracket';
 import { ResponsiveSheet } from './UiKit';
 
 export function MatchScoreSheet({
@@ -24,7 +24,7 @@ export function MatchScoreSheet({
   useEffect(() => {
     if (!match) return;
     const rule = ruleForMatch(match, Object.values(catMap), tRules);
-    const n = rule.best_of || 3;
+    const n = rule.play_two ? 2 : rule.best_of || 3;
     const rows: [string, string][] = Array.from({ length: n }, (_, i) => {
       const done = match.sets[i];
       if (done) return [String(done[0]), String(done[1])];
@@ -63,14 +63,14 @@ export function MatchScoreSheet({
     const sw = setWinner(a, b, rule);
     if (sw) {
       parsedDone.push([a, b]);
-      if (matchWinner(parsedDone, rule)) decided = true;
+      if (matchResult(parsedDone, rule).done) decided = true;
     } else {
       openSet = [a, b];
       break;
     }
   }
 
-  const winnerSide = matchWinner(parsedDone, rule);
+  const winnerSide = matchResult(parsedDone, rule).winner;
 
   const handleSaveScores = () => {
     recordMatchSets(match.id, parsedDone, openSet);

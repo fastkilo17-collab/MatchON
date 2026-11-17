@@ -39,6 +39,8 @@ export interface Profile {
   id: string;
   email: string;
   display_name: string | null;
+  avatar_url: string | null;
+  phone: string | null;
   role: 'player' | 'organizer' | 'staff' | 'referee' | 'super_admin' | null;
 }
 
@@ -125,6 +127,7 @@ const categoryFromDb = (r: any): Category => ({
   points: r.points || 21,
   cap: r.cap || 30,
   deuce: r.deuce !== false,
+  play_two: !!r.play_two,
   rule_group: r.rule_group || null,
   rule_ko: r.rule_ko || null,
 });
@@ -142,9 +145,10 @@ const categoryToDb = (c: Category, ruleIds: Set<string>) => ({
   fee: Math.max(0, c.fee || 0),
   format: c.format,
   best_of: [1, 3, 5].includes(c.best_of) ? c.best_of : 3,
-  points: Math.min(30, Math.max(11, c.points || 21)),
-  cap: Math.min(40, Math.max(11, c.cap || 30)),
+  points: Math.min(50, Math.max(5, c.points || 21)),
+  cap: Math.min(99, Math.max(5, c.cap || 30)),
   deuce: c.deuce !== false,
+  play_two: !!c.play_two,
   rule_group: c.rule_group && ruleIds.has(c.rule_group) ? c.rule_group : null,
   rule_ko: c.rule_ko && ruleIds.has(c.rule_ko) ? c.rule_ko : null,
 });
@@ -247,7 +251,35 @@ export async function loadProfile(): Promise<Profile | null> {
   const u = s.session?.user;
   if (!u) return null;
   const { data } = await sb.from('profiles').select('*').eq('id', u.id).maybeSingle();
-  return { id: u.id, email: u.email || '', display_name: data?.display_name || null, role: (data?.role as Profile['role']) || 'player' };
+  const meta: any = u.user_metadata || {};
+  const pic: string | null = meta.picture || meta.avatar_url || null;
+  let avatar: string | null = data?.avatar_url || null;
+  // first LINE login: copy the LINE profile picture / name into the profile
+  if (!avatar && pic) {
+    avatar = pic;
+    void sb.rpc('update_my_profile', { p_name: data?.display_name ? null : meta.name || null, p_phone: null, p_avatar: pic });
+  }
+  return {
+    id: u.id,
+    email: u.email || '',
+    display_name: data?.display_name || meta.name || null,
+    avatar_url: avatar,
+    phone: data?.phone || null,
+    role: (data?.role as Profile['role']) || 'player',
+  };
+}
+
+export async function rpcUpdateProfile(name: string, phone: string, avatar?: string | null): Promise<void> {
+  const { error } = await sb.rpc('update_my_profile', { p_name: name, p_phone: phone, p_avatar: avatar || null });
+  if (error) throw error;
+}
+
+export interface StaffRow {
+  id: string;
+  user_id: string;
+  email: string | null;
+  display_name: string | null;
+  avatar_url: string | null;
 }
 
 export async function loadAll(profile: Profile | null): Promise<Loaded> {
@@ -369,7 +401,7 @@ export async function loadAll(profile: Profile | null): Promise<Loaded> {
         seeded: !!b.seeded,
         locked: !!b.locked,
       })),
-      rules: rules.map((r) => ({ id: r.id, tournament_id: r.tournament_id, name: r.name, best_of: r.best_of, points: r.points, deuce: r.deuce, cap: r.cap })),
+      rules: rules.map((r: any) => ({ id: r.id, tournament_id: r.tournament_id, name: r.name, best_of: r.best_of, points: r.points, deuce: r.deuce, cap: r.cap, play_two: !!r.play_two })),
       referees,
       notifications,
     },
@@ -433,7 +465,7 @@ export async function pushDiff(prev: Data, next: Data, uid: string, manageable: 
   // rules before categories (categories reference them)
   const rd = diff(prev.rules, next.rules);
   const rRows = [...rd.added, ...rd.changed].filter((r) => ok(r.tournament_id)).map((r) => ({
-    id: r.id, tournament_id: r.tournament_id, name: r.name, best_of: r.best_of, points: r.points, deuce: r.deuce, cap: r.cap,
+    id: r.id, tournament_id: r.tournament_id, name: r.name, best_of: r.best_of, points: r.points, deuce: r.deuce, cap: r.cap, play_two: !!r.play_two,
   }));
   if (rRows.length) await must(sb.from('tournament_rules').upsert(rRows, { onConflict: 'id' }));
 

@@ -13,7 +13,7 @@ import { DashboardPage } from './pages/DashboardPage';
 import { LiveScorePage } from './pages/LiveScorePage';
 import { MyRegistrationsPage, RegisterPage } from './pages/RegisterPage';
 import { SchedulePage } from './pages/SchedulePage';
-import { ReportsPage, ResultsPage, RulesStaffPage, SettingsPage } from './pages/SecondaryPages';
+import { ReportsPage, ResultsPage, RulesStaffPage, SettingsPage, StaffPage } from './pages/SecondaryPages';
 import { TournamentsPage } from './pages/TournamentsPage';
 
 function RouteSwitch() {
@@ -39,6 +39,8 @@ function RouteSwitch() {
       return <CourtsPage />;
     case 'live':
       return <LiveScorePage />;
+    case 'staff':
+      return <StaffPage />;
     case 'rules':
       return <RulesStaffPage />;
     case 'results':

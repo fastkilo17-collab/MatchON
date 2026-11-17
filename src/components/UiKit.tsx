@@ -2,6 +2,8 @@ import React, { useEffect, useMemo } from 'react';
 import { X } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import QRCode from 'qrcode';
+import { photoUrl } from '../lib/supabase';
+import type { Registration } from '../types/matchon';
 
 /**
  * Mobile-first Bottom Sheet on small screens, clean centered Modal on desktop.
@@ -150,5 +152,36 @@ export function ToastStack({
         ))}
       </AnimatePresence>
     </div>
+  );
+}
+
+export function TeamAvatars({ reg, size = 36 }: { reg?: Registration | null; size?: number }) {
+  if (!reg) return null;
+  const people = [
+    { n: reg.p1_name, ph: reg.p1_photo },
+    ...(reg.p2_name ? [{ n: reg.p2_name, ph: reg.p2_photo }] : []),
+  ];
+  return (
+    <span className="inline-flex -space-x-2 shrink-0 align-middle">
+      {people.map((p, i) =>
+        p.ph ? (
+          <img
+            key={i}
+            src={photoUrl(p.ph)}
+            alt={p.n}
+            style={{ width: size, height: size }}
+            className="rounded-full object-cover ring-2 ring-white bg-slate-100"
+          />
+        ) : (
+          <span
+            key={i}
+            style={{ width: size, height: size }}
+            className="rounded-full ring-2 ring-white bg-slate-200 text-slate-500 grid place-items-center text-xs font-bold"
+          >
+            {[...(p.n || '?')][0]}
+          </span>
+        ),
+      )}
+    </span>
   );
 }

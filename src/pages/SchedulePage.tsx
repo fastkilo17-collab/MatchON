@@ -38,6 +38,7 @@ export function SchedulePage() {
   }, []);
   const [startDT, setStartDT] = useState(defaultStart);
   const [selectedCourts, setSelectedCourts] = useState<number[]>([]);
+  const [timeOnly, setTimeOnly] = useState(false);
 
   if (!activeTournament) {
     return (
@@ -59,7 +60,7 @@ export function SchedulePage() {
   const handleRunAuto = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedCourts.length) return;
-    runAutoSchedule(new Date(startDT).toISOString(), selectedCourts);
+    runAutoSchedule(new Date(startDT).toISOString(), selectedCourts, timeOnly);
     setAutoOpen(false);
   };
 
@@ -249,8 +250,25 @@ export function SchedulePage() {
             />
           </label>
 
+          <div className="grid grid-cols-2 gap-1 p-1 bg-slate-100 rounded-xl">
+            {([[false, 'จัดสนาม + เวลา'], [true, 'จัดเฉพาะเวลา']] as const).map(([v, label]) => (
+              <button
+                key={label}
+                type="button"
+                onClick={() => setTimeOnly(v)}
+                className={`min-h-[40px] rounded-lg text-xs font-semibold ${timeOnly === v ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-600'}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          {timeOnly && (
+            <p className="text-xs text-slate-500">
+              กำหนดเฉพาะเวลาเริ่ม ไม่ผูกสนาม — เลือกจำนวนสนามด้านล่างเพื่อกำหนดว่าแข่งพร้อมกันได้กี่คู่ แล้วค่อยเรียกคู่ลงสนามที่ว่างตอนแข่งจริง
+            </p>
+          )}
           <div className="space-y-2">
-            <div className="text-xs font-semibold text-slate-700">เลือกสนามที่ใช้จัดตาราง</div>
+            <div className="text-xs font-semibold text-slate-700">{timeOnly ? 'จำนวนสนามที่แข่งพร้อมกัน (เลือกกี่สนามก็ได้)' : 'เลือกสนามที่ใช้จัดตาราง'}</div>
             <div className="grid grid-cols-3 gap-2">
               {tCourts.map((c) => {
                 const checked = selectedCourts.includes(c.no);

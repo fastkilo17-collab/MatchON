@@ -322,7 +322,7 @@ export function BracketsPage() {
                               <th className="py-2 text-left font-semibold">#</th>
                               <th className="py-2 text-left font-semibold">ทีม</th>
                               <th className="py-2 text-right font-semibold">แข่ง</th>
-                              <th className="py-2 text-right font-semibold">ชนะ</th>
+                              <th className="py-2 text-right font-semibold">คะแนน</th>
                               <th className="py-2 text-right font-semibold">เกม+/-</th>
                               <th className="py-2 text-right font-semibold">แต้ม+/-</th>
                             </tr>
@@ -335,7 +335,7 @@ export function BracketsPage() {
                                   {teamName(regMap[r.id])}
                                 </td>
                                 <td className="py-2 text-right">{r.played}</td>
-                                <td className="py-2 text-right font-bold text-blue-700">{r.won}</td>
+                                <td className="py-2 text-right font-bold text-blue-700">{r.pts}</td>
                                 <td className="py-2 text-right">{r.gf - r.ga}</td>
                                 <td className="py-2 text-right">{r.pf - r.pa}</td>
                               </tr>

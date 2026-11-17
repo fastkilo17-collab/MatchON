@@ -4,7 +4,7 @@ import { useMatchON } from '../context/MatchONContext';
 import type { Match } from '../types/matchon';
 import { ruleForMatch, ruleText, teamName } from '../utils/bracket';
 import { MatchScoreSheet } from '../components/MatchScoreSheet';
-import { QrCodeSvg, ResponsiveSheet } from '../components/UiKit';
+import { QrCodeSvg, ResponsiveSheet, TeamAvatars } from '../components/UiKit';
 import { useLiveBridge } from '../lib/liveBridge';
 
 export function LiveScorePage() {
@@ -21,6 +21,8 @@ export function LiveScorePage() {
     recordMatchSets,
     isManagerOf,
     toast,
+    tReferees,
+    assignReferee,
   } = useMatchON();
 
   const [qrCourtNo, setQrCourtNo] = useState<number | null>(null);
@@ -37,14 +39,24 @@ export function LiveScorePage() {
     catMap,
     canWrite: canOperate,
     recordSets: recordMatchSets,
+    rules: tRules,
+    categories: tCategories,
   });
-  const openQr = async (no: number) => {
+  const [picking, setPicking] = useState(false);
+  const openQr = (no: number) => {
     setQrCourtNo(no);
     setRefUrl('');
+    setPicking(true);
+  };
+  const chooseReferee = async (refId: string | null, label: string) => {
+    if (qrCourtNo === null) return;
+    assignReferee(refId, qrCourtNo);
+    setPicking(false);
     try {
-      setRefUrl(await refereeUrl(no));
+      setRefUrl(await refereeUrl(qrCourtNo, label));
     } catch (e: any) {
       toast(e?.message || 'สร้างลิงก์กรรมการไม่สำเร็จ', 'err');
+      setPicking(true);
     }
   };
 
@@ -114,7 +126,7 @@ export function LiveScorePage() {
           const m = liveM || nextM;
           const rule = m ? ruleForMatch(m, tCategories, tRules) : null;
           const f = fb[court.no];
-          const fromRef = !!(m && liveM && f && f.status === 'LIVE' && f.matchCode === m.id.slice(0, 8));
+          const fromRef = !!(m && f && f.status === 'LIVE' && f.matchCode === m.id.slice(0, 8) && (f.startedAt || f.scores.some((x) => x[0] || x[1])));
           const act = fromRef && f.activeSet >= 0 ? f.activeSet : 0;
           const shownSets: [number, number][] = fromRef
             ? (f.scores.slice(0, act).filter((x) => x[0] || x[1]) as [number, number][])
@@ -156,7 +168,7 @@ export function LiveScorePage() {
                   {canOperate && (
                     <button
                       type="button"
-                      onClick={() => void openQr(court.no)}
+                      onClick={() => openQr(court.no)}
                       aria-label={`QR กรรมการ ${court.name}`}
                       className="min-h-[38px] min-w-[38px] flex items-center justify-center rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700"
                     >
@@ -171,6 +183,7 @@ export function LiveScorePage() {
                   {/* Scoreboard Face */}
                   <div className="grid grid-cols-11 items-center gap-2 py-2">
                     <div className="col-span-5 text-center space-y-2">
+                      <div className="flex justify-center"><TeamAvatars reg={m.reg_a ? regMap[m.reg_a] : null} size={44} /></div>
                       <div className="text-sm sm:text-base font-bold text-slate-900 line-clamp-2 min-h-[2.5rem] flex items-center justify-center">
                         {teamName(m.reg_a ? regMap[m.reg_a] : null)}
                       </div>
@@ -182,6 +195,7 @@ export function LiveScorePage() {
                     <div className="col-span-1 text-center text-xs font-bold text-slate-300">VS</div>
 
                     <div className="col-span-5 text-center space-y-2">
+                      <div className="flex justify-center"><TeamAvatars reg={m.reg_b ? regMap[m.reg_b] : null} size={44} /></div>
                       <div className="text-sm sm:text-base font-bold text-slate-900 line-clamp-2 min-h-[2.5rem] flex items-center justify-center">
                         {teamName(m.reg_b ? regMap[m.reg_b] : null)}
                       </div>
@@ -268,12 +282,42 @@ export function LiveScorePage() {
       {/* Court Referee QR Sheet */}
       <ResponsiveSheet
         open={qrCourtNo !== null}
-        onClose={() => setQrCourtNo(null)}
+        onClose={() => {
+          setQrCourtNo(null);
+          setPicking(false);
+        }}
         title={`QR กรรมการ · สนาม ${qrCourtNo ?? ''}`}
         subtitle="ให้กรรมการประจำสนามสแกนเพื่อเปิดหน้าให้คะแนนสนามนี้โดยตรง"
       >
         <div className="flex flex-col items-center text-center space-y-4 py-2">
-          {refUrl ? (
+          {picking ? (
+            <div className="w-full space-y-2 text-left">
+              <div className="text-xs font-semibold text-slate-500">เลือกกรรมการประจำสนามนี้ (แสดงเฉพาะกรรมการที่ว่าง)</div>
+              {tReferees
+                .map((r, i) => ({ r, i }))
+                .filter(({ r }) => !r.court_no || r.court_no === qrCourtNo)
+                .map(({ r, i }) => (
+                  <button
+                    key={r.id}
+                    type="button"
+                    onClick={() => void chooseReferee(r.id, r.name)}
+                    className="w-full min-h-[48px] px-4 rounded-xl border border-slate-200 bg-white hover:bg-blue-50 text-left"
+                  >
+                    <div className="text-sm font-bold text-slate-900">
+                      กรรมการที่ {i + 1} · {r.name}
+                    </div>
+                    <div className="text-xs text-slate-500 tabular-nums">{r.phone || 'ไม่ระบุเบอร์'}</div>
+                  </button>
+                ))}
+              <button
+                type="button"
+                onClick={() => void chooseReferee(null, 'กรรมการพิเศษ')}
+                className="w-full min-h-[48px] px-4 rounded-xl border border-dashed border-amber-300 bg-amber-50 text-sm font-bold text-amber-800"
+              >
+                กรรมการพิเศษ
+              </button>
+            </div>
+          ) : refUrl ? (
             <>
               <QrCodeSvg value={refUrl} size={220} />
               <div className="text-xs text-slate-500 max-w-xs">

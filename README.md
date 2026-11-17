@@ -3,8 +3,9 @@
 ระบบจัดการแข่งขันแบดมินตัน (React 19 + Vite + Tailwind 4 + TypeScript) เชื่อมฐานข้อมูล Supabase
 
 - เว็บ: https://fastkilo17-collab.github.io/MatchON/
-- ข้อมูล: Supabase (ตาราง/RLS/RPC ใน `supabase/migrations` 001–009)
-- ล็อกอิน: อีเมล/รหัสผ่าน และ LINE (custom OIDC `custom:line`); นักกีฬาสมัครได้โดยไม่ต้องล็อกอิน (ใช้ edit token ในเบราว์เซอร์)
+- ข้อมูล: Supabase (ตาราง/RLS/RPC ใน `supabase/migrations` 001–010)
+- ล็อกอิน: นักกีฬาต้องล็อกอิน LINE (custom OIDC `custom:line`) ก่อนสมัคร ผู้จัด/staff ใช้ LINE หรืออีเมล; รูปโปรไฟล์ดึงจาก LINE
+- Live: `public/referee.html` (หน้ากรรมการ) เชื่อม Firebase ผ่าน `src/lib/liveBridge.ts`; QR กรรมการอยู่ในหน้า Live Score
 - `public/` เก็บหน้าเดิม: `referee.html`, `courts.html`, `js/`, `v1/` (Firebase live)
 
 ## โครงสร้าง

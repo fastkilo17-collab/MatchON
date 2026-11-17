@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { photoUrl, sb } from './supabase';
 import type { Category, Court, Match, Registration, Tournament } from '../types/matchon';
+import { ruleForMatch } from '../utils/bracket';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // Firebase live layer lives in /public/js/live.js (shared with referee.html and courts.html).
@@ -28,11 +29,13 @@ interface Args {
   regMap: Record<string, Registration>;
   catMap: Record<string, Category>;
   canWrite: boolean;
-  recordSets: (id: string, sets: [number, number][], cur: [number, number] | null, silent?: boolean) => void;
+  recordSets: (id: string, sets: [number, number][], cur: [number, number] | null, silent?: boolean, force?: boolean) => void;
+  rules: import('../types/matchon').RulePreset[];
+  categories: Category[];
 }
 
 export function useLiveBridge(a: Args) {
-  const { tournament, courts, matches, regMap, catMap, canWrite, recordSets } = a;
+  const { tournament, courts, matches, regMap, catMap, canWrite, recordSets, rules, categories } = a;
   const [fb, setFb] = useState<Record<number, FbCourt>>({});
   const [bridgeOn, setBridgeOn] = useState(false);
   const [error, setError] = useState('');
@@ -41,8 +44,8 @@ export function useLiveBridge(a: Args) {
   const done = useRef<Set<string>>(new Set());
   const lastSig = useRef<Record<string, string>>({});
   const lastPushed = useRef<Record<string, string>>({});
-  const latest = useRef({ matches, regMap, catMap, courts, recordSets });
-  latest.current = { matches, regMap, catMap, courts, recordSets };
+  const latest = useRef({ matches, regMap, catMap, courts, recordSets, rules, categories });
+  latest.current = { matches, regMap, catMap, courts, recordSets, rules, categories };
   const tid = tournament?.id || '';
   const [cfgLive, setCfgLive] = useState<string | null>(null);
   const liveId = cfgLive || tournament?.live_id || null;
@@ -61,7 +64,7 @@ export function useLiveBridge(a: Args) {
           real: ks.map((k) => (r as any)[`${k}_name`]),
           ph: ks.map((k) => {
             const p = (r as any)[`${k}_photo`] as string | null;
-            return p && !p.startsWith('data:') ? photoUrl(p) : '';
+            return p && (!p.startsWith('data:') || p.length < 3000) ? photoUrl(p) : '';
           }),
         };
       };
@@ -72,6 +75,8 @@ export function useLiveBridge(a: Args) {
       return {
         courtNo: no, status: 'LIVE', matchCode: CODE(m),
         round: `${m.match_no ? '#' + m.match_no : ''} ${C[m.category_id]?.name || ''} ${m.round_label || ''}`.trim(),
+        matchNo: m.match_no || null, roundLabel: m.round_label || '', catName: C[m.category_id]?.name || '',
+        rule: (() => { const r = ruleForMatch(m, latest.current.categories, latest.current.rules); return { best_of: r.best_of, points: r.points, cap: r.cap, deuce: r.deuce, playTwo: r.play_two }; })(),
         tournament: name, teamA: A.team, clubA: ra?.club || '', teamB: B.team, clubB: rb?.club || '',
         realA: A.real, realB: B.real, photoA: A.ph, photoB: B.ph, scores: [[0, 0], [0, 0], [0, 0]], shuttleUsed: 1, activeSet: -1,
       };
@@ -147,7 +152,7 @@ export function useLiveBridge(a: Args) {
               .split(',')
               .map((s) => s.trim().split('-').map(Number))
               .filter((p) => p.length === 2 && p.every(Number.isFinite)) as [number, number][];
-            if (sets.length) latest.current.recordSets(m.id, sets, null);
+            if (sets.length) latest.current.recordSets(m.id, sets, null, false, true);
           }
         });
       } catch (e: any) {
@@ -204,7 +209,7 @@ export function useLiveBridge(a: Args) {
   }, [bridgeOn, matches, courts, fb, payload]);
 
   const refereeUrl = useCallback(
-    async (no: number): Promise<string> => {
+    async (no: number, umpire?: string): Promise<string> => {
       const c = cfg.current;
       if (!c) throw new Error(error || 'ยังเชื่อม Firebase ไม่เสร็จ ลองอีกครั้ง');
       if (!c.keys['c' + no]) {
@@ -214,7 +219,7 @@ export function useLiveBridge(a: Args) {
       }
       const m = currentMatch(no);
       if (!fb[no]) await FB.current.writeCourts(c.live_id, [payload(no, m)]);
-      return `${location.origin}${import.meta.env.BASE_URL}referee.html?court=${no}&live=${c.live_id}#k=${c.keys['c' + no]}`;
+      return `${location.origin}${import.meta.env.BASE_URL}referee.html?court=${no}&live=${c.live_id}${umpire ? '&ref=' + encodeURIComponent(umpire) : ''}#k=${c.keys['c' + no]}`;
     },
     [error, tid, fb, payload],
   );

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import {
+  ShieldCheck,
   Activity,
   BarChart3,
   CalendarDays,
@@ -44,11 +45,12 @@ const NAV_ITEMS: NavItem[] = [
 
   { id: 'courts', label: 'จัดการสนาม', shortLabel: 'สนาม', icon: MapPin, group: 'arena', roles: ['organizer', 'referee'] },
   { id: 'live', label: 'Live Score', shortLabel: 'คะแนนสด', icon: Activity, group: 'arena', roles: ['organizer', 'player', 'referee'] },
+  { id: 'staff', label: 'จัดการ Staff', shortLabel: 'Staff', icon: ShieldCheck, group: 'arena', roles: ['organizer'] },
   { id: 'rules', label: 'กติกา & กรรมการ', shortLabel: 'กติกา', icon: Scale, group: 'arena', roles: ['organizer', 'referee'] },
 
   { id: 'results', label: 'ผลการแข่งขัน', shortLabel: 'ผลแข่ง', icon: Trophy, group: 'info', roles: ['organizer', 'player', 'referee'] },
   { id: 'reports', label: 'รายงานและสถิติ', shortLabel: 'รายงาน', icon: BarChart3, group: 'info', roles: ['organizer'] },
-  { id: 'settings', label: 'ตั้งค่า & มุมมอง', shortLabel: 'ตั้งค่า', icon: Settings, group: 'info', roles: ['organizer', 'player', 'referee'] },
+  { id: 'settings', label: 'โปรไฟล์ & บัญชี', shortLabel: 'โปรไฟล์', icon: Settings, group: 'info', roles: ['organizer', 'player', 'referee'] },
 ];
 
 const ROLE_META: Record<UserRole, { label: string; short: string }> = {

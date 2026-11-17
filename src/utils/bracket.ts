@@ -134,7 +134,7 @@ export function ruleForMatch(
   match: Match,
   categories: Category[],
   rules: RulePreset[],
-): { best_of: number; points: number; deuce: boolean; cap: number } {
+): { best_of: number; points: number; deuce: boolean; cap: number; play_two: boolean } {
   const cat = categories.find((c) => c.id === match.category_id);
   const ruleId = match.stage === 'group' || match.stage === 'swiss' ? cat?.rule_group : cat?.rule_ko;
   const preset = ruleId ? rules.find((r) => r.id === ruleId) : undefined;
@@ -143,11 +143,19 @@ export function ruleForMatch(
     points: preset?.points ?? cat?.points ?? 21,
     deuce: preset?.deuce ?? cat?.deuce ?? true,
     cap: preset?.cap ?? cat?.cap ?? 30,
+    // a fixed 2-set game can end 1-1, so it only applies where draws make sense (groups / round robin / swiss)
+    play_two:
+      !!(preset ? preset.play_two : cat?.play_two) &&
+      (match.stage === 'group' || match.stage === 'swiss' || cat?.format === 'round_robin' || cat?.format === 'group_stage'),
   };
 }
 
-export function ruleText(r: { best_of: number; points: number; deuce: boolean; cap: number }): string {
-  const setLabel = r.best_of === 1 ? '1 เกม' : `1 ใน ${r.best_of} เกม`;
+export function ruleText(r: { best_of: number; points: number; deuce: boolean; cap: number; play_two?: boolean }): string {
+  const setLabel = r.play_two
+    ? '2 เซต (2-0 ได้ 2 แต้ม · 1-1 เสมอ ได้ทีมละ 1)'
+    : r.best_of === 1
+      ? '1 เซต'
+      : `${Math.floor(r.best_of / 2) + 1} ใน ${r.best_of} เซต`;
   return `${setLabel} · ${r.points} แต้ม${r.deuce ? ` (ดิวสูงสุด ${r.cap})` : ' (ไม่ดิว)'}`;
 }
 
@@ -181,6 +189,25 @@ export function matchWinner(sets: [number, number][], rule: { best_of: number })
   if (wa >= need) return 'a';
   if (wb >= need) return 'b';
   return null;
+}
+
+// How a match ends: normal (first to win enough sets) or "2 sets" (always 2 sets, 1-1 is a draw).
+export function matchResult(
+  sets: [number, number][],
+  rule: { best_of: number; play_two?: boolean },
+): { done: boolean; winner: 'a' | 'b' | null; draw: boolean } {
+  if (rule.play_two) {
+    if (sets.length < 2) return { done: false, winner: null, draw: false };
+    let wa = 0;
+    let wb = 0;
+    for (const [sa, sb] of sets.slice(0, 2)) {
+      if (sa > sb) wa++;
+      else if (sb > sa) wb++;
+    }
+    return { done: true, winner: wa > wb ? 'a' : wb > wa ? 'b' : null, draw: wa === wb };
+  }
+  const w = matchWinner(sets, rule);
+  return { done: !!w, winner: w, draw: false };
 }
 
 export function seedOrder(size: number): number[] {
@@ -354,12 +381,14 @@ export interface StandingRow {
   ga: number;
   pf: number;
   pa: number;
+  drawn: number;
+  pts: number;
 }
 
 export function computeStandings(teamIds: string[], matches: Match[]): StandingRow[] {
   const row: Record<string, StandingRow> = {};
   teamIds.forEach((id) => {
-    row[id] = { id, played: 0, won: 0, lost: 0, gf: 0, ga: 0, pf: 0, pa: 0 };
+    row[id] = { id, played: 0, won: 0, lost: 0, gf: 0, ga: 0, pf: 0, pa: 0, drawn: 0, pts: 0 };
   });
 
   for (const m of matches) {
@@ -368,7 +397,10 @@ export function computeStandings(teamIds: string[], matches: Match[]): StandingR
     const rb = row[m.reg_b];
     ra.played++;
     rb.played++;
-    if (m.winner === m.reg_a) {
+    if (!m.winner) {
+      ra.drawn++;
+      rb.drawn++;
+    } else if (m.winner === m.reg_a) {
       ra.won++;
       rb.lost++;
     } else if (m.winner === m.reg_b) {
@@ -390,8 +422,13 @@ export function computeStandings(teamIds: string[], matches: Match[]): StandingR
     }
   }
 
+  Object.values(row).forEach((r) => {
+    r.pts = r.won * 2 + r.drawn; // win 2, draw 1, loss 0
+  });
   return Object.values(row).sort((a, b) => {
-    if (b.won !== a.won) return b.won - a.won;
+    if (b.pts !== a.pts) return b.pts - a.pts;
+    const pd = b.pf - b.pa - (a.pf - a.pa); // equal points: points scored minus conceded
+    if (pd !== 0) return pd;
     const gd = b.gf - b.ga - (a.gf - a.ga);
     if (gd !== 0) return gd;
     return b.pf - b.pa - (a.pf - a.pa);
@@ -443,7 +480,8 @@ export function planAutoSchedule(
   t: Tournament,
   startIso: string,
   courts: number[],
-): Array<{ id: string; court: number; scheduled_at: string }> {
+  timeOnly = false,
+): Array<{ id: string; court: number | null; scheduled_at: string }> {
   const dur = (t.match_minutes || 30) * MIN;
   const rest = (t.rest_minutes || 0) * MIN;
   const start = +new Date(startIso);
@@ -471,10 +509,10 @@ export function planAutoSchedule(
   });
 
   const todo = matches
-    .filter((m) => m.status === 'scheduled' && (!m.court || !m.scheduled_at) && (m.reg_a || m.reg_b || feeders[m.id]))
+    .filter((m) => m.status === 'scheduled' && (timeOnly ? !m.scheduled_at : !m.court || !m.scheduled_at) && (m.reg_a || m.reg_b || feeders[m.id]))
     .sort((a, b) => a.round - b.round || (a.match_no || 0) - (b.match_no || 0) || a.slot - b.slot);
 
-  const plan: Array<{ id: string; court: number; scheduled_at: string }> = [];
+  const plan: Array<{ id: string; court: number | null; scheduled_at: string }> = [];
   for (const m of todo) {
     let ready = start;
     for (const id of [m.reg_a, m.reg_b]) {
@@ -494,7 +532,8 @@ export function planAutoSchedule(
     for (const id of [m.reg_a, m.reg_b]) {
       if (id) teamFree[id] = best.s + dur + rest;
     }
-    plan.push({ id: m.id, court: best.c, scheduled_at: new Date(best.s).toISOString() });
+    // time-only: the slot number only limits how many matches run at once; the court is chosen when the match is called
+    plan.push({ id: m.id, court: timeOnly ? null : best.c, scheduled_at: new Date(best.s).toISOString() });
   }
   return plan;
 }

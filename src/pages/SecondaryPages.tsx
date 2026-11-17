@@ -7,7 +7,9 @@ import {
   Trash2,
   Trophy,
 } from 'lucide-react';
-import { AccountBox } from '../components/AuthDialog';
+import { AccountBox, LineLoginCard } from '../components/AuthDialog';
+import { rpcUpdateProfile, type StaffRow } from '../lib/db';
+import { sb } from '../lib/supabase';
 import { useMatchON } from '../context/MatchONContext';
 import {
   baht,
@@ -172,25 +174,24 @@ export function RulesStaffPage() {
     tRules,
     tCategories,
     tBrackets,
-    tCourts,
     tReferees,
     addRulePreset,
     deleteRulePreset,
     assignCategoryRule,
     addReferee,
-    updateRefereeCourt,
+    updateReferee,
     deleteReferee,
+    addStandardRules,
   } = useMatchON();
 
   const [ruleName, setRuleName] = useState('');
-  const [bestOf, setBestOf] = useState(3);
+  const [mode, setMode] = useState<'one' | 'bo3' | 'bo5' | 'two'>('bo3');
   const [points, setPoints] = useState(21);
   const [cap, setCap] = useState(30);
   const [deuce, setDeuce] = useState(true);
 
   const [refName, setRefName] = useState('');
   const [refPhone, setRefPhone] = useState('');
-  const [refCourt, setRefCourt] = useState<string>('');
 
   if (!activeTournament) {
     return (
@@ -208,7 +209,8 @@ export function RulesStaffPage() {
     addRulePreset({
       tournament_id: activeTournament.id,
       name: ruleName.trim(),
-      best_of: bestOf,
+      best_of: mode === 'one' ? 1 : mode === 'bo5' ? 5 : 3,
+      play_two: mode === 'two',
       points,
       cap,
       deuce,
@@ -223,11 +225,10 @@ export function RulesStaffPage() {
       tournament_id: activeTournament.id,
       name: refName.trim(),
       phone: refPhone.trim(),
-      court_no: refCourt ? Number(refCourt) : null,
+      court_no: null,
     });
     setRefName('');
     setRefPhone('');
-    setRefCourt('');
   };
 
   return (
@@ -265,7 +266,16 @@ export function RulesStaffPage() {
         </div>
 
         {isOrganizer && (
-          <form onSubmit={handleAddRule} className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 pt-3 border-t border-slate-100">
+          <button
+            type="button"
+            onClick={addStandardRules}
+            className="min-h-[40px] px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-semibold text-slate-700"
+          >
+            + เพิ่มชุดมาตรฐาน (1 เซต / 2 ใน 3 เซต / 3 ใน 5 เซต / 2 เซต)
+          </button>
+        )}
+        {isOrganizer && (
+          <form onSubmit={handleAddRule} className="grid grid-cols-2 sm:grid-cols-7 gap-2.5 pt-3 border-t border-slate-100">
             <input
               required
               value={ruleName}
@@ -274,21 +284,39 @@ export function RulesStaffPage() {
               className="col-span-2 min-h-[44px] px-3 rounded-xl border border-slate-200 text-sm"
             />
             <select
-              value={bestOf}
-              onChange={(e) => setBestOf(Number(e.target.value))}
+              value={mode}
+              onChange={(e) => setMode(e.target.value as typeof mode)}
               className="min-h-[44px] px-3 rounded-xl border border-slate-200 bg-white text-sm"
             >
-              <option value={1}>1 เกม</option>
-              <option value={3}>1 ใน 3 เกม</option>
+              <option value="one">1 เซต</option>
+              <option value="bo3">2 ใน 3 เซต</option>
+              <option value="bo5">3 ใน 5 เซต</option>
+              <option value="two">2 เซต (2-0 ได้ 2, 1-1 ได้ 1)</option>
             </select>
             <input
               type="number"
-              min={11}
-              max={30}
+              min={5}
+              max={50}
               value={points}
               onChange={(e) => setPoints(Number(e.target.value))}
-              aria-label="แต้มต่อเกม"
+              aria-label="แต้มต่อเซต"
+              title="แต้มต่อเซต"
               className="min-h-[44px] px-3 rounded-xl border border-slate-200 text-sm tabular-nums"
+            />
+            <label className="flex items-center gap-2 text-xs text-slate-600 px-1">
+              <input type="checkbox" checked={deuce} onChange={(e) => setDeuce(e.target.checked)} className="w-4 h-4" />
+              ดิว
+            </label>
+            <input
+              type="number"
+              min={5}
+              max={99}
+              value={cap}
+              disabled={!deuce}
+              onChange={(e) => setCap(Number(e.target.value))}
+              aria-label="แต้มสูงสุด"
+              title="แต้มสูงสุด (ปิดเซต)"
+              className="min-h-[44px] px-3 rounded-xl border border-slate-200 text-sm tabular-nums disabled:bg-slate-100"
             />
             <button
               type="submit"
@@ -355,42 +383,58 @@ export function RulesStaffPage() {
       {/* Referees */}
       <section className="bg-white border border-slate-200/80 rounded-2xl p-5 space-y-4">
         <h3 className="font-display text-base font-bold text-slate-900">รายชื่อกรรมการ ({tReferees.length})</h3>
+        <p className="text-xs text-slate-500">
+          เพิ่มสนามแล้วระบบสร้างกรรมการให้ตามจำนวนสนามอัตโนมัติ แก้ชื่อ/เบอร์โทรได้ภายหลัง · กรรมการถูกเลือกประจำสนามเมื่อกด QR กรรมการในหน้า Live Score
+        </p>
         <div className="divide-y divide-slate-100">
-          {tReferees.map((rf) => (
+          {tReferees.map((rf, i) => (
             <div key={rf.id} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div>
-                <div className="text-sm font-bold text-slate-900">{rf.name}</div>
-                <div className="text-xs text-slate-500 tabular-nums">{rf.phone || 'ไม่ระบุเบอร์'}</div>
-              </div>
+              {isOrganizer ? (
+                <div className="flex flex-wrap items-center gap-2 min-w-0">
+                  <span className="text-xs font-bold text-slate-500 w-24 shrink-0">กรรมการที่ {i + 1}</span>
+                  <input
+                    defaultValue={rf.name}
+                    onBlur={(e) => e.target.value.trim() && e.target.value !== rf.name && updateReferee(rf.id, { name: e.target.value.trim() })}
+                    className="min-h-[40px] w-40 px-3 rounded-xl border border-slate-200 text-sm font-semibold"
+                  />
+                  <input
+                    type="tel"
+                    defaultValue={rf.phone || ''}
+                    onBlur={(e) => e.target.value !== (rf.phone || '') && updateReferee(rf.id, { phone: e.target.value.trim() })}
+                    className="min-h-[40px] w-36 px-3 rounded-xl border border-slate-200 text-sm tabular-nums"
+                    placeholder="เบอร์โทร"
+                  />
+                </div>
+              ) : (
+                <div className="text-sm">
+                  <span className="text-xs text-slate-500 mr-2">กรรมการที่ {i + 1}</span>
+                  <span className="font-bold text-slate-900">{rf.name}</span>
+                  <span className="text-xs text-slate-500 tabular-nums ml-2">{rf.phone || ''}</span>
+                </div>
+              )}
               <div className="flex items-center gap-2">
-                {isOrganizer ? (
-                  <>
-                    <select
-                      value={rf.court_no ?? ''}
-                      onChange={(e) =>
-                        updateRefereeCourt(rf.id, e.target.value ? Number(e.target.value) : null)
-                      }
-                      className="min-h-[40px] px-3 rounded-xl border border-slate-200 bg-white text-xs font-semibold"
-                    >
-                      <option value="">ยังไม่ระบุสนาม</option>
-                      {tCourts.map((c) => (
-                        <option key={c.id} value={c.no}>
-                          {c.name}
-                        </option>
-                      ))}
-                    </select>
-                    <button
-                      type="button"
-                      onClick={() => deleteReferee(rf.id)}
-                      className="min-h-[40px] min-w-[40px] flex items-center justify-center rounded-xl hover:bg-red-50 text-red-600"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </>
+                {rf.court_no ? (
+                  <span className="text-xs font-semibold text-blue-700 bg-blue-50 rounded-lg px-2.5 py-1.5">ประจำสนาม {rf.court_no}</span>
                 ) : (
-                  <span className="text-xs font-semibold text-blue-700">
-                    {rf.court_no ? `สนาม ${rf.court_no}` : '-'}
-                  </span>
+                  <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 rounded-lg px-2.5 py-1.5">ว่าง</span>
+                )}
+                {isOrganizer && rf.court_no ? (
+                  <button
+                    type="button"
+                    onClick={() => updateReferee(rf.id, { court_no: null })}
+                    className="min-h-[36px] px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-semibold text-slate-600"
+                  >
+                    ปล่อยว่าง
+                  </button>
+                ) : null}
+                {isOrganizer && (
+                  <button
+                    type="button"
+                    onClick={() => deleteReferee(rf.id)}
+                    className="min-h-[40px] min-w-[40px] flex items-center justify-center rounded-xl hover:bg-red-50 text-red-600"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 )}
               </div>
             </div>
@@ -398,7 +442,7 @@ export function RulesStaffPage() {
         </div>
 
         {isOrganizer && (
-          <form onSubmit={handleAddRef} className="grid grid-cols-1 sm:grid-cols-4 gap-2.5 pt-3 border-t border-slate-100">
+          <form onSubmit={handleAddRef} className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-3 border-t border-slate-100">
             <input
               required
               value={refName}
@@ -413,18 +457,6 @@ export function RulesStaffPage() {
               placeholder="เบอร์โทร"
               className="min-h-[44px] px-3 rounded-xl border border-slate-200 text-sm"
             />
-            <select
-              value={refCourt}
-              onChange={(e) => setRefCourt(e.target.value)}
-              className="min-h-[44px] px-3 rounded-xl border border-slate-200 bg-white text-sm"
-            >
-              <option value="">เลือกสนามประจำ</option>
-              {tCourts.map((c) => (
-                <option key={c.id} value={c.no}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
             <button
               type="submit"
               className="inline-flex items-center justify-center gap-1 min-h-[44px] rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold"
@@ -609,21 +641,148 @@ export function ReportsPage() {
 }
 
 export function SettingsPage() {
-  const { state, profile } = useMatchON();
+  const { state, profile, toast, reload } = useMatchON();
+  const [name, setName] = useState(profile?.display_name || '');
+  const [phone, setPhone] = useState(profile?.phone || '');
+  const [busy, setBusy] = useState(false);
+  React.useEffect(() => {
+    setName(profile?.display_name || '');
+    setPhone(profile?.phone || '');
+  }, [profile?.id, profile?.display_name, profile?.phone]);
   const roleTh = state.role === 'organizer' ? 'ผู้จัดการแข่งขัน' : 'นักกีฬา / ผู้ชม';
+  const save = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    try {
+      await rpcUpdateProfile(name, phone);
+      toast('บันทึกโปรไฟล์แล้ว');
+      await reload();
+    } catch (err: any) {
+      toast(err?.message || 'บันทึกไม่สำเร็จ', 'err');
+    } finally {
+      setBusy(false);
+    }
+  };
+  if (!profile) return <LineLoginCard why="เข้าสู่ระบบเพื่อดูและแก้ไขโปรไฟล์ รูปโปรไฟล์จะดึงมาจาก LINE อัตโนมัติ" />;
+  const inp = 'w-full min-h-[44px] px-3.5 rounded-xl border border-slate-200 text-sm';
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div>
-        <h2 className="font-display text-xl font-bold text-slate-900">บัญชีผู้ใช้</h2>
-        <p className="text-xs text-slate-500 mt-0.5">สิทธิ์การใช้งานผูกกับบัญชีที่ล็อกอิน ข้อมูลทั้งหมดบันทึกในฐานข้อมูลกลาง</p>
+        <h2 className="font-display text-xl font-bold text-slate-900">โปรไฟล์ & บัญชี</h2>
+        <p className="text-xs text-slate-500 mt-0.5">ข้อมูลผูกกับบัญชีที่ล็อกอิน รูปโปรไฟล์ดึงจาก LINE</p>
       </div>
-      <section className="bg-white border border-slate-200/80 rounded-2xl p-5 space-y-3">
-        <div className="flex items-center gap-2 text-sm font-bold text-slate-900">
-          <Trophy className="w-4 h-4 text-blue-600" />
-          {profile ? profile.display_name || profile.email : 'ยังไม่ได้เข้าสู่ระบบ'}
+      <section className="bg-white border border-slate-200/80 rounded-2xl p-5 space-y-4">
+        <div className="flex items-center gap-4">
+          {profile.avatar_url ? (
+            <img src={profile.avatar_url} alt="" referrerPolicy="no-referrer" className="w-20 h-20 rounded-full object-cover bg-slate-100" />
+          ) : (
+            <div className="w-20 h-20 rounded-full bg-slate-100 grid place-items-center text-2xl text-slate-400">👤</div>
+          )}
+          <div className="min-w-0">
+            <div className="text-base font-bold text-slate-900 truncate">{profile.display_name || 'ผู้ใช้'}</div>
+            <div className="text-xs text-slate-500 truncate">{profile.email || 'เข้าสู่ระบบด้วย LINE'}</div>
+            <div className="text-xs font-semibold text-blue-700 mt-1">สิทธิ์: {roleTh}</div>
+          </div>
         </div>
-        <p className="text-xs text-slate-500">สิทธิ์ปัจจุบัน: {roleTh}</p>
+        <form onSubmit={save} className="space-y-2.5">
+          <label className="block text-xs font-semibold text-slate-600">
+            ชื่อที่แสดง
+            <input value={name} onChange={(e) => setName(e.target.value)} className={inp + ' mt-1'} />
+          </label>
+          <label className="block text-xs font-semibold text-slate-600">
+            เบอร์โทร
+            <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className={inp + ' mt-1'} />
+          </label>
+          <button disabled={busy} className="w-full min-h-[46px] rounded-xl bg-blue-600 text-white text-sm font-semibold">
+            {busy ? 'กำลังบันทึก…' : 'บันทึกโปรไฟล์'}
+          </button>
+        </form>
         <AccountBox />
+      </section>
+    </div>
+  );
+}
+
+export function StaffPage() {
+  const { activeTournament, isManagerOf, state, toast } = useMatchON();
+  const [rows, setRows] = useState<StaffRow[]>([]);
+  const [q, setQ] = useState('');
+  const [busy, setBusy] = useState(false);
+  const tid = activeTournament?.id || '';
+  const load = React.useCallback(async () => {
+    if (!tid) return;
+    const { data, error } = await sb.rpc('list_staff', { p_tournament: tid });
+    if (!error) setRows((data || []) as StaffRow[]);
+  }, [tid]);
+  React.useEffect(() => {
+    void load();
+  }, [load]);
+  if (!activeTournament) {
+    return <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center text-sm text-slate-500">ยังไม่มีรายการแข่งขัน</div>;
+  }
+  const owner = state.role === 'organizer' && isManagerOf(tid);
+  const add = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!q.trim()) return;
+    setBusy(true);
+    const { error } = await sb.rpc('add_staff', { p_tournament: tid, p_email: q.trim() });
+    setBusy(false);
+    if (error) return toast(error.message, 'err');
+    toast('เพิ่ม staff แล้ว');
+    setQ('');
+    await load();
+  };
+  const remove = async (id: string) => {
+    const { error } = await sb.rpc('remove_staff', { p_staff: id });
+    if (error) return toast(error.message, 'err');
+    toast('ลบ staff แล้ว');
+    await load();
+  };
+  return (
+    <div className="space-y-6 max-w-2xl">
+      <div>
+        <h2 className="font-display text-xl font-bold text-slate-900">จัดการ Staff · {activeTournament.name}</h2>
+        <p className="text-xs text-slate-500 mt-0.5">
+          Staff จัดการรายการนี้ร่วมกับผู้จัดได้ (สายแข่ง ตาราง คะแนน นักกีฬา) แต่ลบรายการหรือเพิ่ม staff เองไม่ได้
+        </p>
+      </div>
+      <section className="bg-white border border-slate-200/80 rounded-2xl p-5 space-y-4">
+        <h3 className="font-display text-base font-bold text-slate-900">รายชื่อ Staff ({rows.length})</h3>
+        <div className="divide-y divide-slate-100">
+          {rows.map((r) => (
+            <div key={r.id} className="py-3 flex items-center gap-3">
+              {r.avatar_url ? (
+                <img src={r.avatar_url} alt="" referrerPolicy="no-referrer" className="w-10 h-10 rounded-full object-cover bg-slate-100" />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-slate-100 grid place-items-center text-slate-400">👤</div>
+              )}
+              <div className="min-w-0 flex-1">
+                <div className="text-sm font-bold text-slate-900 truncate">{r.display_name || r.email || 'ผู้ใช้'}</div>
+                <div className="text-xs text-slate-500 truncate">{r.email || 'บัญชี LINE'}</div>
+              </div>
+              {owner && (
+                <button type="button" onClick={() => void remove(r.id)} className="min-h-[40px] min-w-[40px] flex items-center justify-center rounded-xl hover:bg-red-50 text-red-600">
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          ))}
+          {!rows.length && <div className="py-6 text-center text-sm text-slate-400">ยังไม่มี staff</div>}
+        </div>
+        {owner && (
+          <form onSubmit={add} className="flex flex-col sm:flex-row gap-2 pt-3 border-t border-slate-100">
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="อีเมล หรือ ชื่อที่แสดงใน LINE ของ staff"
+              className="flex-1 min-h-[44px] px-3.5 rounded-xl border border-slate-200 text-sm"
+            />
+            <button disabled={busy} className="min-h-[44px] px-5 rounded-xl bg-blue-600 text-white text-xs font-semibold">
+              + เพิ่ม Staff
+            </button>
+          </form>
+        )}
+        <p className="text-[11px] text-slate-400">ให้ staff ล็อกอินเข้าเว็บ (LINE หรืออีเมล) อย่างน้อยหนึ่งครั้งก่อน แล้วพิมพ์อีเมลหรือชื่อที่แสดงให้ตรง</p>
       </section>
     </div>
   );

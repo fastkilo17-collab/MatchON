@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { sb, photoUrl, uploadPhoto } from '../lib/supabase';
+import { LineLoginCard } from '../components/AuthDialog';
 import { promptPayPayload } from '../utils/promptpay';
 import { rpcSubmitSlip, rpcUpdateRegistration } from '../lib/db';
 import { Bell, CheckCircle2, ChevronLeft, ChevronRight, QrCode, Ticket } from 'lucide-react';
@@ -46,7 +47,7 @@ function ppValue(id: string, amount: number): string {
   }
 }
 
-export function RegisterPage() {
+function RegisterForm() {
   const { state, activeTournament, setActiveTid, addRegistration, navigate, toast } = useMatchON();
   const openTournaments = state.tournaments.filter((t) => t.status === 'open');
   const targetTournament =
@@ -693,4 +694,13 @@ export function MyRegistrationsPage() {
       )}
     </div>
   );
+}
+
+export function RegisterPage() {
+  const { profile, loading } = useMatchON();
+  if (loading) return null;
+  if (!profile) {
+    return <LineLoginCard why="นักกีฬาต้องล็อกอินด้วย LINE ก่อนสมัครแข่ง เพื่อผูกใบสมัครกับบัญชีของคุณและรับแจ้งเตือนผลการแข่งขัน" />;
+  }
+  return <RegisterForm />;
 }

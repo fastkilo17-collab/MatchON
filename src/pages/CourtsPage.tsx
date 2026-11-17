@@ -12,7 +12,7 @@ import { useMatchON } from '../context/MatchONContext';
 import type { Match } from '../types/matchon';
 import { fmtTime, scoreText, teamName } from '../utils/bracket';
 import { MatchScoreSheet } from '../components/MatchScoreSheet';
-import { ResponsiveSheet } from '../components/UiKit';
+import { ResponsiveSheet, TeamAvatars } from '../components/UiKit';
 
 export function CourtsPage() {
   const {
@@ -144,13 +144,13 @@ export function CourtsPage() {
                     </div>
                     <div className="space-y-1 text-sm font-bold text-slate-900">
                       <div className="flex items-center justify-between gap-2">
-                        <span className="truncate">{teamName(m.reg_a ? regMap[m.reg_a] : null)}</span>
+                        <span className="flex items-center gap-2 min-w-0"><TeamAvatars reg={m.reg_a ? regMap[m.reg_a] : null} /><span className="truncate">{teamName(m.reg_a ? regMap[m.reg_a] : null)}</span></span>
                         {kind === 'live' && (
                           <span className="font-mono text-base tabular-nums text-blue-700">{m.cur_a}</span>
                         )}
                       </div>
                       <div className="flex items-center justify-between gap-2">
-                        <span className="truncate">{teamName(m.reg_b ? regMap[m.reg_b] : null)}</span>
+                        <span className="flex items-center gap-2 min-w-0"><TeamAvatars reg={m.reg_b ? regMap[m.reg_b] : null} /><span className="truncate">{teamName(m.reg_b ? regMap[m.reg_b] : null)}</span></span>
                         {kind === 'live' && (
                           <span className="font-mono text-base tabular-nums text-blue-700">{m.cur_b}</span>
                         )}

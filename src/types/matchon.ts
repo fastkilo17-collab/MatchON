@@ -21,6 +21,7 @@ export type NavRoute =
   | 'courts'
   | 'live'
   | 'rules'
+  | 'staff'
   | 'results'
   | 'reports'
   | 'settings';
@@ -59,6 +60,7 @@ export interface Category {
   points: number;
   cap: number;
   deuce: boolean;
+  play_two?: boolean;
   rule_group?: string | null;
   rule_ko?: string | null;
 }
@@ -137,6 +139,7 @@ export interface RulePreset {
   points: number;
   deuce: boolean;
   cap: number;
+  play_two?: boolean;
 }
 
 export interface Referee {

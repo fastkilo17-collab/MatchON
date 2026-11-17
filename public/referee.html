@@ -25,7 +25,7 @@ button{font:inherit;color:inherit;border:0;cursor:pointer;touch-action:manipulat
 button:disabled{opacity:.38;cursor:not-allowed}
 .num{font-family:'Prompt',sans-serif;font-variant-numeric:tabular-nums}
 #wrap{position:relative;margin:auto 0}
-#cv{position:absolute;left:0;top:0;width:1536px;min-height:0;transform-origin:0 0;padding:10px 16px 12px;display:flex;flex-direction:column;gap:8px;
+#cv{position:absolute;left:0;top:0;width:var(--W,1536px);min-height:0;transform-origin:0 0;padding:10px 16px 12px;display:flex;flex-direction:column;gap:8px;
   background:radial-gradient(1100px 520px at 50% 0,#102a78 0,transparent 62%),radial-gradient(900px 500px at 100% 100%,#1a1470 0,transparent 60%),linear-gradient(#060d2a,#050a1a)}
 
 /* ---------- header ---------- */
@@ -180,7 +180,7 @@ tr:last-child td{border-bottom:0}
 .close{background:#1e293b;border-radius:12px;padding:12px;font-weight:700;font-size:16px}
 .evlist{overflow:auto;display:flex;flex-direction:column;gap:2px;font-size:15px}
 .evlist div{display:flex;gap:12px;padding:6px 4px;border-bottom:1px solid #1a2d70}.evlist b{font-weight:500;color:#8da3d8;flex:none}
-@media (orientation:portrait) and (max-width:700px){.rot{display:grid}}
+
 
 /* ---- v2 layout: everything on one screen ---- */
 .hd{height:80px}
@@ -270,7 +270,43 @@ body.fill #gear2{display:grid}
 .sc>.bt{width:100%;height:auto!important;align-self:stretch}
 .mc{align-self:stretch;height:100%}
 .mc .bt{flex:1;height:auto!important}
-#mi1,#mr1,#pl1,#pr1{height:auto!important;align-self:stretch!important}</style>
+#mi1,#mr1,#pl1,#pr1{height:auto!important;align-self:stretch!important}
+/* ---- v7 ---- */
+.ttl>div{min-width:0;flex:1}
+.tc h2{padding:0 14px}
+.pnm,.tc h2{white-space:nowrap}
+.livep:not(.idle){animation:slowblink 2.6s ease-in-out infinite}
+@keyframes slowblink{0%,100%{opacity:1}50%{opacity:.35}}
+.sheet{position:relative}
+.sheet h3{padding-right:44px}
+.xb{position:absolute;top:8px;right:8px;width:38px;height:38px;border-radius:50%;background:#1e293b;color:#e6ecff;font-size:20px;line-height:1;display:grid;place-items:center;z-index:2}
+.evh{display:block}
+.shc{width:100%;margin-top:2px}
+.shc .lbl{font:600 22px 'Noto Sans Thai';color:#dbe5ff;display:flex;align-items:center;gap:8px;white-space:nowrap}
+.shc .bt{flex:1;height:54px;width:auto;font-size:34px}
+.shc b{min-width:70px;font-size:40px}
+.fsi{width:32px;height:32px}
+th.ttlc{font:700 22px 'Noto Sans Thai';color:#e6ecff}
+/* portrait: one column, scaled by width */
+body.pt .hd{height:auto;flex-wrap:wrap;gap:8px 14px;padding:6px 6px 10px}
+body.pt .logo{width:auto}body.pt .logo small,body.pt .vdiv{display:none}
+body.pt .ttl{flex:1 1 100%;order:9}
+body.pt .ttl strong{font-size:24px}body.pt .ttl span{font-size:19px}
+body.pt .clk{font-size:26px}
+body.pt .livep{font-size:22px;height:42px;padding:0 16px;margin-left:auto}
+body.pt .bd{height:auto;flex-wrap:wrap;margin-top:2px}
+body.pt .cn{order:-1;flex:1 1 100%;height:236px}
+body.pt .tc{width:calc(50% - 6px);height:290px}
+body.pt .tc h2{height:50px;line-height:50px;font-size:26px}
+body.pt .pic{width:164px;height:136px}
+body.pt .pw{width:164px}
+body.pt .hs{flex-wrap:wrap;height:auto;padding:8px 12px}
+body.pt .hs .cells{flex:1 1 100%;order:5;height:38px}
+body.pt .mr{grid-template-columns:1fr;grid-auto-rows:auto}
+body.pt .mr .pn:nth-child(2) .sc{min-height:340px}
+body.pt .stp{grid-template-columns:1fr 1fr;grid-template-rows:none;grid-auto-rows:84px}
+body.pt .pn{padding:12px 14px}
+</style>
 </head>
 <body>
 <div id="wrap"><div id="cv">
@@ -283,7 +319,7 @@ body.fill #gear2{display:grid}
     <div class="vdiv"></div>
     <div class="clk"><svg viewBox="0 0 24 24" fill="none" stroke="#9fb5f5" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2" stroke-linecap="round"/></svg><span class="num" id="clock">--:--:--</span></div>
     <div class="vdiv"></div>
-    <button class="ib" id="fsBtn" title="เต็มจอ" aria-label="เต็มจอ">⛶</button>
+    <button class="ib" id="fsBtn" title="เต็มจอ" aria-label="เต็มจอ"></button>
     <button class="ib" id="gear" title="ตั้งค่า" aria-label="ตั้งค่า">⚙</button>
   </header>
 
@@ -302,9 +338,9 @@ body.fill #gear2{display:grid}
     <div class="tm"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#9fb5f5" stroke-width="1.8"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 13.5V9M9.5 3h5M18.5 6l1.4-1.4" stroke-linecap="round"/></svg><b class="num" id="timer">00:00:00</b></div></section>
 
   <section class="mr">
-    <div class="pn"><div class="evh"><h3>สรุปคะแนน (Sets)</h3>
-      <div class="shc"><span id="icBall"></span><button class="bt g" id="shDec">-</button><b class="num" id="shNum">1</b><button class="bt g" id="shInc">+</button></div></div>
-      <table><thead><tr><th></th><th>Set 1</th><th>Set 2</th><th>Set 3</th></tr></thead><tbody id="sumBody"></tbody></table>
+    <div class="pn"><div class="evh">
+      <div class="shc"><span class="lbl"><span id="icBall"></span>ลูกที่ใช้</span><button class="bt g" id="shDec">-</button><b class="num" id="shNum">1</b><button class="bt g" id="shInc">+</button></div></div>
+      <table><thead><tr id="sumHead"></tr></thead><tbody id="sumBody"></tbody></table>
       <button class="bt g" id="evAll" style="margin-top:auto;height:60px;font-size:24px">เหตุการณ์ทั้งหมด</button></div>
     <div class="pn">
       <div class="sc" id="sc">
@@ -327,18 +363,16 @@ body.fill #gear2{display:grid}
 </div></div>
 
 <div class="msg" id="msg"><div id="msgTxt"></div></div>
-<div class="rot"><div><span>📱↻</span>หมุนจอเป็นแนวนอน<br>เพื่อใช้หน้ากรรมการ</div></div>
 <div class="toast" id="toast"></div>
-<div class="modal" id="modal"><div class="sheet">
+<div class="modal" id="modal"><div class="sheet"><button class="xb" id="xModal" aria-label="ปิด">✕</button>
   <h3>ตั้งค่า</h3>
-  <button class="row" id="optFlip"><div>สลับข้างซ้าย-ขวา<small>ให้ตรงกับที่กรรมการนั่งดูสนาม</small></div><span class="sw" id="swFlip"></span></button>
   <button class="row" id="optWake"><div>เปิดหน้าจอค้างไว้<small>กันจอดับระหว่างแมตช์</small></div><span class="sw" id="swWake"></span></button>
   <div class="row" style="display:block"><div style="margin-bottom:8px">การแสดงผลเต็มจอ</div>
     <label class="rad"><input type="radio" name="fitmode" value="fit"> Fit screen <small>เห็นทั้งหน้า คงสัดส่วน อาจมีขอบดำ</small></label>
     <label class="rad"><input type="radio" name="fitmode" value="fill"> Fill screen <small>เต็มความกว้างจอ ไม่ตัด ไม่ยืดภาพ เลื่อนลงดูส่วนล่างได้</small></label></div>
   <button class="close" id="closeModal">ปิด</button>
 </div></div>
-<div class="modal" id="evModal"><div class="sheet"><h3>เหตุการณ์ทั้งหมด</h3><div class="evlist" id="evList"></div><button class="close" id="closeEv">ปิด</button></div></div>
+<div class="modal" id="evModal"><div class="sheet"><button class="xb" id="xEv" aria-label="ปิด">✕</button><h3>เหตุการณ์ทั้งหมด</h3><div class="evlist" id="evList"></div><button class="close" id="closeEv">ปิด</button></div></div>
 
 <script type="module">
 import * as Live from './js/live.js';
@@ -348,9 +382,13 @@ const q = new URLSearchParams(location.search);
 const courtNo = Number(q.get('court'));
 const liveId = q.get('live');
 const secret = new URLSearchParams(location.hash.slice(1)).get('k');
+const umpire = (q.get('ref') || '').trim();
 const LOCAL_KEY = 'MATCHON_LOCAL_DB_V1';
 const PREF = 'matchon.referee.prefs';
-const MAXSET = 3, SHUTTLE_CAP = 21;
+const SHUTTLE_CAP = 21;
+const RULE0 = { best_of: 3, points: 21, cap: 30, deuce: true, playTwo: false };
+const R = (c) => Object.assign({}, RULE0, (c && c.rule) || {});
+const maxSets = (c) => { const r = R(c); return r.playTwo ? 2 : Math.max(1, r.best_of || 3); };
 
 let court = null, canWrite = false, online = false, note = '';
 let viewSet = null;              // set shown on screen; null = follow the set being played
@@ -361,11 +399,25 @@ const savePrefs = () => { try { localStorage.setItem(PREF, JSON.stringify(prefs)
 /* ---------------- canvas scaling ---------------- */
 function fit() {
   const W = innerWidth, H = innerHeight, cv = $('cv'), wrap = $('wrap');
+  const portrait = H > W * 1.05;
+  document.body.classList.toggle('pt', portrait);
+  const DW = portrait ? 820 : 1536;
+  cv.style.setProperty('--W', DW + 'px');
+  fitTexts();
   const CH = cv.offsetHeight || 1024;                                   // natural height of the page (no empty space)
-  const k = prefs.fit === 'fill' ? W / 1536 : Math.min(W / 1536, H / CH);
-  wrap.style.width = 1536 * k + 'px'; wrap.style.height = CH * k + 'px';
+  const k = (prefs.fit === 'fill' || portrait) ? W / DW : Math.min(W / DW, H / CH);
+  wrap.style.width = DW * k + 'px'; wrap.style.height = CH * k + 'px';
   cv.style.transform = `scale(${k})`;
-  document.documentElement.style.overflowY = CH * k > H + 1 ? 'auto' : 'hidden';   // fill: scroll down when the page is taller than the screen
+  document.documentElement.style.overflowY = CH * k > H + 1 ? 'auto' : 'hidden';   // scroll down when the page is taller than the screen
+}
+// shrink a text until it fits its box (team names are shown as large as they can be)
+function fitTexts() {
+  document.querySelectorAll('.tc h2,.pnm,#tsub').forEach((el) => {
+    const max = el.classList.contains('pnm') ? 25 : el.id === 'tsub' ? 20 : 34;
+    el.style.fontSize = max + 'px';
+    let sz = max;
+    while (el.scrollWidth > el.clientWidth + 1 && sz > 11) { sz -= 1; el.style.fontSize = sz + 'px'; }
+  });
 }
 addEventListener('resize', fit); fit(); setTimeout(fit, 400); if (document.fonts) document.fonts.ready.then(fit);
 
@@ -407,7 +459,13 @@ const teamName = (c, t) => { const k = clubOf(c, t); return k && k !== '-' ? k :
 const names = (c, t) => players(c, t).split('/').map((p) => p.trim()).filter(Boolean);
 // who is serving: the saved value, otherwise the last scorer, otherwise team A once the game has started
 const server = (c) => c.server === 'A' || c.server === 'B' ? c.server : (c.log.length ? c.log[c.log.length - 1][0] : (began(c) ? 'A' : ''));
-const setWinner = (s) => { const hi = Math.max(s[0], s[1]), lead = Math.abs(s[0] - s[1]); return (hi >= 21 && lead >= 2) || hi >= 30 ? (s[0] > s[1] ? 'A' : 'B') : ''; };
+const setWinner = (s, c) => {
+  const r = R(c), hi = Math.max(s[0], s[1]), lead = Math.abs(s[0] - s[1]);
+  if (s[0] === s[1]) return '';
+  const w = s[0] > s[1] ? 'A' : 'B';
+  if (!r.deuce) return hi >= r.points ? w : '';
+  return (hi >= r.cap) || (hi >= r.points && lead >= 2) ? w : '';
+};
 function setsWon(c) { const cur = act(c); let a = 0, b = 0; c.scores.forEach((s, i) => { if (i < cur) { if (s[0] > s[1]) a++; else if (s[1] > s[0]) b++; } }); return [a, b]; }
 const pushEv = (c, txt) => { c.events.push({ at: Date.now(), txt }); if (c.events.length > 40) c.events.splice(0, c.events.length - 40); };
 
@@ -443,7 +501,7 @@ const playPause = (c) => {
   else if (c.paused) { c.pausedTotal = (c.pausedTotal || 0) + (now - (c.pausedAt || now)); c.pausedAt = 0; c.paused = false; pushEv(c, 'เล่นต่อ'); }
   else { c.paused = true; c.pausedAt = now; pushEv(c, 'พักการแข่งขัน'); }
 };
-const endSetMut = (c) => { ensure(c); const i = act(c); pushEv(c, `จบเซต ${i + 1}: ${c.scores[i][0]} - ${c.scores[i][1]}`); c.activeSet = Math.min(MAXSET - 1, i + 1); };
+const endSetMut = (c) => { ensure(c); const i = act(c); pushEv(c, `จบเซต ${i + 1}: ${c.scores[i][0]} - ${c.scores[i][1]}`); c.activeSet = Math.min(maxSets(c) - 1, i + 1); };
 
 /* ---------------- rendering ---------------- */
 const side = () => (prefs.flip ? { L: 'B', R: 'A' } : { L: 'A', R: 'B' });
@@ -470,12 +528,15 @@ function draw() {
   const live = c.status === 'LIVE', begun = began(c), running = live && begun && !c.paused;
   const sv = server(c);
   const [wa, wb] = setsWon(c);
-  const [roundTxt, catTxt] = String(c.round || '').split('•').map((x) => x.trim());
+  const catTxt = c.catName || String(c.round || '').split('•').map((x) => x.trim())[1];
 
   // header
+  const live0 = c.status === 'LIVE';
   const mno = String(c.matchCode || '').replace(/\D/g, '');
   $('tname').textContent = c.tournament || 'การแข่งขันแบดมินตัน';
-  $('tsub').textContent = 'สนาม ' + courtNo + (mno ? '  |  แมตช์ที่ ' + mno : '') + '  ' + String(c.round || '').replace('•', '-').replace(/\s+/g, ' ');
+  const mnum = c.matchNo || mno;
+  const rtxt = c.roundLabel || c.catName ? [c.roundLabel, c.catName].filter(Boolean).join(' - ') : String(c.round || '').replace('•', '-').replace(/\s+/g, ' ');
+  $('tsub').textContent = 'สนาม ' + courtNo + (live0 && mnum ? ' | แมตช์ที่ ' + mnum : '') + (live0 && rtxt ? ' ' + rtxt : '') + (umpire ? ' | umpire-' + umpire : '');
   $('livep').className = 'livep' + (running ? '' : live && begun ? ' paused' : ' idle');
   $('livetxt').textContent = running ? 'LIVE' : live && begun ? 'PAUSED' : live ? 'READY' : 'IDLE';
 
@@ -516,7 +577,7 @@ function draw() {
   entries.forEach((e) => { const t = e[0]; cnt[t] += 1; cells += `<span class="c ${t}">${cnt[t]}</span>`; });
   $('cells').innerHTML = cells || '<span class="none">ยังไม่มีแต้มในเซตนี้</span>';
   const cl = $('cells'); cl.scrollLeft = viewingLive ? cl.scrollWidth : 0;
-  $('setbtns').innerHTML = [0, 1, 2].map((i) => `<button class="sbtn${i === vi ? ' view' : ''}${i === a ? ' cur' : ''}" data-set="${i}">${i + 1}</button>`).join('');
+  $('setbtns').innerHTML = Array.from({ length: maxSets(c) }, (_, i) => i).map((i) => `<button class="sbtn${i === vi ? ' view' : ''}${i === a ? ' cur' : ''}" data-set="${i}">${i + 1}</button>`).join('');
   $('timer').textContent = hms(elapsed(c));
   $('icBall').innerHTML = shuttle(36, false, '#e6ecff'); $('icSrv').innerHTML = shuttle(34, true, '#fff');
   $('srvSwap').disabled = !(canWrite && live);
@@ -544,17 +605,19 @@ function draw() {
   $('swapSide').disabled = false;
 
   // sets summary
+  $('sumHead').innerHTML = '<th class="ttlc">ผลรายเซต</th>' + Array.from({ length: maxSets(c) }, (_, i) => `<th>Set ${i + 1}</th>`).join('');
   $('sumBody').innerHTML = ['A', 'B'].map((t) => `<tr><td><i style="background:${t === 'A' ? '#2f74ff' : '#ff3a57'}"></i>${esc(teamName(c, t))}</td>` +
-    [0, 1, 2].map((i) => {
+    Array.from({ length: maxSets(c) }, (_, i) => i).map((i) => {
       const s = c.scores[i], played = i < a || s[0] || s[1] || (i === a && began(c));
       if (!played) return '<td class="x">-</td>';
-      const win = (i < a || setWinner(s)) && ((t === 'A' && s[0] > s[1]) || (t === 'B' && s[1] > s[0]));
+      const win = (i < a || setWinner(s, c)) && ((t === 'A' && s[0] > s[1]) || (t === 'B' && s[1] > s[0]));
       return `<td class="${win ? 'w' : 'n'}">${s[T(t)]}</td>`;
     }).join('') + '</tr>').join('');
 
   // recent events
-  $('swFlip').classList.toggle('on', prefs.flip); $('swWake').classList.toggle('on', prefs.wake);
+  $('swWake').classList.toggle('on', prefs.wake);
   if (note) toast(note), note = '';
+  fitTexts();
 }
 
 /* ---------------- writes ---------------- */
@@ -575,7 +638,7 @@ const vibe = () => { try { navigator.vibrate && navigator.vibrate(18); } catch {
 // after a point: if the set is won, offer to move to the next set
 async function maybeEndSet() {
   const c = court && ensure(court), i = c && act(c);
-  if (!c || i >= MAXSET - 1 || !setWinner(c.scores[i])) return;
+  if (!c || i >= maxSets(c) - 1 || !setWinner(c.scores[i], c)) return;
   if (confirm(`เซตที่ ${i + 1} จบแล้ว (${c.scores[i][0]} - ${c.scores[i][1]})\nไปเซตถัดไปเลยไหม?`)) await commit(endSetMut);
 }
 
@@ -600,8 +663,8 @@ $('shDec').onclick = () => commit((c) => { if (c.shuttleUsed > 0) c.shuttleUsed 
 $('pp').onclick = () => { requestWake(); commit(playPause); };
 $('endSet').onclick = () => {
   const c = ensure(court), i = act(c);
-  if (i >= MAXSET - 1) return toast('นี่คือเซตสุดท้าย กด "จบการแข่งขัน"');
-  if (!setWinner(c.scores[i]) && !confirm('คะแนนยังไม่ถึงเกณฑ์จบเซต (21 แต้ม ห่าง 2) จบเซตนี้เลยไหม?')) return;
+  if (i >= maxSets(c) - 1) return toast('นี่คือเซตสุดท้าย กด "จบการแข่งขัน"');
+  if (!setWinner(c.scores[i], c) && !confirm(`คะแนนยังไม่ถึงเกณฑ์จบเซต (${R(c).points} แต้ม) จบเซตนี้เลยไหม?`)) return;
   commit(endSetMut);
 };
 $('setbtns').addEventListener('click', (e) => { const b = e.target.closest('[data-set]'); if (b) { viewSet = Number(b.dataset.set); draw(); } });
@@ -618,8 +681,9 @@ $('endMatch').onclick = async () => {
   const c = ensure(court), cur = act(c);
   let a = 0, b = 0;
   c.scores.forEach((s, i) => { if (i <= cur && (s[0] || s[1])) { if (s[0] > s[1]) a++; else if (s[1] > s[0]) b++; } });
+  const draw = R(c).playTwo && a === b;
   const aWin = a !== b ? a > b : c.scores.reduce((n, s) => n + s[0] - s[1], 0) >= 0;
-  if (!confirm(`จบการแข่งขัน?\nเซตที่ชนะ ${a} - ${b}  ผู้ชนะ ${teamName(c, aWin ? 'A' : 'B')}`)) return;
+  if (!confirm(`จบการแข่งขัน?\nเซตที่ชนะ ${a} - ${b}  ${draw ? 'ผลเสมอ (ทีมละ 1 คะแนน)' : 'ผู้ชนะ ' + teamName(c, aWin ? 'A' : 'B')}`)) return;
   const label = (t) => `${players(c, t)} (${clubOf(c, t)})`;
   const done = {
     courtNo, slot: 'c' + courtNo,
@@ -650,11 +714,11 @@ $('evAll').onclick = () => {
   $('evList').innerHTML = c.events.length ? c.events.slice().reverse().map((e) => `<div><b>${clockTxt(e.at)}</b><span>${esc(e.txt)}</span></div>`).join('') : '<div>ยังไม่มีเหตุการณ์</div>';
   $('evModal').classList.add('on');
 };
-$('closeEv').onclick = () => $('evModal').classList.remove('on');
+$('closeEv').onclick = $('xEv').onclick = () => $('evModal').classList.remove('on');
 $('gear').onclick = () => $('modal').classList.add('on');
-$('closeModal').onclick = () => $('modal').classList.remove('on');
+$('closeModal').onclick = $('xModal').onclick = () => $('modal').classList.remove('on');
+for (const id of ['modal', 'evModal']) $(id).addEventListener('click', (e) => { if (e.target.id === id) $(id).classList.remove('on'); });
 document.querySelectorAll('input[name=fitmode]').forEach((r) => { r.checked = r.value === prefs.fit; r.onchange = () => { prefs.fit = r.value; savePrefs(); fit(); }; });
-$('optFlip').onclick = () => { prefs.flip = !prefs.flip; savePrefs(); draw(); };
 let wakeLock = null;
 async function requestWake() { if (!prefs.wake || !('wakeLock' in navigator)) return; try { wakeLock = await navigator.wakeLock.request('screen'); } catch {} }
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') requestWake(); });
@@ -671,7 +735,10 @@ async function toggleFullscreen() {
     try { await screen.orientation.lock('landscape'); } catch { /* not allowed on this device */ }
   } catch (e) { toast('เปิดเต็มจอไม่สำเร็จ: ' + (e.message || e)); }
 }
-const syncFs = () => { $('fsBtn').textContent = fsOn() ? '🗗' : '⛶'; setTimeout(fit, 150); };
+const FS_IN = '<svg class="fsi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>';
+const FS_OUT = '<svg class="fsi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>';
+const syncFs = () => { $('fsBtn').innerHTML = fsOn() ? FS_OUT : FS_IN; setTimeout(fit, 150); };
+syncFs();
 ['fullscreenchange', 'webkitfullscreenchange'].forEach((ev) => document.addEventListener(ev, syncFs));
 $('fsBtn').onclick = toggleFullscreen;
 
