@@ -5,6 +5,7 @@ import type { Match } from '../types/matchon';
 import { ruleForMatch, ruleText, teamName } from '../utils/bracket';
 import { MatchScoreSheet } from '../components/MatchScoreSheet';
 import { QrCodeSvg, ResponsiveSheet } from '../components/UiKit';
+import { useLiveBridge } from '../lib/liveBridge';
 
 export function LiveScorePage() {
   const {
@@ -17,11 +18,35 @@ export function LiveScorePage() {
     regMap,
     catMap,
     adjustLivePoint,
+    recordMatchSets,
+    isManagerOf,
+    toast,
   } = useMatchON();
 
   const [qrCourtNo, setQrCourtNo] = useState<number | null>(null);
   const [editMatch, setEditMatch] = useState<Match | null>(null);
+  const [refUrl, setRefUrl] = useState('');
   const [refMode, setRefMode] = useState(state.role === 'referee' || state.role === 'organizer');
+
+  const canOperate = !!activeTournament && isManagerOf(activeTournament.id);
+  const { fb, bridgeOn, error: bridgeError, refereeUrl } = useLiveBridge({
+    tournament: activeTournament,
+    courts: tCourts,
+    matches: tMatches,
+    regMap,
+    catMap,
+    canWrite: canOperate,
+    recordSets: recordMatchSets,
+  });
+  const openQr = async (no: number) => {
+    setQrCourtNo(no);
+    setRefUrl('');
+    try {
+      setRefUrl(await refereeUrl(no));
+    } catch (e: any) {
+      toast(e?.message || 'สร้างลิงก์กรรมการไม่สำเร็จ', 'err');
+    }
+  };
 
   if (!activeTournament) {
     return (
@@ -30,8 +55,6 @@ export function LiveScorePage() {
       </div>
     );
   }
-
-  const canOperate = state.role === 'organizer' || state.role === 'referee';
 
   return (
     <div className="space-y-5">
@@ -71,6 +94,16 @@ export function LiveScorePage() {
         )}
       </div>
 
+      {canOperate && (
+        <p className="text-xs text-slate-500">
+          {bridgeOn
+            ? '🟢 เชื่อมหน้ากรรมการแล้ว — เปิดหน้านี้ค้างไว้เพื่อรับคะแนนจากกรรมการ'
+            : bridgeError
+              ? `⚠️ เชื่อม Firebase ไม่สำเร็จ: ${bridgeError}`
+              : 'กำลังเชื่อมหน้ากรรมการ…'}
+        </p>
+      )}
+
       {/* Live Courts Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {tCourts.map((court) => {
@@ -80,6 +113,13 @@ export function LiveScorePage() {
             : undefined;
           const m = liveM || nextM;
           const rule = m ? ruleForMatch(m, tCategories, tRules) : null;
+          const f = fb[court.no];
+          const fromRef = !!(m && liveM && f && f.status === 'LIVE' && f.matchCode === m.id.slice(0, 8));
+          const act = fromRef && f.activeSet >= 0 ? f.activeSet : 0;
+          const shownSets: [number, number][] = fromRef
+            ? (f.scores.slice(0, act).filter((x) => x[0] || x[1]) as [number, number][])
+            : m?.sets || [];
+          const shownCur: [number, number] = fromRef ? ((f.scores[act] || [0, 0]) as [number, number]) : [m?.cur_a || 0, m?.cur_b || 0];
 
           return (
             <div
@@ -116,7 +156,7 @@ export function LiveScorePage() {
                   {canOperate && (
                     <button
                       type="button"
-                      onClick={() => setQrCourtNo(court.no)}
+                      onClick={() => void openQr(court.no)}
                       aria-label={`QR กรรมการ ${court.name}`}
                       className="min-h-[38px] min-w-[38px] flex items-center justify-center rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700"
                     >
@@ -135,7 +175,7 @@ export function LiveScorePage() {
                         {teamName(m.reg_a ? regMap[m.reg_a] : null)}
                       </div>
                       <div className="font-display text-5xl sm:text-6xl font-extrabold tabular-nums text-blue-600">
-                        {m.cur_a}
+                        {shownCur[0]}
                       </div>
                     </div>
 
@@ -146,7 +186,7 @@ export function LiveScorePage() {
                         {teamName(m.reg_b ? regMap[m.reg_b] : null)}
                       </div>
                       <div className="font-display text-5xl sm:text-6xl font-extrabold tabular-nums text-slate-900">
-                        {m.cur_b}
+                        {shownCur[1]}
                       </div>
                     </div>
                   </div>
@@ -154,8 +194,8 @@ export function LiveScorePage() {
                   {/* Completed Sets & Rule */}
                   <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500 pt-2 border-t border-slate-100">
                     <div className="font-mono tabular-nums">
-                      {m.sets.length > 0
-                        ? `เซตที่ผ่านมา: ${m.sets.map(([a, b]) => `${a}-${b}`).join(' · ')}`
+                      {shownSets.length > 0
+                        ? `เซตที่ผ่านมา: ${shownSets.map(([a, b]) => `${a}-${b}`).join(' · ')}`
                         : `เซตที่ 1`}
                     </div>
                     {rule && <span>{ruleText(rule)}</span>}
@@ -233,14 +273,30 @@ export function LiveScorePage() {
         subtitle="ให้กรรมการประจำสนามสแกนเพื่อเปิดหน้าให้คะแนนสนามนี้โดยตรง"
       >
         <div className="flex flex-col items-center text-center space-y-4 py-2">
-          <QrCodeSvg
-            value={`${location.origin}${import.meta.env.BASE_URL}?t=${activeTournament.id}&court=${qrCourtNo}`}
-            size={196}
-          />
-          <div className="text-xs text-slate-500 max-w-xs">
-            รหัสสนาม: <span className="font-mono font-bold text-slate-800">COURT-{qrCourtNo}</span> ·{' '}
-            {activeTournament.name}
-          </div>
+          {refUrl ? (
+            <>
+              <QrCodeSvg value={refUrl} size={220} />
+              <div className="text-xs text-slate-500 max-w-xs">
+                สแกนเพื่อเปิดหน้ากรรมการ (referee.html) ของสนาม {qrCourtNo} · อย่าแชร์ให้ผู้ชม
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => navigator.clipboard?.writeText(refUrl).then(() => toast('คัดลอกลิงก์แล้ว'), () => toast('คัดลอกไม่ได้', 'err'))}
+                  className="min-h-[40px] px-4 rounded-xl bg-slate-100 text-xs font-semibold"
+                >
+                  คัดลอกลิงก์
+                </button>
+                <a href={refUrl} target="_blank" rel="noreferrer" className="min-h-[40px] px-4 rounded-xl bg-blue-600 text-white text-xs font-semibold inline-flex items-center">
+                  เปิดหน้ากรรมการ
+                </a>
+              </div>
+            </>
+          ) : (
+            <div className="text-sm text-slate-500 py-8">
+              {bridgeError ? `เชื่อม Firebase ไม่สำเร็จ: ${bridgeError}` : 'กำลังเชื่อม Firebase…'}
+            </div>
+          )}
         </div>
       </ResponsiveSheet>
 

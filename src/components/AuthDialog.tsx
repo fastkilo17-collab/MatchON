@@ -67,7 +67,7 @@ export function AccountBox() {
   const { profile, signOut, canCreate, toast, reload } = useMatchON();
   const [open, setOpen] = useState(false);
   const becomeOrganizer = async () => {
-    const { error } = await sb.rpc('become_organizer');
+    const { error } = await sb.rpc('become_organizer', { p_name: profile?.display_name || '' });
     if (error) toast(error.message, 'err');
     else {
       toast('เปิดสิทธิ์ผู้จัดการแข่งขันแล้ว');

@@ -89,7 +89,7 @@ interface MatchONContextValue {
   clearBracket: (categoryId: string) => void;
   generateGroupKnockoutStage: (categoryId: string) => void;
   generateNextSwissRound: (categoryId: string) => void;
-  recordMatchSets: (matchId: string, sets: [number, number][], liveCur?: [number, number] | null) => void;
+  recordMatchSets: (matchId: string, sets: [number, number][], liveCur?: [number, number] | null, silent?: boolean) => void;
   adjustLivePoint: (matchId: string, side: 'a' | 'b', delta: 1 | -1) => void;
   updateMatchMeta: (matchId: string, patch: Partial<Match>) => void;
   runAutoSchedule: (startIso: string, courtNos: number[]) => number;
@@ -749,7 +749,7 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
   );
 
   const recordMatchSets = useCallback(
-    (matchId: string, sets: [number, number][], liveCur?: [number, number] | null) => {
+    (matchId: string, sets: [number, number][], liveCur?: [number, number] | null, silent?: boolean) => {
       setState((prev) => {
         const target = prev.matches.find((m) => m.id === matchId);
         if (!target) return prev;
@@ -782,7 +782,7 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
         });
         return { ...prev, matches: updatedMatches };
       });
-      toast('บันทึกคะแนนแข่งขันแล้ว');
+      if (!silent) toast('บันทึกคะแนนแข่งขันแล้ว');
     },
     [toast],
   );
