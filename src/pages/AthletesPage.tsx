@@ -19,7 +19,7 @@ import {
   teamFullName,
   teamName,
 } from '../utils/bracket';
-import { ResponsiveSheet } from '../components/UiKit';
+import { PhotoThumb, ResponsiveSheet } from '../components/UiKit';
 
 export function AthletesPage() {
   const {
@@ -210,8 +210,8 @@ export function AthletesPage() {
             [
               ['all', `ทั้งหมด (${tRegistrations.length})`],
               ['slip_sent', `รอตรวจสลิป (${tRegistrations.filter((r) => r.pay_status === 'slip_sent').length})`],
-              ['pending', `รอยืนยัน (${tRegistrations.filter((r) => r.status === 'pending').length})`],
-              ['confirmed', `ยืนยันแล้ว (${tRegistrations.filter((r) => r.status === 'confirmed').length})`],
+              ['pending', `รอประเมิน (${tRegistrations.filter((r) => r.status === 'pending').length})`],
+              ['confirmed', `ประเมินผ่าน (${tRegistrations.filter((r) => r.status === 'confirmed').length})`],
               ['waitlist', `สำรอง (${tRegistrations.filter((r) => r.status === 'waitlist').length})`],
             ] as const
           ).map(([key, label]) => (
@@ -243,7 +243,7 @@ export function AthletesPage() {
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="flex -space-x-3 shrink-0">
                     {[r.p1_photo, r.p2_photo].filter(Boolean).map((ph, i) => (
-                      <img key={i} src={photoUrl(ph)} alt="" className="w-11 h-11 rounded-full object-cover ring-2 ring-white bg-slate-100" />
+                      <PhotoThumb key={i} photo={ph} name={i === 0 ? r.p1_name : r.p2_name} size={44} />
                     ))}
                   </div>
                 <div className="min-w-0 space-y-1">
@@ -257,35 +257,43 @@ export function AthletesPage() {
                   <div className="text-xs text-slate-500 truncate">
                     {teamFullName(r)} · {cat?.name || ''} · {r.p1_phone || 'ไม่ระบุเบอร์'}
                   </div>
-                  <div className="flex items-center gap-3 text-xs pt-0.5">
-                    <span
-                      className={`font-semibold ${
+                  <div className="flex flex-wrap items-center gap-2 text-xs pt-1">
+                    <select
+                      aria-label="สถานะใบสมัคร"
+                      value={r.status}
+                      onChange={(e) => updateRegistration(r.id, { status: e.target.value as RegStatus })}
+                      className={`min-h-[34px] px-2 rounded-lg border text-xs font-semibold ${
                         r.status === 'confirmed'
-                          ? 'text-emerald-700'
-                          : r.status === 'cancelled'
-                            ? 'text-red-600'
-                            : 'text-amber-700'
+                          ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                          : r.status === 'cancelled' || r.status === 'rejected'
+                            ? 'border-red-200 bg-red-50 text-red-600'
+                            : 'border-amber-200 bg-amber-50 text-amber-700'
                       }`}
                     >
-                      {REG_STATUS_TH[r.status]}
-                    </span>
-                    <span className="text-slate-300" aria-hidden="true">
-                      /
-                    </span>
-                    <span
-                      className={`font-semibold ${
+                      {Object.entries(REG_STATUS_TH).map(([k, label]) => (
+                        <option key={k} value={k}>{label}</option>
+                      ))}
+                    </select>
+                    <select
+                      aria-label="สถานะชำระเงิน"
+                      value={r.pay_status}
+                      onChange={(e) => updateRegistration(r.id, { pay_status: e.target.value as PayStatus })}
+                      className={`min-h-[34px] px-2 rounded-lg border text-xs font-semibold ${
                         r.pay_status === 'paid'
-                          ? 'text-emerald-700'
+                          ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
                           : r.pay_status === 'slip_sent'
-                            ? 'text-blue-600'
+                            ? 'border-blue-200 bg-blue-50 text-blue-600'
                             : r.pay_status === 'rejected'
-                              ? 'text-red-600'
-                              : 'text-slate-500'
+                              ? 'border-red-200 bg-red-50 text-red-600'
+                              : 'border-slate-200 bg-white text-slate-500'
                       }`}
                     >
-                      {PAY_TH[r.pay_status]}
-                    </span>
+                      {Object.entries(PAY_TH).map(([k, label]) => (
+                        <option key={k} value={k}>{label}</option>
+                      ))}
+                    </select>
                   </div>
+                  {r.note && <div className="text-[11px] text-slate-500 truncate">📝 {r.note}</div>}
                 </div>
                 </div>
 
@@ -374,6 +382,22 @@ export function AthletesPage() {
             </div>
 
             <label className="block space-y-1">
+              <span className="text-xs font-semibold text-slate-700">หมายเหตุ (ผู้สมัครเห็นข้อความนี้)</span>
+              <textarea
+                rows={3}
+                maxLength={500}
+                placeholder="เช่น เหตุผลที่ไม่ผ่าน / สิ่งที่ต้องแก้ไข"
+                value={selectedReg.note ?? ''}
+                onChange={(e) => {
+                  const note = e.target.value;
+                  updateRegistration(selectedReg.id, { note });
+                  setSelectedReg({ ...selectedReg, note });
+                }}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm"
+              />
+            </label>
+
+            <label className="block space-y-1">
               <span className="text-xs font-semibold text-slate-700">ลำดับมือวาง (Seed)</span>
               <input
                 type="number"
@@ -399,7 +423,7 @@ export function AthletesPage() {
                 className="inline-flex items-center justify-center gap-1.5 min-h-[46px] rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold"
               >
                 <CheckCircle2 className="w-4 h-4" />
-                ยืนยัน + ชำระแล้ว
+                ประเมินผ่าน + ชำระแล้ว
               </button>
               <button
                 type="button"

@@ -4,7 +4,7 @@ export type TournamentStatus = 'open' | 'live' | 'closed' | 'draft';
 export type CategoryKind = 'singles' | 'doubles';
 export type CategoryGender = 'male' | 'female' | 'mixed' | 'open';
 export type BracketFormat = 'knockout' | 'round_robin' | 'group_stage' | 'group_knockout' | 'swiss';
-export type RegStatus = 'pending' | 'confirmed' | 'waitlist' | 'cancelled';
+export type RegStatus = 'pending' | 'confirmed' | 'waitlist' | 'rejected' | 'cancelled';
 export type PayStatus = 'unpaid' | 'slip_sent' | 'paid' | 'rejected';
 export type MatchStatus = 'scheduled' | 'live' | 'finished';
 export type MatchStage = 'main' | 'group' | 'knockout' | 'swiss';
@@ -42,6 +42,10 @@ export interface Tournament {
   rest_minutes: number;
   organizer_id?: string;
   live_id?: string | null;
+  poster?: string | null;
+  format_text?: string;
+  rules_text?: string;
+  notice?: string;
 }
 
 export interface Category {
@@ -84,6 +88,7 @@ export interface Registration {
   reg_open?: boolean;
   status: RegStatus;
   pay_status: PayStatus;
+  note?: string;
   seed: number | null;
   is_mine?: boolean;
   created_at: string;

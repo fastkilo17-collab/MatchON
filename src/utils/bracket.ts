@@ -47,9 +47,10 @@ export const MATCH_TH: Record<MatchStatus, string> = {
 };
 
 export const REG_STATUS_TH: Record<RegStatus, string> = {
-  pending: 'รอยืนยัน',
-  confirmed: 'ยืนยันแล้ว',
-  waitlist: 'รายชื่อสำรอง',
+  pending: 'รอประเมิน',
+  confirmed: 'ประเมินผ่าน',
+  waitlist: 'สำรอง',
+  rejected: 'ไม่ผ่าน',
   cancelled: 'ยกเลิก',
 };
 

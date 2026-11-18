@@ -306,6 +306,13 @@ body.pt .mr{grid-template-columns:1fr;grid-auto-rows:auto}
 body.pt .mr .pn:nth-child(2) .sc{min-height:340px}
 body.pt .stp{grid-template-columns:1fr 1fr;grid-template-rows:none;grid-auto-rows:84px}
 body.pt .pn{padding:12px 14px}
+
+/* ---- v8 ---- */
+.pic.srv{outline:5px solid #22c55e;outline-offset:2px;box-shadow:0 0 26px #22c55e}
+.pic .real{background:rgba(0,0,0,.72)!important;padding:5px 4px!important}
+.pw .pnm{background:rgba(255,255,255,.14);border-radius:8px;padding:2px 10px;box-sizing:border-box}
+body.pt .tc{height:auto!important;padding-bottom:10px}
+body.pt .tc .ph{padding:10px 0 0}
 </style>
 </head>
 <body>
@@ -458,7 +465,7 @@ const clubOf = (c, t) => (t === 'A' ? c.clubA : c.clubB);
 const teamName = (c, t) => { const k = clubOf(c, t); return k && k !== '-' ? k : players(c, t); };
 const names = (c, t) => players(c, t).split('/').map((p) => p.trim()).filter(Boolean);
 // who is serving: the saved value, otherwise the last scorer, otherwise team A once the game has started
-const server = (c) => c.server === 'A' || c.server === 'B' ? c.server : (c.log.length ? c.log[c.log.length - 1][0] : (began(c) ? 'A' : ''));
+const server = (c) => c.server === 'A' || c.server === 'B' ? c.server : (c.log.length ? c.log[c.log.length - 1][0] : 'A');
 const setWinner = (s, c) => {
   const r = R(c), hi = Math.max(s[0], s[1]), lead = Math.abs(s[0] - s[1]);
   if (s[0] === s[1]) return '';
@@ -560,7 +567,7 @@ function draw() {
     const real = (t === 'A' ? c.realA : c.realB) || [];
     $('ph' + sd).innerHTML = slots.map((k, pos) => {
       const u = safeUrl(photos[k]);
-      return `<div class="pw"><div class="pic"><div class="pi">${u ? `<img src="${esc(u)}" alt="${esc(ns[k] || '')}">` : k + 1}</div>${real[k] ? `<div class="real">${esc(real[k])}</div>` : ''}${pos === serverSlot ? `<span class="ball">${shuttle(34, true)}</span>` : ''}</div><div class="pnm">${esc(ns[k] || '')}</div></div>`;
+      return `<div class="pw"><div class="pic${pos === serverSlot ? ' srv' : ''}"><div class="pi">${u ? `<img src="${esc(u)}" alt="${esc(ns[k] || '')}">` : k + 1}</div>${real[k] ? `<div class="real">${esc(real[k])}</div>` : ''}${pos === serverSlot ? `<span class="ball">${shuttle(34, true)}</span>` : ''}</div><div class="pnm">${esc(ns[k] || '')}</div></div>`;
     }).join('');
     $('n' + sd).textContent = c.scores[vi][T(t)];
     $('l' + sd).textContent = viewingLive ? 'คะแนนปัจจุบัน' : 'คะแนนเซตที่ ' + (vi + 1);

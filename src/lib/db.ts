@@ -92,6 +92,10 @@ export const tournamentFromDb = (r: any): Tournament & { organizer_id: string; l
   rest_minutes: r.rest_minutes ?? 15,
   organizer_id: r.organizer_id,
   live_id: r.live_id || null,
+  poster: r.poster || null,
+  format_text: r.format_text || '',
+  rules_text: r.rules_text || '',
+  notice: r.notice || '',
 });
 
 const tournamentToDb = (t: Tournament & { organizer_id?: string }, uid: string) => ({
@@ -109,6 +113,10 @@ const tournamentToDb = (t: Tournament & { organizer_id?: string }, uid: string) 
   promptpay_id: digits(t.promptpay_id),
   match_minutes: Math.min(180, Math.max(5, t.match_minutes || 30)),
   rest_minutes: Math.min(120, Math.max(0, t.rest_minutes ?? 15)),
+  poster: t.poster || null,
+  format_text: t.format_text || null,
+  rules_text: t.rules_text || null,
+  notice: t.notice || null,
 });
 
 const categoryFromDb = (r: any): Category => ({
@@ -170,6 +178,7 @@ export const registrationFromDb = (r: any): Registration => ({
   p2_photo: r.p2_photo || null,
   status: r.status || 'pending',
   pay_status: r.pay_status || 'unpaid',
+  note: r.note || '',
   seed: r.seed ?? null,
   created_at: r.created_at,
 });
@@ -188,6 +197,7 @@ const registrationToDb = (r: Registration) => ({
   p2_photo: r.p2_photo || null,
   status: r.status,
   pay_status: r.pay_status,
+  note: r.note || null,
   seed: r.seed ?? null,
 });
 
@@ -351,6 +361,7 @@ export async function loadAll(profile: Profile | null): Promise<Loaded> {
         p2_photo: data.p2_photo || null,
         status: data.status,
         pay_status: data.pay_status,
+        note: data.note || '',
         category_id: base?.category_id || '',
         created_at: base?.created_at || new Date().toISOString(),
         edit_token: token,

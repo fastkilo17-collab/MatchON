@@ -43,6 +43,8 @@ export function useLiveBridge(a: Args) {
   const FB = useRef<any>(null);
   const done = useRef<Set<string>>(new Set());
   const lastSig = useRef<Record<string, string>>({});
+  const fbReady = useRef(false);
+  const [fbLoaded, setFbLoaded] = useState(false);
   const lastPushed = useRef<Record<string, string>>({});
   const latest = useRef({ matches, regMap, catMap, courts, recordSets, rules, categories });
   latest.current = { matches, regMap, catMap, courts, recordSets, rules, categories };
@@ -70,6 +72,12 @@ export function useLiveBridge(a: Args) {
       };
       const ra = m.reg_a ? R[m.reg_a] : null;
       const rb = m.reg_b ? R[m.reg_b] : null;
+      // seed from Supabase so an in-progress score is never reset to 0-0
+      const seeded: [number, number][] = [[0, 0], [0, 0], [0, 0]];
+      (m.sets || []).slice(0, 3).forEach((x, i) => { seeded[i] = [x[0], x[1]]; });
+      const si = Math.min(2, (m.sets || []).length);
+      if (m.status === 'live' || m.cur_a || m.cur_b) seeded[si] = [m.cur_a || 0, m.cur_b || 0];
+      const hasScore = seeded.some((x) => x[0] || x[1]);
       const A = side(ra);
       const B = side(rb);
       return {
@@ -78,7 +86,7 @@ export function useLiveBridge(a: Args) {
         matchNo: m.match_no || null, roundLabel: m.round_label || '', catName: C[m.category_id]?.name || '',
         rule: (() => { const r = ruleForMatch(m, latest.current.categories, latest.current.rules); return { best_of: r.best_of, points: r.points, cap: r.cap, deuce: r.deuce, playTwo: r.play_two }; })(),
         tournament: name, teamA: A.team, clubA: ra?.club || '', teamB: B.team, clubB: rb?.club || '',
-        realA: A.real, realB: B.real, photoA: A.ph, photoB: B.ph, scores: [[0, 0], [0, 0], [0, 0]], shuttleUsed: 1, activeSet: -1,
+        realA: A.real, realB: B.real, photoA: A.ph, photoB: B.ph, scores: seeded, shuttleUsed: 1, activeSet: hasScore ? si : -1,
       };
     },
     [tournament?.name],
@@ -102,6 +110,7 @@ export function useLiveBridge(a: Args) {
         if (dead) return;
         off = mod.watchCourts(liveId, (list: any[]) => {
           setFb(Object.fromEntries((list || []).map((c) => [c.courtNo, c])));
+          if (!fbReady.current) { fbReady.current = true; setFbLoaded(true); }
         });
       } catch {
         /* offline or Firebase blocked: Supabase data alone still works */
@@ -186,7 +195,7 @@ export function useLiveBridge(a: Args) {
 
   // put the court's current match on the referee page when it changes
   useEffect(() => {
-    if (!bridgeOn || !cfg.current || !FB.current) return;
+    if (!bridgeOn || !fbLoaded || !cfg.current || !FB.current) return;
     (async () => {
       for (const ct of courts) {
         const m = currentMatch(ct.no);
@@ -206,7 +215,7 @@ export function useLiveBridge(a: Args) {
         }
       }
     })();
-  }, [bridgeOn, matches, courts, fb, payload]);
+  }, [bridgeOn, fbLoaded, matches, courts, fb, payload]);
 
   const refereeUrl = useCallback(
     async (no: number, umpire?: string): Promise<string> => {
@@ -218,7 +227,7 @@ export function useLiveBridge(a: Args) {
         await FB.current.publishCourtKeys(c.live_id, c.keys);
       }
       const m = currentMatch(no);
-      if (!fb[no]) await FB.current.writeCourts(c.live_id, [payload(no, m)]);
+      if (!fb[no] && fbReady.current) await FB.current.writeCourts(c.live_id, [payload(no, m)]);
       return `${location.origin}${import.meta.env.BASE_URL}referee.html?court=${no}&live=${c.live_id}${umpire ? '&ref=' + encodeURIComponent(umpire) : ''}#k=${c.keys['c' + no]}`;
     },
     [error, tid, fb, payload],

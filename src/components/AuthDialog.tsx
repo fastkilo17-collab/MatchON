@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { sb } from '../lib/supabase';
+import { startLineLogin } from '../lib/line';
 import { useMatchON } from '../context/MatchONContext';
 import { ResponsiveSheet } from './UiKit';
 
@@ -36,11 +37,14 @@ export function AuthDialog({ open, onClose, lineOnly }: { open: boolean; onClose
   };
 
   const line = async () => {
-    const { error } = await sb.auth.signInWithOAuth({
-      provider: 'custom:line' as any,
-      options: { redirectTo: location.origin + import.meta.env.BASE_URL },
-    });
-    if (error) toast(error.message, 'err');
+    try {
+      if (await startLineLogin()) {
+        toast('เข้าสู่ระบบแล้ว');
+        onClose();
+      }
+    } catch (e: any) {
+      toast(e?.message || 'ล็อกอิน LINE ไม่สำเร็จ', 'err');
+    }
   };
 
   return (

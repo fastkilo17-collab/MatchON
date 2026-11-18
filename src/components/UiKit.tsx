@@ -155,6 +155,43 @@ export function ToastStack({
   );
 }
 
+/** Tap-to-view photo lightbox (portal-free fixed overlay) */
+export function PhotoLightbox({ src, caption, onClose }: { src: string | null; caption?: string; onClose: () => void }) {
+  if (!src) return null;
+  return (
+    <div
+      role="dialog"
+      aria-label="ดูรูป"
+      onClick={(e) => { e.stopPropagation(); onClose(); }}
+      className="fixed inset-0 z-[200] bg-black/85 flex flex-col items-center justify-center p-4 gap-3"
+    >
+      <button type="button" aria-label="ปิด" onClick={(e) => { e.stopPropagation(); onClose(); }} className="absolute top-3 right-3 w-11 h-11 rounded-full bg-white/15 text-white text-xl">✕</button>
+      <img src={src} alt={caption || ''} className="max-w-full max-h-[80vh] object-contain rounded-xl" />
+      {caption && <div className="text-white text-sm font-semibold">{caption}</div>}
+    </div>
+  );
+}
+
+/** Round avatar that opens the lightbox when tapped */
+export function PhotoThumb({ photo, name, size = 44, className = '' }: { photo?: string | null; name?: string; size?: number; className?: string }) {
+  const [open, setOpen] = React.useState(false);
+  const src = photo ? photoUrl(photo) : '';
+  if (!src)
+    return (
+      <span style={{ width: size, height: size }} className={`rounded-full ring-2 ring-white bg-slate-200 text-slate-500 grid place-items-center text-xs font-bold shrink-0 ${className}`}>
+        {[...(name || '?')][0]}
+      </span>
+    );
+  return (
+    <>
+      <button type="button" onClick={(e) => { e.stopPropagation(); setOpen(true); }} aria-label={`ดูรูป ${name || ''}`} className="shrink-0 rounded-full">
+        <img src={src} alt={name || ''} style={{ width: size, height: size }} className={`rounded-full object-cover ring-2 ring-white bg-slate-100 ${className}`} />
+      </button>
+      <PhotoLightbox src={open ? src : null} caption={name} onClose={() => setOpen(false)} />
+    </>
+  );
+}
+
 export function TeamAvatars({ reg, size = 36 }: { reg?: Registration | null; size?: number }) {
   if (!reg) return null;
   const people = [
@@ -163,25 +200,9 @@ export function TeamAvatars({ reg, size = 36 }: { reg?: Registration | null; siz
   ];
   return (
     <span className="inline-flex -space-x-2 shrink-0 align-middle">
-      {people.map((p, i) =>
-        p.ph ? (
-          <img
-            key={i}
-            src={photoUrl(p.ph)}
-            alt={p.n}
-            style={{ width: size, height: size }}
-            className="rounded-full object-cover ring-2 ring-white bg-slate-100"
-          />
-        ) : (
-          <span
-            key={i}
-            style={{ width: size, height: size }}
-            className="rounded-full ring-2 ring-white bg-slate-200 text-slate-500 grid place-items-center text-xs font-bold"
-          >
-            {[...(p.n || '?')][0]}
-          </span>
-        ),
-      )}
+      {people.map((p, i) => (
+        <PhotoThumb key={i} photo={p.ph} name={p.n} size={size} />
+      ))}
     </span>
   );
 }

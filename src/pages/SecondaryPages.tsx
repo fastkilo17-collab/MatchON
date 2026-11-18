@@ -388,31 +388,31 @@ export function RulesStaffPage() {
         </p>
         <div className="divide-y divide-slate-100">
           {tReferees.map((rf, i) => (
-            <div key={rf.id} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div key={rf.id} className="py-2.5 flex flex-nowrap items-center gap-2 overflow-x-auto">
               {isOrganizer ? (
-                <div className="flex flex-wrap items-center gap-2 min-w-0">
-                  <span className="text-xs font-bold text-slate-500 w-24 shrink-0">กรรมการที่ {i + 1}</span>
+                <div className="flex flex-nowrap items-center gap-2 flex-1 min-w-0">
+                  <span className="text-xs font-bold text-slate-500 shrink-0 whitespace-nowrap">กรรมการที่ {i + 1}</span>
                   <input
                     defaultValue={rf.name}
                     onBlur={(e) => e.target.value.trim() && e.target.value !== rf.name && updateReferee(rf.id, { name: e.target.value.trim() })}
-                    className="min-h-[40px] w-40 px-3 rounded-xl border border-slate-200 text-sm font-semibold"
+                    className="min-h-[40px] flex-1 min-w-[7rem] px-3 rounded-xl border border-slate-200 text-sm font-semibold"
                   />
                   <input
                     type="tel"
                     defaultValue={rf.phone || ''}
                     onBlur={(e) => e.target.value !== (rf.phone || '') && updateReferee(rf.id, { phone: e.target.value.trim() })}
-                    className="min-h-[40px] w-36 px-3 rounded-xl border border-slate-200 text-sm tabular-nums"
+                    className="min-h-[40px] w-32 shrink-0 px-3 rounded-xl border border-slate-200 text-sm tabular-nums"
                     placeholder="เบอร์โทร"
                   />
                 </div>
               ) : (
-                <div className="text-sm">
+                <div className="text-sm flex-1 min-w-0 whitespace-nowrap">
                   <span className="text-xs text-slate-500 mr-2">กรรมการที่ {i + 1}</span>
                   <span className="font-bold text-slate-900">{rf.name}</span>
                   <span className="text-xs text-slate-500 tabular-nums ml-2">{rf.phone || ''}</span>
                 </div>
               )}
-              <div className="flex items-center gap-2">
+              <div className="flex flex-nowrap items-center gap-2 shrink-0 whitespace-nowrap">
                 {rf.court_no ? (
                   <span className="text-xs font-semibold text-blue-700 bg-blue-50 rounded-lg px-2.5 py-1.5">ประจำสนาม {rf.court_no}</span>
                 ) : (
@@ -482,7 +482,7 @@ export function ReportsPage() {
     );
   }
 
-  const activeRegs = tRegistrations.filter((r) => r.status !== 'cancelled');
+  const activeRegs = tRegistrations.filter((r) => r.status !== 'cancelled' && r.status !== 'rejected');
   const paidRegs = activeRegs.filter((r) => r.pay_status === 'paid');
   const owedRegs = activeRegs.filter((r) => r.pay_status !== 'paid');
   const feeOf = (cid: string) => catMap[cid]?.fee || 0;

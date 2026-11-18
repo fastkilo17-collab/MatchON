@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Minus, Plus, QrCode, Radio, SlidersHorizontal } from 'lucide-react';
 import { useMatchON } from '../context/MatchONContext';
 import type { Match } from '../types/matchon';
-import { ruleForMatch, ruleText, teamName } from '../utils/bracket';
+import { fmtTime, ruleForMatch, ruleText, teamName } from '../utils/bracket';
 import { MatchScoreSheet } from '../components/MatchScoreSheet';
 import { QrCodeSvg, ResponsiveSheet, TeamAvatars } from '../components/UiKit';
 import { useLiveBridge } from '../lib/liveBridge';
@@ -43,7 +43,10 @@ export function LiveScorePage() {
     categories: tCategories,
   });
   const [picking, setPicking] = useState(false);
+  const [pickId, setPickId] = useState('');
   const openQr = (no: number) => {
+    const cur = tReferees.find((r) => r.court_no === no);
+    setPickId(cur ? cur.id : '');
     setQrCourtNo(no);
     setRefUrl('');
     setPicking(true);
@@ -147,6 +150,11 @@ export function LiveScorePage() {
                   {m && (
                     <span className="text-xs text-slate-500 truncate">
                       · {catMap[m.category_id]?.name || ''} · {m.round_label}
+                    </span>
+                  )}
+                  {m && (m.match_no || m.scheduled_at) && (
+                    <span className="text-[11px] font-bold text-blue-700 bg-blue-50 rounded-md px-1.5 py-0.5 shrink-0 tabular-nums">
+                      {m.match_no ? `แมตช์ #${m.match_no}` : ''}{m.match_no && m.scheduled_at ? ' · ' : ''}{m.scheduled_at ? fmtTime(m.scheduled_at) : ''}
                     </span>
                   )}
                 </div>
@@ -291,30 +299,46 @@ export function LiveScorePage() {
       >
         <div className="flex flex-col items-center text-center space-y-4 py-2">
           {picking ? (
-            <div className="w-full space-y-2 text-left">
-              <div className="text-xs font-semibold text-slate-500">เลือกกรรมการประจำสนามนี้ (แสดงเฉพาะกรรมการที่ว่าง)</div>
-              {tReferees
-                .map((r, i) => ({ r, i }))
-                .filter(({ r }) => !r.court_no || r.court_no === qrCourtNo)
-                .map(({ r, i }) => (
-                  <button
-                    key={r.id}
-                    type="button"
-                    onClick={() => void chooseReferee(r.id, r.name)}
-                    className="w-full min-h-[48px] px-4 rounded-xl border border-slate-200 bg-white hover:bg-blue-50 text-left"
-                  >
-                    <div className="text-sm font-bold text-slate-900">
-                      กรรมการที่ {i + 1} · {r.name}
-                    </div>
-                    <div className="text-xs text-slate-500 tabular-nums">{r.phone || 'ไม่ระบุเบอร์'}</div>
-                  </button>
-                ))}
+            <div className="w-full space-y-3 text-left">
+              <div className="text-xs font-semibold text-slate-500">เลือกกรรมการประจำสนามนี้ (แสดงเฉพาะกรรมการที่ว่าง + ที่ประจำสนามนี้)</div>
+              {(() => {
+                const cur = tReferees.find((r) => r.court_no === qrCourtNo);
+                return cur ? (
+                  <div className="rounded-xl border-2 border-blue-500 bg-blue-50 px-4 py-2.5">
+                    <div className="text-[11px] font-semibold text-blue-700">กรรมการที่เลือกอยู่</div>
+                    <div className="text-sm font-bold text-slate-900">{cur.name} <span className="text-xs font-normal text-slate-500 tabular-nums">{cur.phone || ''}</span></div>
+                  </div>
+                ) : null;
+              })()}
+              <select
+                value={pickId}
+                onChange={(e) => setPickId(e.target.value)}
+                className="w-full min-h-[48px] px-3 rounded-xl border border-slate-300 bg-white text-sm font-semibold"
+              >
+                <option value="">— เลือกกรรมการ —</option>
+                {tReferees
+                  .map((r, i) => ({ r, i }))
+                  .filter(({ r }) => !r.court_no || r.court_no === qrCourtNo)
+                  .map(({ r, i }) => (
+                    <option key={r.id} value={r.id}>
+                      {r.court_no === qrCourtNo ? '✓ ' : ''}กรรมการที่ {i + 1} · {r.name}{r.phone ? ` · ${r.phone}` : ''}
+                    </option>
+                  ))}
+                <option value="special">กรรมการพิเศษ</option>
+              </select>
               <button
                 type="button"
-                onClick={() => void chooseReferee(null, 'กรรมการพิเศษ')}
-                className="w-full min-h-[48px] px-4 rounded-xl border border-dashed border-amber-300 bg-amber-50 text-sm font-bold text-amber-800"
+                disabled={!pickId}
+                onClick={() => {
+                  if (pickId === 'special') void chooseReferee(null, 'กรรมการพิเศษ');
+                  else {
+                    const r = tReferees.find((x) => x.id === pickId);
+                    if (r) void chooseReferee(r.id, r.name);
+                  }
+                }}
+                className="w-full min-h-[48px] rounded-xl bg-blue-600 disabled:bg-slate-300 text-white text-sm font-semibold"
               >
-                กรรมการพิเศษ
+                สร้าง QR code
               </button>
             </div>
           ) : refUrl ? (
@@ -334,6 +358,9 @@ export function LiveScorePage() {
                 <a href={refUrl} target="_blank" rel="noreferrer" className="min-h-[40px] px-4 rounded-xl bg-blue-600 text-white text-xs font-semibold inline-flex items-center">
                   เปิดหน้ากรรมการ
                 </a>
+                <button type="button" onClick={() => setPicking(true)} className="min-h-[40px] px-4 rounded-xl bg-amber-100 text-amber-800 text-xs font-semibold">
+                  เปลี่ยน QR code
+                </button>
               </div>
             </>
           ) : (

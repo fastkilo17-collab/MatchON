@@ -30,7 +30,7 @@ export function DashboardPage() {
 
   const [editingMatch, setEditingMatch] = useState<Match | null>(null);
 
-  const activeRegs = tRegistrations.filter((r) => r.status !== 'cancelled');
+  const activeRegs = tRegistrations.filter((r) => r.status !== 'cancelled' && r.status !== 'rejected');
   const athletesCount = activeRegs.reduce((sum, r) => sum + peopleCount(r), 0);
   const liveMatches = tMatches.filter((m) => m.status === 'live');
   const waitingMatches = tMatches.filter((m) => m.status === 'scheduled' && m.reg_a && m.reg_b);

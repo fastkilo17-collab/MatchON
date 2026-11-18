@@ -19,7 +19,7 @@ import {
   scoreText,
   teamName,
 } from '../utils/bracket';
-import { QrCodeSvg } from '../components/UiKit';
+import { PhotoThumb, QrCodeSvg } from '../components/UiKit';
 
 function PhotoPick({ label, file, onPick }: { label: string; file: File | null; onPick: (f: File | null) => void }) {
   const url = React.useMemo(() => (file ? URL.createObjectURL(file) : ''), [file]);
@@ -187,6 +187,26 @@ function RegisterForm() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-5">
+      {(targetTournament.poster || targetTournament.format_text || targetTournament.rules_text || targetTournament.notice) && (
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-5 space-y-3">
+          {targetTournament.poster && (
+            <img src={targetTournament.poster} alt="โปสเตอร์" className="w-full max-h-96 object-contain rounded-xl bg-slate-100" />
+          )}
+          {[
+            ['รูปแบบการแข่งขัน', targetTournament.format_text],
+            ['รายละเอียดกติกา', targetTournament.rules_text],
+            ['เงื่อนไขที่นักกีฬาต้องทราบ', targetTournament.notice],
+          ].map(([h, v]) =>
+            v ? (
+              <div key={h}>
+                <div className="text-xs font-bold text-slate-800">{h}</div>
+                <p className="text-xs text-slate-600 whitespace-pre-line mt-0.5">{v}</p>
+              </div>
+            ) : null,
+          )}
+        </div>
+      )}
+
       {/* Tournament Picker when multiple open */}
       <div className="bg-white border border-slate-200/80 rounded-2xl p-5 space-y-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -530,8 +550,8 @@ function RegActions({ r }: { r: Registration }) {
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-3">
-        {r.p1_photo && <img src={photoUrl(r.p1_photo)} alt="" className="w-10 h-10 rounded-full object-cover" />}
-        {r.p2_photo && <img src={photoUrl(r.p2_photo)} alt="" className="w-10 h-10 rounded-full object-cover -ml-4 ring-2 ring-white" />}
+        {r.p1_photo && <PhotoThumb photo={r.p1_photo} name={r.p1_name} size={40} />}
+        {r.p2_photo && <PhotoThumb photo={r.p2_photo} name={r.p2_name} size={40} className="-ml-4" />}
         {canSlip && (
           <label className="text-xs font-semibold text-blue-700 cursor-pointer">
             {busy ? 'กำลังส่ง…' : '📎 แนบสลิปโอนเงิน'}
@@ -636,6 +656,12 @@ export function MyRegistrationsPage() {
                     {cat?.fee ? baht(cat.fee) : 'ฟรี'}
                   </span>
                 </div>
+
+                {r.note && (
+                  <div className="text-xs rounded-xl bg-amber-50 border border-amber-200 text-amber-900 p-3">
+                    <span className="font-semibold">หมายเหตุจากผู้จัด:</span> {r.note}
+                  </div>
+                )}
 
                 <RegActions r={r} />
 

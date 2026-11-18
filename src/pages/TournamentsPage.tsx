@@ -21,6 +21,7 @@ import {
   STATUS_TH,
 } from '../utils/bracket';
 import { ResponsiveSheet } from '../components/UiKit';
+import { resizeImage } from '../lib/supabase';
 
 export function TournamentsPage() {
   const {
@@ -53,6 +54,10 @@ export function TournamentsPage() {
     promptpay_id: '',
     match_minutes: 30,
     rest_minutes: 15,
+    poster: '' as string,
+    format_text: '',
+    rules_text: '',
+    notice: '',
   });
 
   // Category modal state
@@ -89,6 +94,10 @@ export function TournamentsPage() {
       promptpay_id: '081-234-5678',
       match_minutes: 30,
       rest_minutes: 15,
+      poster: '',
+      format_text: '',
+      rules_text: '',
+      notice: '',
     });
     setTSheetOpen(true);
   };
@@ -107,8 +116,28 @@ export function TournamentsPage() {
       promptpay_id: t.promptpay_id,
       match_minutes: t.match_minutes,
       rest_minutes: t.rest_minutes,
+      poster: t.poster || '',
+      format_text: t.format_text || '',
+      rules_text: t.rules_text || '',
+      notice: t.notice || '',
     });
     setTSheetOpen(true);
+  };
+
+  const pickPoster = async (f?: File | null) => {
+    if (!f) return;
+    try {
+      const blob = await resizeImage(f, 1100, 0.78);
+      const uri: string = await new Promise((res, rej) => {
+        const fr = new FileReader();
+        fr.onload = () => res(String(fr.result));
+        fr.onerror = () => rej(new Error('อ่านรูปไม่สำเร็จ'));
+        fr.readAsDataURL(blob);
+      });
+      setTForm((x) => ({ ...x, poster: uri }));
+    } catch {
+      /* ignore */
+    }
   };
 
   const handleSaveT = (e: React.FormEvent) => {
@@ -120,6 +149,10 @@ export function TournamentsPage() {
       name: tForm.name.trim(),
       venue: tForm.venue.trim(),
       description: tForm.description.trim(),
+      poster: tForm.poster || null,
+      format_text: tForm.format_text.trim(),
+      rules_text: tForm.rules_text.trim(),
+      notice: tForm.notice.trim(),
     });
     setTSheetOpen(false);
   };
@@ -296,7 +329,7 @@ export function TournamentsPage() {
           {state.tournaments.map((t) => {
             const cats = state.categories.filter((c) => c.tournament_id === t.id);
             const regs = state.registrations.filter(
-              (r) => r.tournament_id === t.id && r.status !== 'cancelled',
+              (r) => r.tournament_id === t.id && r.status !== 'cancelled' && r.status !== 'rejected',
             );
             const isSelected = activeTournament?.id === t.id;
 
@@ -562,6 +595,31 @@ export function TournamentsPage() {
               onChange={(e) => setTForm({ ...tForm, description: e.target.value })}
               className="w-full p-3 rounded-xl border border-slate-200 text-sm focus:border-blue-500 focus:outline-none"
             />
+          </label>
+          <div className="space-y-1">
+            <span className="text-xs font-semibold text-slate-700">รูปโปสเตอร์</span>
+            {tForm.poster && <img src={tForm.poster} alt="โปสเตอร์" className="w-full max-h-64 object-contain rounded-xl bg-slate-100" />}
+            <div className="flex gap-2">
+              <label className="flex-1 min-h-[44px] flex items-center justify-center rounded-xl border border-dashed border-slate-300 text-xs font-semibold text-slate-600 cursor-pointer">
+                {tForm.poster ? 'เปลี่ยนรูป' : 'เลือกรูปโปสเตอร์'}
+                <input type="file" accept="image/*" className="hidden" onChange={(e) => void pickPoster(e.target.files?.[0])} />
+              </label>
+              {tForm.poster && (
+                <button type="button" onClick={() => setTForm({ ...tForm, poster: '' })} className="min-h-[44px] px-4 rounded-xl bg-red-50 text-red-700 text-xs font-semibold">ลบรูป</button>
+              )}
+            </div>
+          </div>
+          <label className="block space-y-1">
+            <span className="text-xs font-semibold text-slate-700">รูปแบบการแข่งขัน</span>
+            <textarea rows={3} value={tForm.format_text} onChange={(e) => setTForm({ ...tForm, format_text: e.target.value })} placeholder="เช่น แบ่งกลุ่มเก็บแต้ม แล้วเข้ารอบน็อคเอาท์ 8 ทีม" className="w-full p-3 rounded-xl border border-slate-200 text-sm focus:border-blue-500 focus:outline-none" />
+          </label>
+          <label className="block space-y-1">
+            <span className="text-xs font-semibold text-slate-700">รายละเอียดกติกา</span>
+            <textarea rows={3} value={tForm.rules_text} onChange={(e) => setTForm({ ...tForm, rules_text: e.target.value })} placeholder="เช่น 2 เซต เซตละ 21 แต้ม ลูกที่ใช้ ฯลฯ" className="w-full p-3 rounded-xl border border-slate-200 text-sm focus:border-blue-500 focus:outline-none" />
+          </label>
+          <label className="block space-y-1">
+            <span className="text-xs font-semibold text-slate-700">เงื่อนไขที่ต้องแจ้งให้นักกีฬาทราบ</span>
+            <textarea rows={3} value={tForm.notice} onChange={(e) => setTForm({ ...tForm, notice: e.target.value })} placeholder="เช่น มาถึงก่อนเวลา 30 นาที ชุดแข่งต้องสุภาพ ฯลฯ" className="w-full p-3 rounded-xl border border-slate-200 text-sm focus:border-blue-500 focus:outline-none" />
           </label>
           {editingT && (
             <button

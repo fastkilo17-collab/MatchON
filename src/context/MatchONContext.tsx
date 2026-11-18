@@ -1,3 +1,4 @@
+import { finishLineLogin } from '../lib/line';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type {
   BracketFormat,
@@ -205,6 +206,7 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let alive = true;
     (async () => {
+      try { await finishLineLogin(); } catch (e: any) { setTimeout(() => toast(`ล็อกอิน LINE ไม่สำเร็จ: ${e?.message || e}`, 'err'), 500); }
       await reload();
       if (alive) {
         ready.current = true;
