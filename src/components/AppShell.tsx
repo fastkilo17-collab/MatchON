@@ -4,8 +4,9 @@ import {
   Activity,
   BarChart3,
   CalendarDays,
-  ChevronDown,
   ClipboardCheck,
+  Edit3,
+  ListChecks,
   GitBranch,
   LayoutDashboard,
   MapPin,
@@ -43,6 +44,9 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'my', label: 'การสมัครของฉัน', shortLabel: 'ของฉัน', icon: Ticket, group: 'main', roles: ['player', 'organizer'] },
 
   { id: 'roster', label: 'รายชื่อนักกีฬา', shortLabel: 'รายชื่อ', icon: Users, group: 'main', roles: ['organizer', 'player', 'referee'] },
+  { id: 'mine', label: 'รายการจัดแข่งขันของฉัน', shortLabel: 'ของฉัน', icon: Trophy, group: 'manage', roles: ['organizer'] },
+  { id: 'info', label: 'ข้อมูลรายการ', shortLabel: 'ข้อมูล', icon: Edit3, group: 'manage', roles: ['organizer'] },
+  { id: 'cats', label: 'จัดการรุ่นการแข่งขัน', shortLabel: 'รุ่น', icon: ListChecks, group: 'manage', roles: ['organizer'] },
   { id: 'athletes', label: 'จัดการนักกีฬา', shortLabel: 'นักกีฬา', icon: Users, group: 'manage', roles: ['organizer'] },
   { id: 'brackets', label: 'สายแข่งขัน', shortLabel: 'สาย', icon: GitBranch, group: 'manage', roles: ['organizer', 'player', 'referee'] },
   { id: 'schedule', label: 'ตารางการแข่งขัน', shortLabel: 'ตาราง', icon: CalendarDays, group: 'manage', roles: ['organizer', 'player', 'referee'] },
@@ -72,9 +76,8 @@ const GROUP_TITLES: Record<NavItem['group'], string> = {
 };
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const { state, route, navigate, activeTournament, setActiveTid, toasts, profile, isAdmin } = useMatchON();
+  const { state, route, navigate, activeTournament, toasts, profile, isAdmin } = useMatchON();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [logoError, setLogoError] = useState(false);
 
   const role = state.role;
   const visibleItems = NAV_ITEMS.filter((item) => item.roles.includes(role) && (!item.adminOnly || isAdmin));
@@ -91,7 +94,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     .map((id) => NAV_ITEMS.find((item) => item.id === id))
     .filter(Boolean) as NavItem[];
 
-  const hideTournamentPicker = ['tournaments', 'register', 'my', 'settings'].includes(route);
 
   const handleNav = (id: NavRoute) => {
     navigate(id);
@@ -103,22 +105,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* Desktop Bright Light Sidebar */}
       <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:shrink-0 bg-white border-r border-slate-200 sticky top-0 h-dvh noprint">
         <div className="h-16 px-5 flex items-center gap-3 border-b border-slate-100 shrink-0">
-          {!logoError ? (
-            <img
-              src={`${import.meta.env.BASE_URL}src/assets/images/matchon_emblem_1794832771407.jpg`}
-              alt="MatchON"
-              referrerPolicy="no-referrer"
-              onError={() => setLogoError(true)}
-              className="w-9 h-9 rounded-xl object-cover border border-slate-200 shrink-0"
-            />
-          ) : (
-            <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center font-display font-bold text-base shrink-0">
-              M
-            </div>
-          )}
-          <span className="font-display font-bold text-lg tracking-tight text-slate-900 whitespace-nowrap">
-            MatchON
-          </span>
+          <button type="button" onClick={() => handleNav('home')} className="flex items-center gap-2.5 min-w-0" aria-label="MatchON">
+            <img src={`${import.meta.env.BASE_URL}img/app-icon-192.png`} alt="" className="w-10 h-10 rounded-xl object-cover shrink-0" />
+            <img src={`${import.meta.env.BASE_URL}img/matchon-wordmark.png`} alt="MatchON Badminton Platform" className="h-9 w-auto object-contain" />
+          </button>
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
@@ -172,22 +162,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               onClick={() => handleNav(role === 'organizer' ? 'dashboard' : role === 'referee' ? 'live' : 'tournaments')}
               className="lg:hidden flex items-center gap-2 shrink-0 min-h-[40px]"
             >
-              {!logoError ? (
-                <img
-                  src={`${import.meta.env.BASE_URL}src/assets/images/matchon_emblem_1794832771407.jpg`}
-                  alt="MatchON"
-                  referrerPolicy="no-referrer"
-                  onError={() => setLogoError(true)}
-                  className="w-7 h-7 rounded-lg object-cover border border-slate-200"
-                />
-              ) : (
-                <div className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center font-display font-bold text-xs">
-                  M
-                </div>
-              )}
-              <span className="font-display font-bold text-base text-slate-900 whitespace-nowrap">
-                MatchON
-              </span>
+              <img src={`${import.meta.env.BASE_URL}img/app-icon-192.png`} alt="" className="w-9 h-9 rounded-xl object-cover" />
+              <img src={`${import.meta.env.BASE_URL}img/matchon-wordmark.png`} alt="MatchON" className="h-8 w-auto object-contain" />
             </button>
 
             <h1 className="hidden lg:block font-display font-bold text-lg text-slate-900 truncate">
@@ -197,26 +173,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
           {/* Center/Right: Tournament Picker + Primary Action / Role Switch */}
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-            {!hideTournamentPicker && state.tournaments.length > 0 && (
-              <div className="relative flex items-center min-w-0 max-w-[175px] sm:max-w-[260px]">
-                <select
-                  aria-label="เลือกรายการแข่งขัน"
-                  value={activeTournament?.id || ''}
-                  onChange={(e) => setActiveTid(e.target.value)}
-                  className="w-full appearance-none bg-slate-100 hover:bg-slate-200/70 text-slate-800 text-xs sm:text-sm font-medium rounded-xl pl-3 pr-8 py-2 min-h-[40px] border border-transparent focus:border-blue-500 focus:bg-white focus:outline-none truncate transition-colors cursor-pointer"
-                >
-                  {state.tournaments.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.name}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="w-4 h-4 text-slate-500 pointer-events-none absolute right-2.5" />
-              </div>
-            )}
-
-            {hideTournamentPicker && activeTournament && (
-              <button type="button" onClick={() => handleNav('home')} title="หน้าหลักรายการ" className="min-w-0 max-w-[140px] sm:max-w-[260px] truncate text-xs sm:text-sm font-semibold text-slate-700 hover:text-blue-700">
+            {activeTournament && (
+              <button type="button" onClick={() => handleNav('home')} title="ไปหน้าหลักรายการ" className="min-w-0 max-w-[150px] sm:max-w-[300px] truncate text-xs sm:text-sm font-semibold text-slate-800 bg-slate-100 hover:bg-blue-50 hover:text-blue-700 rounded-xl px-3 min-h-[40px]">
                 {activeTournament.name}
               </button>
             )}
@@ -348,7 +306,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 </button>
               </div>
 
-              <div className="px-5 py-3 bg-slate-50 border-b border-slate-100"><AccountBox /></div>
+              <div className="px-5 py-3 bg-slate-50 border-b border-slate-100"><AccountBox onDone={() => setMenuOpen(false)} /></div>
 
               <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5 pb-safe">
                 {(['main', 'manage', 'arena', 'info'] as const).map((groupKey) => {

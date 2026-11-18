@@ -67,7 +67,7 @@ export function AuthDialog({ open, onClose, lineOnly }: { open: boolean; onClose
   );
 }
 
-export function AccountBox() {
+export function AccountBox({ onDone, hideRequest }: { onDone?: () => void; hideRequest?: boolean } = {}) {
   const { profile, signOut, canCreate, navigate } = useMatchON();
   const [open, setOpen] = useState(false);
   return (
@@ -75,8 +75,8 @@ export function AccountBox() {
       {profile ? (
         <>
           <div className="text-xs text-slate-600 truncate">{profile.display_name || profile.email || 'ผู้ใช้'}</div>
-          {!canCreate && (
-            <button type="button" onClick={() => navigate('settings')} className="w-full min-h-[40px] rounded-xl bg-blue-600 text-white text-xs font-semibold">
+          {!canCreate && !hideRequest && (
+            <button type="button" onClick={() => { navigate('settings'); onDone?.(); }} className="w-full min-h-[40px] rounded-xl bg-blue-600 text-white text-xs font-semibold">
               ขอสิทธิ์ผู้จัดการแข่งขัน
             </button>
           )}
@@ -98,7 +98,7 @@ export function LineLoginCard({ why }: { why: string }) {
   const [open, setOpen] = useState(false);
   return (
     <div className="max-w-md mx-auto bg-white border border-slate-200/80 rounded-2xl p-6 text-center space-y-3">
-      <div className="text-3xl">🔐</div>
+      <img src={`${import.meta.env.BASE_URL}img/app-icon-192.png`} alt="MatchON" className="w-20 h-20 rounded-2xl mx-auto shadow" />
       <h2 className="font-display text-lg font-bold text-slate-900">เข้าสู่ระบบด้วย LINE ก่อน</h2>
       <p className="text-sm text-slate-500">{why}</p>
       <button type="button" onClick={() => setOpen(true)} className="w-full min-h-[48px] rounded-xl bg-[#06C755] text-white text-sm font-semibold">

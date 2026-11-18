@@ -320,13 +320,21 @@ body.pt .tc .ph{padding:10px 0 0}
 .mr .pn:nth-child(2) .sc{grid-template-rows:2fr 1fr;align-items:stretch}
 #pl1,#pr1,#mi1,#mr1{width:100%;height:100%!important;align-self:stretch!important;justify-self:stretch!important}
 body.pt .mr .pn:nth-child(2) .sc{grid-template-columns:1fr 124px 1fr;min-height:420px}
+
+/* ---- v10: text logo ---- */
+.logo .lgr{display:flex;align-items:center;gap:10px}
+.logo .lgi{width:48px;height:48px;flex:none;filter:drop-shadow(0 0 8px #5b8cff)}
+.logo .lgt{font:800 italic 40px/1 'Prompt',sans-serif;letter-spacing:-.5px;white-space:nowrap}
+.logo .lgt b{color:#fff;font-weight:800}.logo .lgt i{color:#fbbf24;font-style:italic;font-weight:800}
+.logo small{margin-left:58px;margin-top:2px;font:500 18px 'Noto Sans Thai';color:#dbe5ff}
+body.pt .logo .lgt{font-size:30px}body.pt .logo .lgi{width:36px;height:36px}
 </style>
 </head>
 <body>
 <div id="wrap"><div id="cv">
 
   <header class="hd">
-    <div class="logo"><img src="img/matchon-logo.png" alt="MatchON"><small>Badminton Live Score</small></div>
+    <div class="logo"><div class="lgr"><svg class="lgi" viewBox="0 0 64 64" fill="none"><g transform="rotate(-35 32 32)"><path d="M32 6c5 0 8 3 8 7l-2 16H26l-2-16c0-4 3-7 8-7Z" fill="#dbe6ff"/><path d="M26 13l-1 16M32 8v21M38 13l1 16M29 11l-1 18M35 11l1 18" stroke="#6f8be0" stroke-width="1.6" stroke-linecap="round"/><rect x="24" y="29" width="16" height="6" rx="3" fill="#2f74ff"/><path d="M26 35h12c0 8-3 17-6 19-3-2-6-11-6-19Z" fill="#fff"/></g></svg><span class="lgt"><b>Match</b><i>ON</i></span></div><small>Badminton Live Score</small></div>
     <div class="vdiv"></div>
     <div class="ttl"><span class="cup">🏆</span><div><strong id="tname">การแข่งขัน</strong><span id="tsub">สนาม –</span></div></div>
     <div class="livep idle" id="livep"><i></i><span id="livetxt">OFFLINE</span></div>
@@ -546,11 +554,11 @@ function draw() {
 
   // header
   const live0 = c.status === 'LIVE';
-  const mno = String(c.matchCode || '').replace(/\D/g, '');
+  const mno = ((String(c.round || '').match(/#\s*(\d+)/) || [])[1]) || '';
   $('tname').textContent = c.tournament || 'การแข่งขันแบดมินตัน';
   const mnum = c.matchNo || mno;
   const rtxt = c.roundLabel || c.catName ? [c.roundLabel, c.catName].filter(Boolean).join(' - ') : String(c.round || '').replace('•', '-').replace(/\s+/g, ' ');
-  $('tsub').textContent = 'สนาม ' + courtNo + (live0 && mnum ? ' | แมตช์ที่ ' + mnum : '') + (live0 && rtxt ? ' ' + rtxt : '') + (umpire ? ' | umpire-' + umpire : '');
+  $('tsub').textContent = 'สนาม ' + courtNo + (live0 && mnum ? ' | แมตช์ #' + mnum : '') + (live0 && rtxt ? ' ' + rtxt : '') + (umpire ? ' | umpire-' + umpire : '');
   $('livep').className = 'livep' + (running ? '' : live && begun ? ' paused' : ' idle');
   $('livetxt').textContent = running ? 'LIVE' : live && begun ? 'PAUSED' : live ? 'READY' : 'IDLE';
 

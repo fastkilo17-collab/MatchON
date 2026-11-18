@@ -67,6 +67,8 @@ export function saveToken(regId: string, token: string): void {
 // ---------- mappers ----------
 const bangkokDay = (iso: string | null): string =>
   iso ? new Date(iso).toLocaleDateString('sv-SE', { timeZone: 'Asia/Bangkok' }) : '';
+const bangkokDT = (iso: string | null): string =>
+  iso ? new Date(iso).toLocaleString('sv-SE', { timeZone: 'Asia/Bangkok' }).replace(' ', 'T').slice(0, 16) : '';
 const toCE = (y?: number | null): number | null => (y ? (y > 2400 ? y - 543 : y) : null);
 const toBE = (y?: number | null): number | null => (y ? y + 543 : null);
 const digits = (s?: string | null): string | null => {
@@ -84,7 +86,7 @@ export const tournamentFromDb = (r: any): Tournament & { organizer_id: string; l
   description: r.description || '',
   start_date: r.start_date || '',
   end_date: r.end_date || r.start_date || '',
-  reg_deadline: bangkokDay(r.reg_deadline),
+  reg_deadline: bangkokDT(r.reg_deadline),
   courts: r.courts || 4,
   status: r.status === 'draft' || r.status === 'live' || r.status === 'finished' ? 'closed' : r.status,
   promptpay_id: r.promptpay_id || '',
@@ -107,7 +109,7 @@ const tournamentToDb = (t: Tournament & { organizer_id?: string }, uid: string) 
   description: t.description || null,
   start_date: t.start_date || null,
   end_date: t.end_date || t.start_date || null,
-  reg_deadline: t.reg_deadline ? `${t.reg_deadline}T23:59:59+07:00` : null,
+  reg_deadline: t.reg_deadline ? (t.reg_deadline.length > 10 ? `${t.reg_deadline.slice(0, 16)}:00+07:00` : `${t.reg_deadline}T23:59:59+07:00`) : null,
   courts: Math.min(40, Math.max(1, t.courts || 1)),
   status: t.status === 'open' ? 'open' : 'closed',
   promptpay_id: digits(t.promptpay_id),

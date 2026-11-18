@@ -26,6 +26,9 @@ export type NavRoute =
   | 'reports'
   | 'settings'
   | 'home'
+  | 'mine'
+  | 'cats'
+  | 'info'
   | 'roster'
   | 'admin';
 

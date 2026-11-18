@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  Activity, CalendarDays, ClipboardCheck, GitBranch, MapPin, Trophy, Users, Award,
+  Activity, CalendarDays, ClipboardCheck, Edit3, GitBranch, ListChecks, MapPin, Trophy, Users, Award,
 } from 'lucide-react';
 import { useMatchON } from '../context/MatchONContext';
 import { PhotoLightbox } from '../components/UiKit';
@@ -38,6 +38,9 @@ export function TournamentHomePage() {
     { id: 'schedule', label: 'ตารางแข่ง', icon: CalendarDays },
     { id: 'live', label: 'Live Score', icon: Activity },
     { id: 'results', label: 'ผลการแข่งขัน', icon: Trophy },
+    { id: 'info', label: 'ข้อมูลรายการ', icon: Edit3, show: isMgr },
+    { id: 'cats', label: 'จัดการรุ่นการแข่งขัน', icon: ListChecks, show: isMgr },
+    { id: 'mine', label: 'รายการจัดแข่งขันของฉัน', icon: Trophy, show: isMgr },
     { id: 'athletes', label: 'จัดการนักกีฬา', icon: Award, show: isMgr },
     { id: 'courts', label: 'จัดการสนาม', icon: MapPin, show: isMgr },
   ];
@@ -56,7 +59,7 @@ export function TournamentHomePage() {
           <div className="space-y-1.5 text-sm text-slate-600">
             <div className="flex items-center gap-2"><CalendarDays className="w-4 h-4 text-slate-400" />{fmtRange(t.start_date, t.end_date)}</div>
             <div className="flex items-center gap-2"><MapPin className="w-4 h-4 text-slate-400" /><span>{t.venue || 'ไม่ระบุสนาม'} · {t.courts} สนาม</span></div>
-            {t.reg_deadline && <div className="flex items-center gap-2"><ClipboardCheck className="w-4 h-4 text-slate-400" />ปิดรับสมัคร {fmtRange(t.reg_deadline, t.reg_deadline)}</div>}
+            {t.reg_deadline && <div className="flex items-center gap-2"><ClipboardCheck className="w-4 h-4 text-slate-400" />ปิดรับสมัคร {fmtRange(t.reg_deadline.slice(0, 10), t.reg_deadline.slice(0, 10))}{t.reg_deadline.length > 10 ? ` ${t.reg_deadline.slice(11, 16)} น.` : ''}</div>}
           </div>
           {t.description && <p className="text-sm text-slate-600 whitespace-pre-line">{t.description}</p>}
         </div>

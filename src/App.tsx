@@ -51,6 +51,12 @@ function RouteSwitch() {
       return <ReportsPage />;
     case 'settings':
       return <SettingsPage />;
+    case 'mine':
+      return <TournamentsPage mode="mine" />;
+    case 'cats':
+      return <TournamentsPage mode="cats" />;
+    case 'info':
+      return <TournamentsPage mode="info" />;
     case 'home':
       return <TournamentHomePage />;
     case 'roster':

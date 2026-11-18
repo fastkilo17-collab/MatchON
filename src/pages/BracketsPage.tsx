@@ -74,7 +74,7 @@ export function BracketsPage() {
       >
         <div className="flex items-center justify-between text-[11px] text-slate-500">
           <span className="font-mono font-semibold tabular-nums">
-            {m.match_no ? `#${m.match_no}` : 'แมตช์'}
+            {m.match_no ? `แมตช์ #${m.match_no}` : 'แมตช์'}
             {m.court ? ` · สนาม ${m.court}` : ''}
           </span>
           <span

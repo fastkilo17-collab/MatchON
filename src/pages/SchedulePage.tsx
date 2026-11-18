@@ -75,7 +75,7 @@ export function SchedulePage() {
         teamName(m.reg_a ? regMap[m.reg_a] : null),
         teamName(m.reg_b ? regMap[m.reg_b] : null),
         catMap[m.category_id]?.name || '',
-        m.match_no ? `#${m.match_no}` : '',
+        m.match_no ? `แมตช์ #${m.match_no}` : '',
       ];
       return names.some((s) => s.toLowerCase().includes(q));
     })
@@ -189,7 +189,7 @@ export function SchedulePage() {
               <div className="min-w-0 space-y-1">
                 <div className="flex items-center gap-2 text-xs text-slate-500">
                   <span className="font-mono font-bold text-slate-800 tabular-nums">
-                    {m.match_no ? `#${m.match_no}` : '—'}
+                    {m.match_no ? `แมตช์ #${m.match_no}` : '—'}
                   </span>
                   <span aria-hidden="true">·</span>
                   <span className="truncate">{catMap[m.category_id]?.name || ''}</span>

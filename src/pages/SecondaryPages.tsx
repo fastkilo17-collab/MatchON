@@ -141,7 +141,7 @@ export function ResultsPage() {
                 >
                   <div className="min-w-0">
                     <div className="text-xs text-slate-500">
-                      {m.match_no ? `#${m.match_no} · ` : ''}
+                      {m.match_no ? `แมตช์ #${m.match_no} · ` : ''}
                       {catMap[m.category_id]?.name || ''} · {m.round_label}
                     </div>
                     <div className="text-sm font-bold text-slate-900 mt-0.5">
@@ -697,7 +697,7 @@ export function SettingsPage() {
             {busy ? 'กำลังบันทึก…' : 'บันทึกโปรไฟล์'}
           </button>
         </form>
-        <AccountBox />
+        <AccountBox hideRequest />
       </section>
       <OrganizerRequestCard />
     </div>

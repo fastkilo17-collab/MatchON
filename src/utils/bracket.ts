@@ -456,7 +456,7 @@ export function findScheduleConflicts(
       const A = sch[i];
       const B = sch[j];
       if (B.s - A.s >= dur + rest) break;
-      const label = `#${A.m.match_no ?? '?'} และ #${B.m.match_no ?? '?'}`;
+      const label = `แมตช์ #${A.m.match_no ?? '?'} และ #${B.m.match_no ?? '?'}`;
       if (A.m.court === B.m.court && B.s < A.s + dur) {
         out.push(`${label}: สนาม ${A.m.court} เวลาชนกัน`);
       }

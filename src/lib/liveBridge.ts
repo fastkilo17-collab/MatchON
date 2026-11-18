@@ -20,6 +20,9 @@ export interface FbCourt {
   scores: [number, number][];
   activeSet: number;
   startedAt?: number;
+  matchNo?: number;
+  roundLabel?: string;
+  catName?: string;
 }
 
 interface Args {
@@ -82,7 +85,7 @@ export function useLiveBridge(a: Args) {
       const B = side(rb);
       return {
         courtNo: no, status: 'LIVE', matchCode: CODE(m),
-        round: `${m.match_no ? '#' + m.match_no : ''} ${C[m.category_id]?.name || ''} ${m.round_label || ''}`.trim(),
+        round: `${m.match_no ? 'แมตช์ #' + m.match_no : ''} ${C[m.category_id]?.name || ''} ${m.round_label || ''}`.trim(),
         matchNo: m.match_no || null, roundLabel: m.round_label || '', catName: C[m.category_id]?.name || '',
         rule: (() => { const r = ruleForMatch(m, latest.current.categories, latest.current.rules); return { best_of: r.best_of, points: r.points, cap: r.cap, deuce: r.deuce, playTwo: r.play_two }; })(),
         tournament: name, teamA: A.team, clubA: ra?.club || '', teamB: B.team, clubB: rb?.club || '',
@@ -204,6 +207,14 @@ export function useLiveBridge(a: Args) {
         const existing = fb[ct.no];
         if (existing && existing.status === 'LIVE' && existing.matchCode === (m ? CODE(m) : undefined)) {
           lastSig.current[ct.no] = sig;
+          // same match: refresh labels only (match number, round, category, rule) - never touch the score
+          const p = payload(ct.no, m);
+          const same = (existing.matchNo || 0) === (p.matchNo || 0) && (existing.roundLabel || '') === p.roundLabel && (existing.catName || '') === p.catName && JSON.stringify((existing as any).rule || null) === JSON.stringify(p.rule);
+          if (!same) {
+            FB.current.updateCourt(cfg.current!.live_id, ct.no, (c: any) => {
+              c.matchNo = p.matchNo; c.roundLabel = p.roundLabel; c.catName = p.catName; c.round = p.round; c.rule = p.rule; c.tournament = p.tournament;
+            }).catch(() => { delete lastSig.current[ct.no]; });
+          }
           continue;
         }
         if (!m && existing && existing.status === 'LIVE') continue; // never wipe a referee's running match

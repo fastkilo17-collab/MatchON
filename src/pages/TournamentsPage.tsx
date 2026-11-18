@@ -23,9 +23,14 @@ import {
 import { ResponsiveSheet } from '../components/UiKit';
 import { resizeImage } from '../lib/supabase';
 
-export function TournamentsPage() {
+export type TournamentsMode = 'list' | 'mine' | 'cats' | 'info';
+
+export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = {}) {
   const {
     state,
+    profile,
+    isAdmin,
+    isManagerOf,
     activeTournament,
     setActiveTid,
     navigate,
@@ -48,7 +53,7 @@ export function TournamentsPage() {
     description: '',
     start_date: new Date().toISOString().slice(0, 10),
     end_date: new Date().toISOString().slice(0, 10),
-    reg_deadline: new Date().toISOString().slice(0, 10),
+    reg_deadline: new Date().toISOString().slice(0, 10) + 'T23:59',
     courts: 4,
     status: 'open' as TournamentStatus,
     promptpay_id: '',
@@ -79,6 +84,26 @@ export function TournamentsPage() {
     deuce: true,
   });
 
+  const myList = state.tournaments.filter((t) => isAdmin || (t as any).organizer_id === profile?.id || isManagerOf(t.id));
+  const shownTournaments = mode === 'list' ? state.tournaments : myList;
+  const openCard = (t: Tournament) => {
+    setActiveTid(t.id);
+    if (mode === 'cats') openCategoryManager(t.id);
+    else if (mode === 'info') openEditT(t);
+    else navigate('home');
+  };
+  const closeSheets = () => {
+    setTSheetOpen(false);
+    setCatManagerTid(null);
+    if (mode === 'cats' || mode === 'info') navigate('home');
+  };
+  React.useEffect(() => {
+    if (!activeTournament || !myList.some((x) => x.id === activeTournament.id)) return;
+    if (mode === 'cats') openCategoryManager(activeTournament.id);
+    else if (mode === 'info') openEditT(activeTournament);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, activeTournament?.id]);
+
   const openCreateT = () => {
     setEditingT(null);
     const today = new Date().toISOString().slice(0, 10);
@@ -88,7 +113,7 @@ export function TournamentsPage() {
       description: '',
       start_date: today,
       end_date: today,
-      reg_deadline: today,
+      reg_deadline: today + 'T23:59',
       courts: 4,
       status: 'open',
       promptpay_id: '081-234-5678',
@@ -110,7 +135,7 @@ export function TournamentsPage() {
       description: t.description,
       start_date: t.start_date,
       end_date: t.end_date,
-      reg_deadline: t.reg_deadline,
+      reg_deadline: t.reg_deadline.length > 10 ? t.reg_deadline : (t.reg_deadline || new Date().toISOString().slice(0, 10)) + 'T23:59',
       courts: t.courts,
       status: t.status,
       promptpay_id: t.promptpay_id,
@@ -243,8 +268,18 @@ export function TournamentsPage() {
 
   return (
     <div className="space-y-6">
+      {mode !== 'list' && (
+        <div>
+          <h2 className="font-display text-xl font-bold text-slate-900">
+            {mode === 'mine' ? 'รายการจัดแข่งขันของฉัน' : mode === 'cats' ? 'จัดการรุ่นการแข่งขัน' : 'ข้อมูลรายการ'}
+          </h2>
+          <p className="text-xs text-slate-500 mt-0.5">
+            {mode === 'mine' ? 'รายการที่คุณเป็นผู้จัดหรือทีมงาน กดการ์ดเพื่อเข้าหน้าหลักของรายการ' : 'เลือกรายการที่ต้องการจัดการ'}
+          </p>
+        </div>
+      )}
       {/* Bright Airy Arena Hero Banner */}
-      <section className="relative overflow-hidden rounded-3xl bg-white border border-slate-200/80">
+      {mode === 'list' && <section className="relative overflow-hidden rounded-3xl bg-white border border-slate-200/80">
         <div className="grid grid-cols-1 lg:grid-cols-12 items-stretch">
           <div className="lg:col-span-7 p-6 sm:p-8 flex flex-col justify-between gap-5">
             <div className="space-y-2.5 max-w-xl">
@@ -305,13 +340,13 @@ export function TournamentsPage() {
             )}
           </div>
         </div>
-      </section>
+      </section>}
 
       {/* Tournaments Grid */}
       <section className="space-y-4">
         <div className="flex items-center justify-between gap-3">
           <h3 className="font-display text-lg font-bold text-slate-900">
-            รายการแข่งขัน ({state.tournaments.length})
+            {mode === 'list' ? 'รายการแข่งขัน' : 'รายการของฉัน'} ({shownTournaments.length})
           </h3>
           {isOrganizer && (
             <button
@@ -326,7 +361,7 @@ export function TournamentsPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {state.tournaments.map((t) => {
+          {shownTournaments.map((t) => {
             const cats = state.categories.filter((c) => c.tournament_id === t.id);
             const regs = state.registrations.filter(
               (r) => r.tournament_id === t.id && r.status !== 'cancelled' && r.status !== 'rejected',
@@ -338,15 +373,9 @@ export function TournamentsPage() {
                 key={t.id}
                 role="link"
                 tabIndex={0}
-                onClick={() => {
-                  setActiveTid(t.id);
-                  navigate('home');
-                }}
+                onClick={() => openCard(t)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    setActiveTid(t.id);
-                    navigate('home');
-                  }
+                  if (e.key === 'Enter') openCard(t);
                 }}
                 className={`bg-white rounded-2xl border p-5 flex flex-col justify-between gap-4 transition-colors cursor-pointer hover:border-blue-300 ${
                   isSelected ? 'border-blue-300 shadow-sm' : 'border-slate-200/80'
@@ -391,7 +420,7 @@ export function TournamentsPage() {
                     <div className="flex items-center gap-2">
                       <Users className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                       <span className="tabular-nums">
-                        {cats.length} รุ่นการแข่งขัน · {regs.length} ทีมที่สมัคร
+                        {cats.length} รุ่น{cats.length ? ` (${cats.map((c) => c.name).join(', ')})` : ''} • {regs.length} ทีมที่สมัคร
                       </span>
                     </div>
                   </div>
@@ -462,7 +491,7 @@ export function TournamentsPage() {
       {/* Create / Edit Tournament Sheet */}
       <ResponsiveSheet
         open={tSheetOpen}
-        onClose={() => setTSheetOpen(false)}
+        onClose={closeSheets}
         title={editingT ? 'แก้ไขรายการแข่งขัน' : 'สร้างรายการแข่งขันใหม่'}
         subtitle="กำหนดชื่อรายการ สถานที่ จำนวนสนาม และเวลาแข่ง"
         footer={
@@ -514,6 +543,15 @@ export function TournamentsPage() {
               onChange={(e) => setTForm({ ...tForm, venue: e.target.value })}
               placeholder="เช่น สปอร์ตคอมเพล็กซ์ พระราม 9"
               className="w-full min-h-[44px] px-3.5 rounded-xl border border-slate-200 text-sm focus:border-blue-500 focus:outline-none"
+            />
+          </label>
+          <label className="block space-y-1">
+            <span className="text-xs font-semibold text-slate-700">ปิดรับสมัคร (วัน-เวลา)</span>
+            <input
+              type="datetime-local"
+              value={tForm.reg_deadline}
+              onChange={(e) => setTForm({ ...tForm, reg_deadline: e.target.value })}
+              className="w-full min-h-[44px] px-3 rounded-xl border border-slate-200 text-sm"
             />
           </label>
           <div className="grid grid-cols-2 gap-3">
@@ -644,7 +682,7 @@ export function TournamentsPage() {
       {/* Category Manager Sheet */}
       <ResponsiveSheet
         open={Boolean(catManagerTid)}
-        onClose={() => setCatManagerTid(null)}
+        onClose={closeSheets}
         title="จัดการรุ่นการแข่งขัน"
         subtitle={state.tournaments.find((t) => t.id === catManagerTid)?.name}
       >

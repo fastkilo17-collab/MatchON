@@ -137,7 +137,7 @@ export function CourtsPage() {
                   <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/60 space-y-2">
                     <div className="flex items-center justify-between text-xs text-slate-500">
                       <span>
-                        {m.match_no ? `#${m.match_no} · ` : ''}
+                        {m.match_no ? `แมตช์ #${m.match_no} · ` : ''}
                         {catMap[m.category_id]?.name || ''} · {m.round_label}
                       </span>
                       {m.scheduled_at && <span className="tabular-nums">{fmtTime(m.scheduled_at)}</span>}
@@ -259,7 +259,7 @@ export function CourtsPage() {
               >
                 <div className="min-w-0">
                   <div className="text-xs text-slate-500">
-                    {m.match_no ? `#${m.match_no} · ` : ''}
+                    {m.match_no ? `แมตช์ #${m.match_no} · ` : ''}
                     {catMap[m.category_id]?.name || ''} · {m.round_label}
                   </div>
                   <div className="text-sm font-bold text-slate-900 truncate mt-0.5">
