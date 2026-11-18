@@ -49,6 +49,7 @@ interface MatchONContextValue {
   loading: boolean;
   profile: Profile | null;
   canCreate: boolean;
+  isAdmin: boolean;
   isManagerOf: (tid: string) => boolean;
   reload: () => Promise<void>;
   signOut: () => Promise<void>;
@@ -163,6 +164,7 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
 
   // role is derived from the signed in account, never chosen by hand
   const canCreate = !!profile && ['organizer', 'staff', 'super_admin'].includes(profile.role || '');
+  const isAdmin = profile?.role === 'super_admin';
   const role = canCreate || manageable.current.size > 0 ? 'organizer' : 'player';
 
   const applyLoaded = useCallback((l: Awaited<ReturnType<typeof loadAll>>) => {
@@ -1087,6 +1089,7 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
     loading,
     profile,
     canCreate,
+    isAdmin,
     isManagerOf,
     reload,
     signOut,

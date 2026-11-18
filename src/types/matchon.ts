@@ -24,7 +24,10 @@ export type NavRoute =
   | 'staff'
   | 'results'
   | 'reports'
-  | 'settings';
+  | 'settings'
+  | 'home'
+  | 'roster'
+  | 'admin';
 
 export interface Tournament {
   id: string;

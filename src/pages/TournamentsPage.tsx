@@ -336,7 +336,19 @@ export function TournamentsPage() {
             return (
               <article
                 key={t.id}
-                className={`bg-white rounded-2xl border p-5 flex flex-col justify-between gap-4 transition-colors ${
+                role="link"
+                tabIndex={0}
+                onClick={() => {
+                  setActiveTid(t.id);
+                  navigate('home');
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    setActiveTid(t.id);
+                    navigate('home');
+                  }
+                }}
+                className={`bg-white rounded-2xl border p-5 flex flex-col justify-between gap-4 transition-colors cursor-pointer hover:border-blue-300 ${
                   isSelected ? 'border-blue-300 shadow-sm' : 'border-slate-200/80'
                 }`}
               >
@@ -355,10 +367,6 @@ export function TournamentsPage() {
                         >
                           {STATUS_TH[t.status]}
                         </span>
-                        <span aria-hidden="true" className="text-slate-300">
-                          ·
-                        </span>
-                        <span className="text-slate-500 tabular-nums">{t.courts} สนาม</span>
                       </div>
                       <h4 className="font-display text-lg font-bold text-slate-900 mt-1">{t.name}</h4>
                     </div>
@@ -378,7 +386,7 @@ export function TournamentsPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                      <span className="truncate">{t.venue || 'ไม่ระบุสนาม'}</span>
+                      <span className="truncate">{t.venue || 'ไม่ระบุสนาม'} · <span className="tabular-nums">{t.courts} สนาม</span></span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Users className="w-3.5 h-3.5 text-slate-400 shrink-0" />
@@ -394,7 +402,7 @@ export function TournamentsPage() {
                 </div>
 
                 {/* Action Row */}
-                <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center gap-2">
+                <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
                   {t.status === 'open' && (
                     <button
                       type="button"

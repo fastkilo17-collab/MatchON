@@ -15,6 +15,7 @@ import {
   Settings,
   Ticket,
   Trophy,
+  UserCheck,
   Users,
   X,
 } from 'lucide-react';
@@ -31,16 +32,19 @@ interface NavItem {
   icon: React.ComponentType<{ className?: string }>;
   group: 'main' | 'manage' | 'arena' | 'info';
   roles: UserRole[];
+  adminOnly?: boolean;
 }
 
 const NAV_ITEMS: NavItem[] = [
   { id: 'dashboard', label: 'ภาพรวมระบบ', shortLabel: 'ภาพรวม', icon: LayoutDashboard, group: 'main', roles: ['organizer'] },
+  { id: 'home', label: 'หน้าหลักรายการ', shortLabel: 'หน้าหลัก', icon: LayoutDashboard, group: 'main', roles: ['organizer', 'player', 'referee'] },
   { id: 'tournaments', label: 'รายการแข่งขัน', shortLabel: 'รายการ', icon: Trophy, group: 'main', roles: ['organizer', 'player', 'referee'] },
   { id: 'register', label: 'สมัครแข่งขัน', shortLabel: 'สมัคร', icon: ClipboardCheck, group: 'main', roles: ['player', 'organizer'] },
   { id: 'my', label: 'การสมัครของฉัน', shortLabel: 'ของฉัน', icon: Ticket, group: 'main', roles: ['player', 'organizer'] },
 
+  { id: 'roster', label: 'รายชื่อนักกีฬา', shortLabel: 'รายชื่อ', icon: Users, group: 'main', roles: ['organizer', 'player', 'referee'] },
   { id: 'athletes', label: 'จัดการนักกีฬา', shortLabel: 'นักกีฬา', icon: Users, group: 'manage', roles: ['organizer'] },
-  { id: 'brackets', label: 'จัดสายแข่งขัน', shortLabel: 'จัดสาย', icon: GitBranch, group: 'manage', roles: ['organizer'] },
+  { id: 'brackets', label: 'สายแข่งขัน', shortLabel: 'สาย', icon: GitBranch, group: 'manage', roles: ['organizer', 'player', 'referee'] },
   { id: 'schedule', label: 'ตารางการแข่งขัน', shortLabel: 'ตาราง', icon: CalendarDays, group: 'manage', roles: ['organizer', 'player', 'referee'] },
 
   { id: 'courts', label: 'จัดการสนาม', shortLabel: 'สนาม', icon: MapPin, group: 'arena', roles: ['organizer', 'referee'] },
@@ -50,6 +54,7 @@ const NAV_ITEMS: NavItem[] = [
 
   { id: 'results', label: 'ผลการแข่งขัน', shortLabel: 'ผลแข่ง', icon: Trophy, group: 'info', roles: ['organizer', 'player', 'referee'] },
   { id: 'reports', label: 'รายงานและสถิติ', shortLabel: 'รายงาน', icon: BarChart3, group: 'info', roles: ['organizer'] },
+  { id: 'admin', label: 'คำขอเป็นผู้จัด', shortLabel: 'คำขอ', icon: UserCheck, group: 'info', roles: ['organizer', 'player', 'referee'], adminOnly: true },
   { id: 'settings', label: 'โปรไฟล์ & บัญชี', shortLabel: 'โปรไฟล์', icon: Settings, group: 'info', roles: ['organizer', 'player', 'referee'] },
 ];
 
@@ -67,12 +72,12 @@ const GROUP_TITLES: Record<NavItem['group'], string> = {
 };
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const { state, route, navigate, activeTournament, setActiveTid, toasts } = useMatchON();
+  const { state, route, navigate, activeTournament, setActiveTid, toasts, profile, isAdmin } = useMatchON();
   const [menuOpen, setMenuOpen] = useState(false);
   const [logoError, setLogoError] = useState(false);
 
   const role = state.role;
-  const visibleItems = NAV_ITEMS.filter((item) => item.roles.includes(role));
+  const visibleItems = NAV_ITEMS.filter((item) => item.roles.includes(role) && (!item.adminOnly || isAdmin));
   const currentMeta = NAV_ITEMS.find((item) => item.id === route);
 
   const primaryBottomIds: NavRoute[] =
@@ -210,14 +215,30 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </div>
             )}
 
+            {hideTournamentPicker && activeTournament && (
+              <button type="button" onClick={() => handleNav('home')} title="หน้าหลักรายการ" className="min-w-0 max-w-[140px] sm:max-w-[260px] truncate text-xs sm:text-sm font-semibold text-slate-700 hover:text-blue-700">
+                {activeTournament.name}
+              </button>
+            )}
+
+            {profile && (
+              <button type="button" onClick={() => handleNav('settings')} aria-label="โปรไฟล์ของฉัน" title={profile.display_name || 'โปรไฟล์'} className="shrink-0 w-10 h-10 rounded-full overflow-hidden ring-2 ring-white shadow bg-blue-100 grid place-items-center text-sm font-bold text-blue-700">
+                {profile.avatar_url ? (
+                  <img src={profile.avatar_url} alt="" referrerPolicy="no-referrer" className="w-full h-full object-cover" />
+                ) : (
+                  <span>{[...(profile.display_name || profile.email || '?')][0]}</span>
+                )}
+              </button>
+            )}
+
             {/* Mobile Quick Role Switcher */}
             <button
               type="button"
               onClick={() => setMenuOpen(true)}
               title="บัญชีผู้ใช้"
-              className="lg:hidden min-h-[40px] px-3 rounded-xl bg-blue-50 text-blue-700 text-xs font-semibold hover:bg-blue-100 transition-colors whitespace-nowrap shrink-0"
+              className={`lg:hidden min-h-[40px] px-3 rounded-xl bg-blue-50 text-blue-700 text-xs font-semibold hover:bg-blue-100 transition-colors whitespace-nowrap shrink-0 ${profile ? 'hidden' : ''}`}
             >
-              โหมด: {ROLE_META[role].short}
+              {profile ? '' : 'เข้าสู่ระบบ'}
             </button>
 
             {/* Desktop Single Primary CTA */}

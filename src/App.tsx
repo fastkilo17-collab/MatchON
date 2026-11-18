@@ -13,7 +13,9 @@ import { DashboardPage } from './pages/DashboardPage';
 import { LiveScorePage } from './pages/LiveScorePage';
 import { MyRegistrationsPage, RegisterPage } from './pages/RegisterPage';
 import { SchedulePage } from './pages/SchedulePage';
-import { ReportsPage, ResultsPage, RulesStaffPage, SettingsPage, StaffPage } from './pages/SecondaryPages';
+import { AdminRequestsPage, ReportsPage, ResultsPage, RulesStaffPage, SettingsPage, StaffPage } from './pages/SecondaryPages';
+import { RosterPage } from './pages/RosterPage';
+import { TournamentHomePage } from './pages/TournamentHomePage';
 import { TournamentsPage } from './pages/TournamentsPage';
 
 function RouteSwitch() {
@@ -49,6 +51,12 @@ function RouteSwitch() {
       return <ReportsPage />;
     case 'settings':
       return <SettingsPage />;
+    case 'home':
+      return <TournamentHomePage />;
+    case 'roster':
+      return <RosterPage />;
+    case 'admin':
+      return <AdminRequestsPage />;
     default:
       return <DashboardPage />;
   }

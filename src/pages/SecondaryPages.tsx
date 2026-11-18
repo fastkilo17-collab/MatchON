@@ -649,7 +649,7 @@ export function SettingsPage() {
     setName(profile?.display_name || '');
     setPhone(profile?.phone || '');
   }, [profile?.id, profile?.display_name, profile?.phone]);
-  const roleTh = state.role === 'organizer' ? 'ผู้จัดการแข่งขัน' : 'นักกีฬา / ผู้ชม';
+  const roleTh = profile?.role === 'super_admin' ? 'ผู้ดูแลระบบ' : state.role === 'organizer' ? 'ผู้จัดการแข่งขัน' : 'นักกีฬา / ผู้ชม';
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
@@ -699,6 +699,7 @@ export function SettingsPage() {
         </form>
         <AccountBox />
       </section>
+      <OrganizerRequestCard />
     </div>
   );
 }
@@ -784,6 +785,127 @@ export function StaffPage() {
         )}
         <p className="text-[11px] text-slate-400">ให้ staff ล็อกอินเข้าเว็บ (LINE หรืออีเมล) อย่างน้อยหนึ่งครั้งก่อน แล้วพิมพ์อีเมลหรือชื่อที่แสดงให้ตรง</p>
       </section>
+    </div>
+  );
+}
+
+/* ---------------- organizer approval ---------------- */
+type OrgReq = {
+  id: string; status: 'pending' | 'approved' | 'rejected'; name: string; org?: string | null; phone?: string | null;
+  reason?: string | null; admin_note?: string | null; created_at: string; decided_at?: string | null;
+  avatar_url?: string | null; display_name?: string | null;
+};
+const REQ_TH = { pending: 'รออนุมัติ', approved: 'อนุมัติแล้ว', rejected: 'ไม่อนุมัติ' } as const;
+
+/** ฟอร์มขอสิทธิ์ผู้จัด (แสดงในหน้าโปรไฟล์ สำหรับผู้ที่ยังไม่ใช่ผู้จัด) */
+export function OrganizerRequestCard() {
+  const { profile, canCreate, toast, reload } = useMatchON();
+  const [req, setReq] = useState<OrgReq | null | undefined>(undefined);
+  const [f, setF] = useState({ name: '', org: '', phone: '', reason: '' });
+  const [busy, setBusy] = useState(false);
+  const load = React.useCallback(async () => {
+    const { data } = await sb.rpc('my_organizer_request');
+    setReq((data as OrgReq) || null);
+  }, []);
+  React.useEffect(() => {
+    if (profile && !canCreate) void load();
+  }, [profile?.id, canCreate, load]);
+  React.useEffect(() => {
+    setF((x) => ({ ...x, name: x.name || profile?.display_name || '', phone: x.phone || profile?.phone || '' }));
+  }, [profile?.display_name, profile?.phone]);
+  if (!profile || canCreate || req === undefined) return null;
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    const { error } = await sb.rpc('request_organizer', { p_name: f.name, p_org: f.org, p_phone: f.phone, p_reason: f.reason });
+    setBusy(false);
+    if (error) return toast(error.message, 'err');
+    toast('ส่งคำขอแล้ว รอผู้ดูแลอนุมัติ');
+    await load();
+    await reload();
+  };
+  const inp = 'w-full min-h-[44px] px-3.5 rounded-xl border border-slate-200 text-sm mt-1';
+  const pending = req?.status === 'pending';
+  return (
+    <section className="bg-white border border-slate-200/80 rounded-2xl p-5 space-y-3">
+      <h3 className="font-display text-base font-bold text-slate-900">ขอสิทธิ์ผู้จัดการแข่งขัน</h3>
+      {req && (
+        <div className={`text-xs rounded-xl p-3 border ${req.status === 'approved' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : req.status === 'rejected' ? 'bg-red-50 border-red-200 text-red-700' : 'bg-amber-50 border-amber-200 text-amber-800'}`}>
+          <b>สถานะคำขอ: {REQ_TH[req.status]}</b>
+          {req.admin_note && <div className="mt-1">หมายเหตุจากผู้ดูแล: {req.admin_note}</div>}
+          {req.status === 'approved' && <div className="mt-1">รีเฟรชหน้าเว็บเพื่อใช้สิทธิ์ผู้จัด</div>}
+        </div>
+      )}
+      <form onSubmit={submit} className="space-y-2.5">
+        <label className="block text-xs font-semibold text-slate-600">ชื่อผู้จัด *<input required value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} className={inp} /></label>
+        <label className="block text-xs font-semibold text-slate-600">ชมรม / องค์กร<input value={f.org} onChange={(e) => setF({ ...f, org: e.target.value })} className={inp} /></label>
+        <label className="block text-xs font-semibold text-slate-600">เบอร์โทรติดต่อ<input type="tel" value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} className={inp} /></label>
+        <label className="block text-xs font-semibold text-slate-600">เหตุผล / รายการที่จะจัด<textarea rows={3} maxLength={500} value={f.reason} onChange={(e) => setF({ ...f, reason: e.target.value })} className={inp + ' py-2'} /></label>
+        <button disabled={busy} className="w-full min-h-[46px] rounded-xl bg-blue-600 text-white text-sm font-semibold">
+          {busy ? 'กำลังส่ง…' : pending ? 'อัปเดตคำขอที่รออยู่' : 'ส่งคำขอ'}
+        </button>
+      </form>
+    </section>
+  );
+}
+
+/** หน้าผู้ดูแล: อนุมัติ/ปฏิเสธคำขอเป็นผู้จัด */
+export function AdminRequestsPage() {
+  const { isAdmin, toast } = useMatchON();
+  const [rows, setRows] = useState<OrgReq[]>([]);
+  const [notes, setNotes] = useState<Record<string, string>>({});
+  const [tab, setTab] = useState<'pending' | 'all'>('pending');
+  const load = React.useCallback(async () => {
+    const { data, error } = await sb.rpc('list_organizer_requests');
+    if (error) toast(error.message, 'err');
+    else setRows((data as OrgReq[]) || []);
+  }, [toast]);
+  React.useEffect(() => {
+    if (isAdmin) void load();
+  }, [isAdmin, load]);
+  if (!isAdmin) return <div className="p-8 text-center text-sm text-slate-500">เฉพาะผู้ดูแลระบบ</div>;
+  const decide = async (id: string, ok: boolean) => {
+    const { error } = await sb.rpc('decide_organizer_request', { p_id: id, p_approve: ok, p_note: notes[id] || '' });
+    if (error) return toast(error.message, 'err');
+    toast(ok ? 'อนุมัติเป็นผู้จัดแล้ว' : 'ปฏิเสธคำขอแล้ว');
+    await load();
+  };
+  const shown = rows.filter((r) => tab === 'all' || r.status === 'pending');
+  const pendingN = rows.filter((r) => r.status === 'pending').length;
+  return (
+    <div className="max-w-3xl mx-auto space-y-4">
+      <div>
+        <h2 className="font-display text-xl font-bold text-slate-900">คำขอเป็นผู้จัด</h2>
+        <p className="text-xs text-slate-500 mt-0.5">ผู้ใช้ที่ส่งคำขอจะเป็นผู้จัดได้ต่อเมื่อคุณอนุมัติ</p>
+      </div>
+      <div className="flex gap-2">
+        {([['pending', `รออนุมัติ (${pendingN})`], ['all', `ทั้งหมด (${rows.length})`]] as const).map(([k, l]) => (
+          <button key={k} type="button" onClick={() => setTab(k)} className={`min-h-[40px] px-4 rounded-xl text-xs font-semibold ${tab === k ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-700'}`}>{l}</button>
+        ))}
+      </div>
+      {!shown.length && <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center text-sm text-slate-500">ไม่มีคำขอ</div>}
+      {shown.map((r) => (
+        <article key={r.id} className="bg-white border border-slate-200/80 rounded-2xl p-4 space-y-3">
+          <div className="flex items-center gap-3">
+            {r.avatar_url ? <img src={r.avatar_url} alt="" referrerPolicy="no-referrer" className="w-12 h-12 rounded-full object-cover" /> : <div className="w-12 h-12 rounded-full bg-slate-100 grid place-items-center">👤</div>}
+            <div className="min-w-0 flex-1">
+              <div className="text-sm font-bold text-slate-900 truncate">{r.name}</div>
+              <div className="text-xs text-slate-500 truncate">{[r.org, r.phone].filter(Boolean).join(' · ') || r.display_name}</div>
+            </div>
+            <span className={`text-[11px] font-bold px-2 py-1 rounded-lg ${r.status === 'approved' ? 'bg-emerald-50 text-emerald-700' : r.status === 'rejected' ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-700'}`}>{REQ_TH[r.status]}</span>
+          </div>
+          {r.reason && <p className="text-xs text-slate-600 whitespace-pre-line">{r.reason}</p>}
+          {r.status === 'pending' ? (
+            <div className="space-y-2">
+              <input placeholder="หมายเหตุ (ผู้ขอเห็น)" value={notes[r.id] || ''} onChange={(e) => setNotes({ ...notes, [r.id]: e.target.value })} className="w-full min-h-[42px] px-3 rounded-xl border border-slate-200 text-sm" />
+              <div className="grid grid-cols-2 gap-2">
+                <button type="button" onClick={() => void decide(r.id, true)} className="min-h-[44px] rounded-xl bg-emerald-600 text-white text-sm font-semibold">อนุมัติ</button>
+                <button type="button" onClick={() => void decide(r.id, false)} className="min-h-[44px] rounded-xl bg-red-50 text-red-700 text-sm font-semibold">ไม่อนุมัติ</button>
+              </div>
+            </div>
+          ) : r.admin_note ? <div className="text-xs text-slate-500">หมายเหตุ: {r.admin_note}</div> : null}
+        </article>
+      ))}
     </div>
   );
 }

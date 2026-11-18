@@ -21,3 +21,8 @@ npm run dev
 npm run build
 ```
 Deploy ผ่าน GitHub Actions (`.github/workflows/pages.yml`) — ตั้ง Settings → Pages → Source: GitHub Actions
+
+### migration 011–012
+- 011: สถานะใบสมัคร `rejected`, `registrations.note`, ข้อมูลรายการ (poster/format_text/rules_text/notice)
+- 012: ผู้ดูแลระบบ (`super_admin`) อนุมัติคำขอเป็นผู้จัด (`organizer_requests`, RPC request_organizer / list_organizer_requests / decide_organizer_request); ลบ `become_organizer`
+- LINE login ใช้ LIFF (`VITE_LIFF_ID`) + edge function `line-login`
