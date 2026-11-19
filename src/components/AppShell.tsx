@@ -40,7 +40,6 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'dashboard', label: 'ภาพรวมระบบ', shortLabel: 'ภาพรวม', icon: LayoutDashboard, group: 'main', roles: ['organizer'] },
   { id: 'home', label: 'หน้าหลักรายการ', shortLabel: 'หน้าหลัก', icon: LayoutDashboard, group: 'main', roles: ['organizer', 'player', 'referee'] },
   { id: 'tournaments', label: 'รายการแข่งขัน', shortLabel: 'รายการ', icon: Trophy, group: 'main', roles: ['organizer', 'player', 'referee'] },
-  { id: 'register', label: 'สมัครแข่งขัน', shortLabel: 'สมัคร', icon: ClipboardCheck, group: 'main', roles: ['player', 'organizer'] },
   { id: 'my', label: 'การสมัครของฉัน', shortLabel: 'ของฉัน', icon: Ticket, group: 'main', roles: ['player', 'organizer'] },
 
   { id: 'roster', label: 'รายชื่อนักกีฬา', shortLabel: 'รายชื่อ', icon: Users, group: 'main', roles: ['organizer', 'player', 'referee'] },
@@ -88,7 +87,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       ? ['dashboard', 'courts', 'live', 'schedule']
       : role === 'referee'
         ? ['live', 'courts', 'schedule', 'results']
-        : ['tournaments', 'register', 'my', 'live'];
+        : ['tournaments', 'home', 'my', 'live'];
 
   const bottomTabs = primaryBottomIds
     .map((id) => NAV_ITEMS.find((item) => item.id === id))

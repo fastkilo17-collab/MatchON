@@ -44,16 +44,27 @@ export function LiveScorePage() {
   });
   const [picking, setPicking] = useState(false);
   const [pickId, setPickId] = useState('');
+  const [refLabel, setRefLabel] = useState('');
   const openQr = (no: number) => {
     const cur = tReferees.find((r) => r.court_no === no);
     setPickId(cur ? cur.id : '');
     setQrCourtNo(no);
     setRefUrl('');
-    setPicking(true);
+    setRefLabel('');
+    if (cur) {
+      // already has a referee -> show the QR straight away
+      setPicking(false);
+      setRefLabel(cur.name);
+      refereeUrl(no, cur.name).then(setRefUrl, (e: any) => {
+        toast(e?.message || 'สร้างลิงก์กรรมการไม่สำเร็จ', 'err');
+        setPicking(true);
+      });
+    } else setPicking(true);
   };
   const chooseReferee = async (refId: string | null, label: string) => {
     if (qrCourtNo === null) return;
     assignReferee(refId, qrCourtNo);
+    setRefLabel(label);
     setPicking(false);
     try {
       setRefUrl(await refereeUrl(qrCourtNo, label));
@@ -166,7 +177,7 @@ export function LiveScorePage() {
                       LIVE
                     </span>
                   ) : nextM ? (
-                    <span className="text-xs font-semibold text-amber-700">เตรียมลงสนาม</span>
+                    <span className="text-xs font-semibold text-amber-700">รอเริ่มแข่ง</span>
                   ) : (
                     <span className="text-xs text-slate-400">
                       {court.status === 'maintenance' ? 'งดใช้งาน' : 'ว่าง'}
@@ -343,6 +354,7 @@ export function LiveScorePage() {
             </div>
           ) : refUrl ? (
             <>
+              <div className="text-sm font-bold text-slate-900">กรรมการ: {refLabel || 'กรรมการพิเศษ'}</div>
               <QrCodeSvg value={refUrl} size={220} />
               <div className="text-xs text-slate-500 max-w-xs">
                 สแกนเพื่อเปิดหน้ากรรมการ (referee.html) ของสนาม {qrCourtNo} · อย่าแชร์ให้ผู้ชม
@@ -359,7 +371,7 @@ export function LiveScorePage() {
                   เปิดหน้ากรรมการ
                 </a>
                 <button type="button" onClick={() => setPicking(true)} className="min-h-[40px] px-4 rounded-xl bg-amber-100 text-amber-800 text-xs font-semibold">
-                  เปลี่ยน QR code
+                  เปลี่ยนกรรมการ
                 </button>
               </div>
             </>

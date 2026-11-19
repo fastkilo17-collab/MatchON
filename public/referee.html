@@ -430,7 +430,7 @@ function fit() {
   const k = (prefs.fit === 'fill' || portrait) ? W / DW : Math.min(W / DW, H / CH);
   wrap.style.width = DW * k + 'px'; wrap.style.height = CH * k + 'px';
   cv.style.transform = `scale(${k})`;
-  document.documentElement.style.overflowY = CH * k > H + 1 ? 'auto' : 'hidden';   // scroll down when the page is taller than the screen
+  document.documentElement.style.overflowY = (portrait || CH * k > H + 1) ? 'auto' : 'hidden';   // scroll down when the page is taller than the screen
 }
 // shrink a text until it fits its box (team names are shown as large as they can be)
 function fitTexts() {
@@ -441,7 +441,10 @@ function fitTexts() {
     while (el.scrollWidth > el.clientWidth + 1 && sz > 11) { sz -= 1; el.style.fontSize = sz + 'px'; }
   });
 }
-addEventListener('resize', fit); fit(); setTimeout(fit, 400); if (document.fonts) document.fonts.ready.then(fit);
+addEventListener('resize', fit); fit(); setTimeout(fit, 400); setTimeout(fit, 1500);
+// content height changes when the court data arrives -> re-fit so scrolling works without pressing a button first
+let lastH = 0;
+if (window.ResizeObserver) new ResizeObserver(() => { const h = $('cv').offsetHeight; if (h !== lastH) { lastH = h; fit(); } }).observe($('cv')); if (document.fonts) document.fonts.ready.then(fit);
 
 /* ---------------- icons ---------------- */
 // shuttlecock, drawn upright and tilted 45 degrees

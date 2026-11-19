@@ -74,7 +74,7 @@ export function AccountBox({ onDone, hideRequest }: { onDone?: () => void; hideR
     <div className="space-y-2">
       {profile ? (
         <>
-          <div className="text-xs text-slate-600 truncate">{profile.display_name || profile.email || 'ผู้ใช้'}</div>
+          {!hideRequest && <div className="text-xs text-slate-600 truncate">{profile.display_name || profile.email || 'ผู้ใช้'}</div>}
           {!canCreate && !hideRequest && (
             <button type="button" onClick={() => { navigate('settings'); onDone?.(); }} className="w-full min-h-[40px] rounded-xl bg-blue-600 text-white text-xs font-semibold">
               ขอสิทธิ์ผู้จัดการแข่งขัน
