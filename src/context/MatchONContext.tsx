@@ -18,6 +18,7 @@ import {
   buildKnockout,
   buildRoundRobin,
   computeStandings,
+  standingPtsFor,
   matchResult,
   matchWinner,
   planAutoSchedule,
@@ -692,7 +693,7 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
       const tops = groupNos.map((g) => {
         const gm = grp.filter((m) => (m.group_no ?? 0) === g);
         const ids = [...new Set(gm.flatMap((m) => [m.reg_a, m.reg_b]).filter(Boolean) as string[])];
-        return computeStandings(ids, gm).map((r) => r.id);
+        return computeStandings(ids, gm, standingPtsFor(categoryId, state.categories, state.rules)).map((r) => r.id);
       });
       const adv = b?.advance || 2;
       const order: string[] = [];
@@ -721,7 +722,7 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
       }));
       toast('สร้างรอบไขว้สาย (Knockout) เรียบร้อย');
     },
-    [state.categories, state.brackets, state.matches, toast],
+    [state.categories, state.brackets, state.matches, state.rules, toast],
   );
 
   const generateNextSwissRound = useCallback(
@@ -736,7 +737,7 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       const ids = [...new Set(sw.flatMap((m) => [m.reg_a, m.reg_b]).filter(Boolean) as string[])];
-      const rank = computeStandings(ids, sw).map((r) => r.id);
+      const rank = computeStandings(ids, sw, standingPtsFor(categoryId, state.categories, state.rules)).map((r) => r.id);
       const met = new Set(sw.flatMap((m) => [`${m.reg_a}:${m.reg_b}`, `${m.reg_b}:${m.reg_a}`]));
       const pool = [...rank];
       const pairs: Array<[string, string]> = [];
@@ -921,7 +922,7 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
         const now = new Date().toISOString();
         const nextMatches = prev.matches.map((m) => {
           if (m.id === matchId) {
-            return { ...m, court: courtNo, scheduled_at: now, status: 'scheduled' as const };
+            return { ...m, court: courtNo, scheduled_at: m.scheduled_at || now, status: 'scheduled' as const };
           }
           if (m.tournament_id === target.tournament_id && m.court === courtNo && m.status === 'scheduled') {
             return { ...m, court: null };

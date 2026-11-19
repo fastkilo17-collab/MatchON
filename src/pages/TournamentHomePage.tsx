@@ -5,7 +5,7 @@ import {
 import { useMatchON } from '../context/MatchONContext';
 import { PhotoLightbox } from '../components/UiKit';
 import type { NavRoute } from '../types/matchon';
-import { baht, fmtRange, FORMAT_TH, KIND_TH, STATUS_TH } from '../utils/bracket';
+import { baht, shuttleText, fmtRange, FORMAT_TH, KIND_TH, STATUS_TH } from '../utils/bracket';
 
 function Kpi({ label, value, sub, tone = 'slate' }: { label: string; value: React.ReactNode; sub?: string; tone?: 'slate' | 'blue' | 'emerald' | 'amber' | 'red' }) {
   const c = { slate: 'text-slate-900', blue: 'text-blue-600', emerald: 'text-emerald-600', amber: 'text-amber-600', red: 'text-red-600' }[tone];
@@ -102,7 +102,7 @@ export function TournamentHomePage() {
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <div className="text-sm font-bold text-slate-900 truncate">{c.name}</div>
-                    <div className="text-xs text-slate-500">{KIND_TH[c.kind]} · {FORMAT_TH[c.format]} · {c.fee ? baht(c.fee) : 'ฟรี'}</div>
+                    <div className="text-xs text-slate-500">{KIND_TH[c.kind]} · {FORMAT_TH[c.format]} · {c.fee ? baht(c.fee) : 'ฟรี'}{c.shuttle_fee ? ` + ${shuttleText(c)}` : ''}</div>
                   </div>
                   <div className="text-right shrink-0 tabular-nums"><b className="text-lg text-slate-900">{n}</b><span className="text-xs text-slate-400"> / {c.max_teams}</span></div>
                 </div>

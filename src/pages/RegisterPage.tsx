@@ -18,6 +18,8 @@ import {
   REG_STATUS_TH,
   scoreText,
   teamName,
+  catTotal,
+  shuttleText,
 } from '../utils/bracket';
 import { PhotoThumb, QrCodeSvg } from '../components/UiKit';
 
@@ -97,7 +99,7 @@ function RegisterForm() {
 
   const selectedCats = cats.filter((c) => selectedCatIds.includes(c.id));
   const needsDoubles = selectedCats.some((c) => c.kind === 'doubles');
-  const totalFee = selectedCats.reduce((sum, c) => sum + c.fee, 0);
+  const totalFee = selectedCats.reduce((sum, c) => sum + catTotal(c), 0);
 
   const toggleCat = (id: string) => {
     setSelectedCatIds((prev) =>
@@ -159,7 +161,7 @@ function RegisterForm() {
         });
         if (!res) continue;
         ok++;
-        if (slipFile && res.token && c.fee > 0) {
+        if (slipFile && res.token && catTotal(c) > 0) {
           try {
             const path = await uploadPhoto('slips', `${tid}/${res.id}`, slipFile);
             await rpcSubmitSlip(res.id, res.token, path);
@@ -298,7 +300,8 @@ function RegisterForm() {
                     </div>
                   </div>
                   <div className="font-mono text-sm font-bold tabular-nums text-blue-700 shrink-0">
-                    {c.fee ? baht(c.fee) : 'ฟรี'}
+                    {catTotal(c) ? baht(catTotal(c)) : 'ฟรี'}
+                    {c.shuttle_fee ? <div className="text-[10px] font-normal text-slate-500 text-right">ค่าสมัคร {baht(c.fee)} + {shuttleText(c)}</div> : null}
                   </div>
                 </label>
               );
@@ -413,11 +416,17 @@ function RegisterForm() {
 
           <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/70 space-y-2 text-sm">
             {selectedCats.map((c) => (
-              <div key={c.id} className="flex items-center justify-between">
-                <span className="text-slate-700">{c.name}</span>
-                <span className="font-mono font-bold tabular-nums text-slate-900">
-                  {c.fee ? baht(c.fee) : 'ฟรี'}
-                </span>
+              <div key={c.id} className="space-y-0.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-700">{c.name} · ค่าสมัคร</span>
+                  <span className="font-mono tabular-nums text-slate-900">{c.fee ? baht(c.fee) : 'ฟรี'}</span>
+                </div>
+                {c.shuttle_fee ? (
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-700">{shuttleText(c).replace(/ \(.*\)/, '')}{c.shuttle_qty ? ` (${c.shuttle_qty} ลูก)` : ''}</span>
+                    <span className="font-mono tabular-nums text-slate-900">{baht(c.shuttle_fee)}</span>
+                  </div>
+                ) : null}
               </div>
             ))}
             <div className="h-px bg-slate-200 my-2" />
@@ -653,7 +662,7 @@ export function MyRegistrationsPage() {
                     </div>
                   </div>
                   <span className="font-mono text-xs font-bold tabular-nums text-slate-700">
-                    {cat?.fee ? baht(cat.fee) : 'ฟรี'}
+                    {catTotal(cat) ? baht(catTotal(cat)) : 'ฟรี'}
                   </span>
                 </div>
 

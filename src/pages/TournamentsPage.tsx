@@ -19,6 +19,8 @@ import {
   GENDER_TH,
   KIND_TH,
   STATUS_TH,
+  catTotal,
+  shuttleText,
 } from '../utils/bracket';
 import { ResponsiveSheet } from '../components/UiKit';
 import { resizeImage } from '../lib/supabase';
@@ -77,6 +79,8 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
     age_max: '',
     max_teams: 16,
     fee: 450,
+    shuttle_fee: 0,
+    shuttle_qty: 0,
     format: 'knockout' as BracketFormat,
     best_of: 3,
     points: 21,
@@ -194,6 +198,8 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
       age_max: '',
       max_teams: 16,
       fee: 450,
+      shuttle_fee: 0,
+      shuttle_qty: 0,
       format: 'knockout',
       best_of: 3,
       points: 21,
@@ -213,6 +219,8 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
       age_min: opts.age_min != null ? String(opts.age_min) : '',
       age_max: opts.age_max != null ? String(opts.age_max) : '',
       fee: opts.fee ?? 450,
+      shuttle_fee: 0,
+      shuttle_qty: 0,
       best_of: opts.best_of ?? 3,
       points: opts.points ?? 21,
       cap: opts.cap ?? 30,
@@ -230,6 +238,8 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
       age_max: c.age_max != null ? String(c.age_max) : '',
       max_teams: c.max_teams,
       fee: c.fee,
+      shuttle_fee: c.shuttle_fee || 0,
+      shuttle_qty: c.shuttle_qty || 0,
       format: c.format,
       best_of: c.best_of,
       points: c.points,
@@ -252,6 +262,8 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
       age_max: catForm.age_max === '' ? null : Number(catForm.age_max),
       max_teams: Number(catForm.max_teams) || 16,
       fee: Number(catForm.fee) || 0,
+      shuttle_fee: Number(catForm.shuttle_fee) || 0,
+      shuttle_qty: Number(catForm.shuttle_qty) || 0,
       format: catForm.format,
       best_of: Number(catForm.best_of) || 3,
       points: Number(catForm.points) || 21,
@@ -699,7 +711,7 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
                     <div className="text-sm font-semibold text-slate-900 truncate">{c.name}</div>
                     <div className="text-xs text-slate-500 truncate mt-0.5 tabular-nums">
                       {KIND_TH[c.kind]} · {GENDER_TH[c.gender]} · {FORMAT_TH[c.format]} ·{' '}
-                      {c.fee ? baht(c.fee) : 'ฟรี'} · รับ {c.max_teams} ทีม
+                      {c.fee ? baht(c.fee) : 'ฟรี'}{c.shuttle_fee ? ` + ${shuttleText(c)}` : ''} · รับ {c.max_teams} ทีม
                     </div>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
@@ -782,6 +794,17 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
                 <option value="mixed">ผสม</option>
                 <option value="open">ทั่วไป</option>
               </select>
+            </label>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2.5">
+            <label className="block space-y-1">
+              <span className="text-xs font-medium text-slate-600">ค่าลูกแบด (฿) เช่น 600</span>
+              <input type="number" min={0} value={catForm.shuttle_fee} onChange={(e) => setCatForm({ ...catForm, shuttle_fee: Number(e.target.value) })} className="w-full min-h-[44px] px-3 rounded-xl border border-slate-200 text-sm tabular-nums" />
+            </label>
+            <label className="block space-y-1">
+              <span className="text-xs font-medium text-slate-600">จำนวนลูกแบด (ลูก) เช่น 10</span>
+              <input type="number" min={0} value={catForm.shuttle_qty} onChange={(e) => setCatForm({ ...catForm, shuttle_qty: Number(e.target.value) })} className="w-full min-h-[44px] px-3 rounded-xl border border-slate-200 text-sm tabular-nums" />
             </label>
           </div>
 

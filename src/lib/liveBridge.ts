@@ -229,10 +229,10 @@ export function useLiveBridge(a: Args) {
   }, [bridgeOn, fbLoaded, matches, courts, fb, payload]);
 
   const refereeUrl = useCallback(
-    async (no: number, umpire?: string): Promise<string> => {
+    async (no: number, umpire?: string, rotate?: boolean): Promise<string> => {
       const c = cfg.current;
       if (!c) throw new Error(error || 'ยังเชื่อม Firebase ไม่เสร็จ ลองอีกครั้ง');
-      if (!c.keys['c' + no]) {
+      if (rotate || !c.keys['c' + no]) {
         c.keys['c' + no] = rand(24);
         await sb.rpc('save_live_keys', { p_tournament: tid, p_keys: c.keys });
         await FB.current.publishCourtKeys(c.live_id, c.keys);

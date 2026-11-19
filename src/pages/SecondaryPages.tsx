@@ -14,6 +14,7 @@ import { useMatchON } from '../context/MatchONContext';
 import {
   baht,
   computeStandings,
+  standingPtsFor,
   downloadCsv,
   FORMAT_TH,
   PAY_TH,
@@ -22,6 +23,8 @@ import {
   ruleText,
   scoreText,
   teamName,
+  catTotal,
+  shuttleText,
 } from '../utils/bracket';
 
 export function ResultsPage() {
@@ -65,7 +68,7 @@ export function ResultsPage() {
     }
     if (ms.length && ms.every((m) => m.status === 'finished') && fmt === 'round_robin') {
       const ids = [...new Set(ms.flatMap((m) => [m.reg_a, m.reg_b]).filter(Boolean) as string[])];
-      const st = computeStandings(ids, ms);
+      const st = computeStandings(ids, ms, standingPtsFor(cat.id, tCategories, tRules));
       return { cat, first: st[0]?.id || null, second: st[1]?.id || null };
     }
     return { cat, first: null, second: null };
@@ -189,6 +192,9 @@ export function RulesStaffPage() {
   const [points, setPoints] = useState(21);
   const [cap, setCap] = useState(30);
   const [deuce, setDeuce] = useState(true);
+  const [winPts, setWinPts] = useState(2);
+  const [drawPts, setDrawPts] = useState(1);
+  const [lossPts, setLossPts] = useState(0);
 
   const [refName, setRefName] = useState('');
   const [refPhone, setRefPhone] = useState('');
@@ -214,6 +220,9 @@ export function RulesStaffPage() {
       points,
       cap,
       deuce,
+      win_pts: winPts,
+      draw_pts: drawPts,
+      loss_pts: lossPts,
     });
     setRuleName('');
   };
@@ -324,6 +333,16 @@ export function RulesStaffPage() {
             >
               + เพิ่มกติกา
             </button>
+            <div className="col-span-2 sm:col-span-7 flex flex-wrap items-center gap-2 text-xs text-slate-600">
+              <span className="font-semibold">คะแนนผลแข่ง (เก็บแต้มตารางคะแนน):</span>
+              {([['ชนะ', winPts, setWinPts], ['เสมอ', drawPts, setDrawPts], ['แพ้', lossPts, setLossPts]] as const).map(([l, v, set]) => (
+                <label key={l} className="inline-flex items-center gap-1.5">
+                  {l}
+                  <input type="number" min={0} max={20} value={v} onChange={(e) => set(Math.max(0, Math.min(20, Number(e.target.value) || 0)))} className="w-16 min-h-[40px] px-2 rounded-xl border border-slate-200 text-sm tabular-nums" />
+                </label>
+              ))}
+              <span className="text-slate-400">คะแนน</span>
+            </div>
           </form>
         )}
       </section>
@@ -494,7 +513,7 @@ export function ReportsPage() {
   const activeRegs = tRegistrations.filter((r) => r.status !== 'cancelled' && r.status !== 'rejected');
   const paidRegs = activeRegs.filter((r) => r.pay_status === 'paid');
   const owedRegs = activeRegs.filter((r) => r.pay_status !== 'paid');
-  const feeOf = (cid: string) => catMap[cid]?.fee || 0;
+  const feeOf = (cid: string) => catTotal(catMap[cid]);
   const revenue = paidRegs.reduce((s, r) => s + feeOf(r.category_id), 0);
   const owedTotal = owedRegs.reduce((s, r) => s + feeOf(r.category_id), 0);
   const finished = tMatches.filter((m) => m.status === 'finished' && m.reg_a && m.reg_b);
@@ -634,7 +653,7 @@ export function ReportsPage() {
                 <div className="flex items-center justify-between text-xs">
                   <span className="font-bold text-slate-900">{c.name}</span>
                   <span className="font-mono tabular-nums text-slate-600">
-                    {count}/{c.max_teams} ทีม · ชำระแล้ว {baht(paidCount * c.fee)}
+                    {count}/{c.max_teams} ทีม · ชำระแล้ว {baht(paidCount * catTotal(c))}
                   </span>
                 </div>
                 <div className="h-2 rounded-full bg-slate-100 overflow-hidden">

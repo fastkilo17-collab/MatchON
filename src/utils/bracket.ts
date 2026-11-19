@@ -151,13 +151,14 @@ export function ruleForMatch(
   };
 }
 
-export function ruleText(r: { best_of: number; points: number; deuce: boolean; cap: number; play_two?: boolean }): string {
+export function ruleText(r: { best_of: number; points: number; deuce: boolean; cap: number; play_two?: boolean; win_pts?: number; draw_pts?: number; loss_pts?: number }): string {
+  const pt = ` · ชนะ ${r.win_pts ?? 2} เสมอ ${r.draw_pts ?? 1} แพ้ ${r.loss_pts ?? 0} คะแนน`;
   const setLabel = r.play_two
-    ? '2 เซต (2-0 ได้ 2 แต้ม · 1-1 เสมอ ได้ทีมละ 1)'
+    ? '2 เซต (2-0 ชนะ · 1-1 เสมอ)'
     : r.best_of === 1
       ? '1 เซต'
       : `${Math.floor(r.best_of / 2) + 1} ใน ${r.best_of} เซต`;
-  return `${setLabel} · ${r.points} แต้ม${r.deuce ? ` (ดิวสูงสุด ${r.cap})` : ' (ไม่ดิว)'}`;
+  return `${setLabel} · ${r.points} แต้ม${r.deuce ? ` (ดิวสูงสุด ${r.cap})` : ' (ไม่ดิว)'}${pt}`;
 }
 
 export function setWinner(
@@ -386,7 +387,16 @@ export interface StandingRow {
   pts: number;
 }
 
-export function computeStandings(teamIds: string[], matches: Match[]): StandingRow[] {
+export type StandingPts = { win: number; draw: number; loss: number };
+export const DEFAULT_PTS: StandingPts = { win: 2, draw: 1, loss: 0 };
+/** คะแนนชนะ/เสมอ/แพ้ ของรุ่น (จากชุดกติการอบแบ่งกลุ่มที่ผูกกับรุ่น) */
+export function standingPtsFor(categoryId: string, categories: Category[], rules: RulePreset[]): StandingPts {
+  const cat = categories.find((c) => c.id === categoryId);
+  const p = cat?.rule_group ? rules.find((r) => r.id === cat.rule_group) : undefined;
+  return { win: p?.win_pts ?? 2, draw: p?.draw_pts ?? 1, loss: p?.loss_pts ?? 0 };
+}
+
+export function computeStandings(teamIds: string[], matches: Match[], pts: StandingPts = DEFAULT_PTS): StandingRow[] {
   const row: Record<string, StandingRow> = {};
   teamIds.forEach((id) => {
     row[id] = { id, played: 0, won: 0, lost: 0, gf: 0, ga: 0, pf: 0, pa: 0, drawn: 0, pts: 0 };
@@ -424,7 +434,7 @@ export function computeStandings(teamIds: string[], matches: Match[]): StandingR
   }
 
   Object.values(row).forEach((r) => {
-    r.pts = r.won * 2 + r.drawn; // win 2, draw 1, loss 0
+    r.pts = r.won * pts.win + r.drawn * pts.draw + r.lost * pts.loss;
   });
   return Object.values(row).sort((a, b) => {
     if (b.pts !== a.pts) return b.pts - a.pts;
@@ -591,3 +601,9 @@ export function buildQrMatrix(seedStr: string, size = 21): boolean[][] {
   }
   return grid;
 }
+
+/** ยอดที่ต้องจ่ายต่อรุ่น = ค่าสมัคร + ค่าลูกแบด */
+export const catTotal = (c?: { fee?: number; shuttle_fee?: number } | null): number => (c?.fee || 0) + (c?.shuttle_fee || 0);
+/** ข้อความอธิบายค่าลูกแบด เช่น "ค่าลูกแบด ฿600 (10 ลูก)" */
+export const shuttleText = (c: { shuttle_fee?: number; shuttle_qty?: number }): string =>
+  c.shuttle_fee ? `ค่าลูกแบด ฿${c.shuttle_fee.toLocaleString('th-TH')}${c.shuttle_qty ? ` (${c.shuttle_qty} ลูก)` : ''}` : '';

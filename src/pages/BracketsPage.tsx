@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { GitBranch, Lock, Printer, Sparkles, Trash2, Unlock } from 'lucide-react';
 import { useMatchON } from '../context/MatchONContext';
 import type { BracketFormat, Match } from '../types/matchon';
-import { computeStandings, FORMAT_TH, scoreText, teamName } from '../utils/bracket';
+import { computeStandings, standingPtsFor, FORMAT_TH, scoreText, teamName } from '../utils/bracket';
 import { MatchScoreSheet } from '../components/MatchScoreSheet';
 
 export function BracketsPage() {
@@ -10,6 +10,7 @@ export function BracketsPage() {
     state,
     activeTournament,
     tCategories,
+    tRules,
     tRegistrations,
     tMatches,
     tBrackets,
@@ -309,7 +310,7 @@ export function BracketsPage() {
                 .map((gNo) => {
                   const gm = groupMatches.filter((m) => (m.group_no ?? 0) === gNo);
                   const teamIds = [...new Set(gm.flatMap((m) => [m.reg_a, m.reg_b]).filter(Boolean) as string[])];
-                  const rows = computeStandings(teamIds, gm);
+                  const rows = computeStandings(teamIds, gm, standingPtsFor(activeCat.id, tCategories, tRules));
                   return (
                     <div key={gNo} className="bg-white border border-slate-200/80 rounded-2xl p-5 space-y-4">
                       <h3 className="font-display text-base font-bold text-slate-900">
@@ -371,6 +372,7 @@ export function BracketsPage() {
                     {computeStandings(
                       [...new Set(koMatches.flatMap((m) => [m.reg_a, m.reg_b]).filter(Boolean) as string[])],
                       koMatches,
+                      standingPtsFor(activeCat.id, tCategories, tRules),
                     ).map((r, idx) => (
                       <tr key={r.id}>
                         <td className="py-2 text-slate-500">{idx + 1}</td>

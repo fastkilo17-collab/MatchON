@@ -65,6 +65,8 @@ export interface Category {
   age_max: number | null;
   max_teams: number;
   fee: number;
+  shuttle_fee?: number;
+  shuttle_qty?: number;
   format: BracketFormat;
   best_of: number;
   points: number;
@@ -151,6 +153,9 @@ export interface RulePreset {
   deuce: boolean;
   cap: number;
   play_two?: boolean;
+  win_pts?: number;
+  draw_pts?: number;
+  loss_pts?: number;
 }
 
 export interface Referee {

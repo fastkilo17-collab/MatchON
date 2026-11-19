@@ -61,6 +61,21 @@ export function LiveScorePage() {
       });
     } else setPicking(true);
   };
+  const [rotating, setRotating] = useState(false);
+  const rotateQr = async () => {
+    if (qrCourtNo === null || rotating) return;
+    if (!window.confirm('เปลี่ยน QR code ใหม่? ลิงก์/QR เดิมจะใช้ไม่ได้ทันที (กรรมการต้องสแกนใหม่)')) return;
+    setRotating(true);
+    try {
+      setRefUrl('');
+      setRefUrl(await refereeUrl(qrCourtNo, refLabel || undefined, true));
+      toast('เปลี่ยน QR code แล้ว ลิงก์เดิมใช้ไม่ได้');
+    } catch (e: any) {
+      toast(e?.message || 'เปลี่ยน QR ไม่สำเร็จ', 'err');
+    } finally {
+      setRotating(false);
+    }
+  };
   const chooseReferee = async (refId: string | null, label: string) => {
     if (qrCourtNo === null) return;
     assignReferee(refId, qrCourtNo);
@@ -150,23 +165,25 @@ export function LiveScorePage() {
           return (
             <div
               key={court.id}
-              className={`rounded-3xl border p-5 flex flex-col justify-between gap-4 bg-white ${
+              className={`rounded-3xl border p-4 flex flex-col justify-between gap-2.5 bg-white ${
                 liveM ? 'border-blue-200 shadow-sm' : 'border-slate-200/80'
               }`}
             >
               {/* Court Bar */}
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="font-display font-bold text-base text-slate-900">{court.name}</span>
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 leading-tight">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-display font-bold text-base text-slate-900">{court.name}</span>
+                    {m && (m.match_no || m.scheduled_at) && (
+                      <span className="text-[11px] font-bold text-blue-700 bg-blue-50 rounded-md px-1.5 py-0.5 shrink-0 tabular-nums">
+                        {m.match_no ? `แมตช์ #${m.match_no}` : ''}{m.match_no && m.scheduled_at ? ' · ' : ''}{m.scheduled_at ? fmtTime(m.scheduled_at) : ''}
+                      </span>
+                    )}
+                  </div>
                   {m && (
-                    <span className="text-xs text-slate-500 truncate">
-                      · {catMap[m.category_id]?.name || ''} · {m.round_label}
-                    </span>
-                  )}
-                  {m && (m.match_no || m.scheduled_at) && (
-                    <span className="text-[11px] font-bold text-blue-700 bg-blue-50 rounded-md px-1.5 py-0.5 shrink-0 tabular-nums">
-                      {m.match_no ? `แมตช์ #${m.match_no}` : ''}{m.match_no && m.scheduled_at ? ' · ' : ''}{m.scheduled_at ? fmtTime(m.scheduled_at) : ''}
-                    </span>
+                    <div className="text-xs text-slate-500 truncate mt-0.5">
+                      {catMap[m.category_id]?.name || ''} · {m.round_label}
+                    </div>
                   )}
                 </div>
 
@@ -372,6 +389,9 @@ export function LiveScorePage() {
                 </a>
                 <button type="button" onClick={() => setPicking(true)} className="min-h-[40px] px-4 rounded-xl bg-amber-100 text-amber-800 text-xs font-semibold">
                   เปลี่ยนกรรมการ
+                </button>
+                <button type="button" disabled={rotating} onClick={() => void rotateQr()} className="min-h-[40px] px-4 rounded-xl bg-red-100 text-red-700 text-xs font-semibold">
+                  เปลี่ยน QR code
                 </button>
               </div>
             </>

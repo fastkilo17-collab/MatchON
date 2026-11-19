@@ -18,6 +18,8 @@ import {
   REG_STATUS_TH,
   teamFullName,
   teamName,
+  catTotal,
+  shuttleText,
 } from '../utils/bracket';
 import { PhotoThumb, ResponsiveSheet } from '../components/UiKit';
 
@@ -77,7 +79,7 @@ export function AthletesPage() {
 
   const paidTotal = filtered
     .filter((r) => r.pay_status === 'paid')
-    .reduce((sum, r) => sum + (catMap[r.category_id]?.fee || 0), 0);
+    .reduce((sum, r) => sum + catTotal(catMap[r.category_id]), 0);
 
   const handleExportCsv = () => {
     downloadCsv(`นักกีฬา-${activeTournament.slug}.csv`, [
@@ -337,7 +339,7 @@ export function AthletesPage() {
               <div className="font-semibold text-slate-900">{teamFullName(selectedReg)}</div>
               <div className="text-slate-600">โทร: {selectedReg.p1_phone || '-'}</div>
               <div className="text-slate-600">
-                ค่าสมัคร: {baht(catMap[selectedReg.category_id]?.fee || 0)}
+                ค่าสมัคร: {baht(catTotal(catMap[selectedReg.category_id]))}{catMap[selectedReg.category_id]?.shuttle_fee ? ` (รวม ${shuttleText(catMap[selectedReg.category_id])})` : ''}
               </div>
             </div>
 

@@ -132,6 +132,8 @@ const categoryFromDb = (r: any): Category => ({
   age_max: r.age_max ?? null,
   max_teams: r.max_teams || 16,
   fee: r.fee || 0,
+  shuttle_fee: r.shuttle_fee || 0,
+  shuttle_qty: r.shuttle_qty || 0,
   format: r.format || 'knockout',
   best_of: r.best_of || 3,
   points: r.points || 21,
@@ -153,6 +155,8 @@ const categoryToDb = (c: Category, ruleIds: Set<string>) => ({
   age_max: c.age_max ?? null,
   max_teams: Math.min(512, Math.max(2, c.max_teams || 16)),
   fee: Math.max(0, c.fee || 0),
+  shuttle_fee: Math.max(0, c.shuttle_fee || 0),
+  shuttle_qty: Math.max(0, c.shuttle_qty || 0),
   format: c.format,
   best_of: [1, 3, 5].includes(c.best_of) ? c.best_of : 3,
   points: Math.min(50, Math.max(5, c.points || 21)),
@@ -414,7 +418,7 @@ export async function loadAll(profile: Profile | null): Promise<Loaded> {
         seeded: !!b.seeded,
         locked: !!b.locked,
       })),
-      rules: rules.map((r: any) => ({ id: r.id, tournament_id: r.tournament_id, name: r.name, best_of: r.best_of, points: r.points, deuce: r.deuce, cap: r.cap, play_two: !!r.play_two })),
+      rules: rules.map((r: any) => ({ id: r.id, tournament_id: r.tournament_id, name: r.name, best_of: r.best_of, points: r.points, deuce: r.deuce, cap: r.cap, play_two: !!r.play_two, win_pts: r.win_pts ?? 2, draw_pts: r.draw_pts ?? 1, loss_pts: r.loss_pts ?? 0 })),
       referees,
       notifications,
     },
@@ -478,7 +482,7 @@ export async function pushDiff(prev: Data, next: Data, uid: string, manageable: 
   // rules before categories (categories reference them)
   const rd = diff(prev.rules, next.rules);
   const rRows = [...rd.added, ...rd.changed].filter((r) => ok(r.tournament_id)).map((r) => ({
-    id: r.id, tournament_id: r.tournament_id, name: r.name, best_of: r.best_of, points: r.points, deuce: r.deuce, cap: r.cap, play_two: !!r.play_two,
+    id: r.id, tournament_id: r.tournament_id, name: r.name, best_of: r.best_of, points: r.points, deuce: r.deuce, cap: r.cap, play_two: !!r.play_two, win_pts: r.win_pts ?? 2, draw_pts: r.draw_pts ?? 1, loss_pts: r.loss_pts ?? 0,
   }));
   if (rRows.length) await must(sb.from('tournament_rules').upsert(rRows, { onConflict: 'id' }));
 
