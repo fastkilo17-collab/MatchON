@@ -259,7 +259,7 @@ export function BracketsPage() {
                       onClick={() => generateGroupKnockoutStage(activeCat.id)}
                       className="min-h-[40px] px-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold"
                     >
-                      สร้างรอบไขว้สาย
+                      สร้างรอบน็อคเอาท์
                     </button>
                   )}
                 {meta?.format === 'swiss' && (

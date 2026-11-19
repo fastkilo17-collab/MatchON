@@ -412,7 +412,7 @@ const RULE0 = { best_of: 3, points: 21, cap: 30, deuce: true, playTwo: false };
 const R = (c) => Object.assign({}, RULE0, (c && c.rule) || {});
 const maxSets = (c) => { const r = R(c); return r.playTwo ? 2 : Math.max(1, r.best_of || 3); };
 
-let court = null, canWrite = false, online = false, note = '';
+let court = null, canWrite = false, online = false, note = '', revoked = false;
 let viewSet = null;              // set shown on screen; null = follow the set being played
 let prefs = { flip: false, wake: false, fit: 'fit' };
 try { Object.assign(prefs, JSON.parse(localStorage.getItem(PREF) || '{}')); } catch {}
@@ -544,6 +544,7 @@ function elapsed(c) {
 }
 
 function draw() {
+  if (revoked) return showMsg('QR / ลิงก์นี้ถูกยกเลิกแล้ว (ผู้จัดเปลี่ยน QR ใหม่) กรุณาขอสแกน QR ใหม่จากผู้จัด');
   if (!courtNo) return showMsg('ลิงก์นี้ไม่ระบุคอร์ต ให้สแกน QR จากหน้า "สายแข่ง & คอร์ทสด" ของแต่ละคอร์ต');
   if (!court) return showMsg(liveId ? 'กำลังเชื่อมต่อ… ถ้านานเกิน 10 วินาทีให้ตรวจอินเทอร์เน็ต หรือผู้จัดยังไม่ได้เปิดข้อมูลคอร์ตนี้' : 'ไม่พบข้อมูลคอร์ตนี้ในเครื่องนี้ ให้สแกน QR ใหม่จากหน้าผู้จัด');
   $('msg').classList.remove('on');
@@ -651,7 +652,7 @@ async function commit(mutate, extraLocal) {
   if (liveId) {
     try { await Live.updateCourt(liveId, courtNo, mutate); }
     catch (e) {
-      if (e.code === 'PERMISSION_DENIED') { canWrite = false; note = 'รหัสถูกเปลี่ยนแล้วหรือไม่มีสิทธิ์ ให้ขอ QR ใหม่จากผู้จัด'; }
+      if (e.code === 'PERMISSION_DENIED') { canWrite = false; revoked = true; note = 'รหัสถูกเปลี่ยนแล้วหรือไม่มีสิทธิ์ ให้ขอ QR ใหม่จากผู้จัด'; }
       else note = 'ส่งไม่สำเร็จ: ' + (e.code || e.message);
       draw(); return false;
     }
@@ -780,12 +781,17 @@ draw();
 if (liveId) {
   Live.connect(liveId, { courtNo, key: secret }).then((r) => {
     canWrite = r.canWrite;
+    if (r.denied) revoked = true;
     if (r.error === 'auth') note = 'เปิด Anonymous sign-in ใน Firebase ก่อน (' + (r.detail || '') + ')';
     else if (r.error === 'nokey' || r.error === 'badkey') note = 'ลิงก์ไม่มีรหัสของคอร์ตนี้ ดูอย่างเดียว ให้สแกน QR ใหม่';
     draw();
   });
   Live.watchConnection((on) => { online = on; if (!on) toast('ออฟไลน์ ระบบจะส่งข้อมูลเมื่อกลับมาออนไลน์'); });
   Live.watchCourt(liveId, courtNo, (c) => { court = c; draw(); });
+  // organizer may rotate the court key at any time: re-prove the key regularly and lock the page if it was revoked
+  const recheck = () => { if (revoked) return; Live.connect(liveId, { courtNo, key: secret }).then((r) => { if (r.denied) { revoked = true; canWrite = false; draw(); } }); };
+  setInterval(recheck, 8000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) recheck(); });
 } else {
   canWrite = true; court = local.court();
   window.addEventListener('storage', (e) => { if (e.key === LOCAL_KEY) { court = local.court(); draw(); } });

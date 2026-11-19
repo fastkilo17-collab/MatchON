@@ -99,6 +99,7 @@ export interface Registration {
   note?: string;
   seed: number | null;
   is_mine?: boolean;
+  slip_path?: string | null;
   created_at: string;
 }
 

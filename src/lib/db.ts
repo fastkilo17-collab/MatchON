@@ -186,6 +186,7 @@ export const registrationFromDb = (r: any): Registration => ({
   pay_status: r.pay_status || 'unpaid',
   note: r.note || '',
   seed: r.seed ?? null,
+  slip_path: r.slip_path || null,
   created_at: r.created_at,
 });
 
@@ -627,4 +628,15 @@ export async function rpcUpdateRegistration(args: {
 export async function rpcSubmitSlip(id: string, token: string, path: string): Promise<void> {
   const { error } = await sb.rpc('submit_slip', { p_reg: id, p_token: token, p_path: path });
   if (error) throw error;
+}
+
+export async function deleteRegistrationDb(id: string): Promise<void> {
+  const { error } = await sb.from('registrations').delete().eq('id', id);
+  if (error) throw error;
+}
+
+export async function slipSignedUrl(path: string): Promise<string> {
+  const { data, error } = await sb.storage.from('slips').createSignedUrl(path, 600);
+  if (error || !data) throw error || new Error('เปิดสลิปไม่ได้');
+  return data.signedUrl;
 }

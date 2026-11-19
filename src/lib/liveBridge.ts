@@ -234,7 +234,8 @@ export function useLiveBridge(a: Args) {
       if (!c) throw new Error(error || 'ยังเชื่อม Firebase ไม่เสร็จ ลองอีกครั้ง');
       if (rotate || !c.keys['c' + no]) {
         c.keys['c' + no] = rand(24);
-        await sb.rpc('save_live_keys', { p_tournament: tid, p_keys: c.keys });
+        const sv = await sb.rpc('save_live_keys', { p_tournament: tid, p_keys: c.keys });
+        if (sv.error) throw sv.error;
         await FB.current.publishCourtKeys(c.live_id, c.keys);
       }
       const m = currentMatch(no);

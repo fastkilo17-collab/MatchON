@@ -839,7 +839,7 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
                 <option value="knockout">แพ้คัดออก</option>
                 <option value="round_robin">พบกันหมด</option>
                 <option value="group_stage">แบ่งกลุ่ม</option>
-                <option value="group_knockout">แบ่งกลุ่ม+ไขว้สาย</option>
+                <option value="group_knockout">แบ่งกลุ่ม+น็อคเอาท์</option>
                 <option value="swiss">Swiss</option>
               </select>
             </label>

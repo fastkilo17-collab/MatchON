@@ -38,7 +38,9 @@ export function SchedulePage() {
   }, []);
   const [startDT, setStartDT] = useState(defaultStart);
   const [selectedCourts, setSelectedCourts] = useState<number[]>([]);
-  const [timeOnly, setTimeOnly] = useState(false);
+  const [useCourt, setUseCourt] = useState(false);
+  const [useTime, setUseTime] = useState(true);
+  const timeOnly = !useCourt;
 
   if (!activeTournament) {
     return (
@@ -59,8 +61,8 @@ export function SchedulePage() {
 
   const handleRunAuto = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedCourts.length) return;
-    runAutoSchedule(new Date(startDT).toISOString(), selectedCourts, timeOnly);
+    if (!selectedCourts.length || (!useCourt && !useTime)) return;
+    runAutoSchedule(new Date(startDT).toISOString(), selectedCourts, timeOnly, useTime);
     setAutoOpen(false);
   };
 
@@ -250,17 +252,14 @@ export function SchedulePage() {
             />
           </label>
 
-          <div className="grid grid-cols-2 gap-1 p-1 bg-slate-100 rounded-xl">
-            {([[false, 'จัดสนาม + เวลา'], [true, 'จัดเฉพาะเวลา']] as const).map(([v, label]) => (
-              <button
-                key={label}
-                type="button"
-                onClick={() => setTimeOnly(v)}
-                className={`min-h-[40px] rounded-lg text-xs font-semibold ${timeOnly === v ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-600'}`}
-              >
-                {label}
-              </button>
-            ))}
+          <div className="flex items-center gap-4 p-3 bg-slate-100 rounded-xl text-sm font-semibold text-slate-700">
+            <span className="text-xs text-slate-500">จัด:</span>
+            <label className="inline-flex items-center gap-2 min-h-[36px] cursor-pointer">
+              <input type="checkbox" checked={useCourt} onChange={(e) => setUseCourt(e.target.checked)} className="w-4 h-4" /> สนาม
+            </label>
+            <label className="inline-flex items-center gap-2 min-h-[36px] cursor-pointer">
+              <input type="checkbox" checked={useTime} onChange={(e) => setUseTime(e.target.checked)} className="w-4 h-4" /> เวลา
+            </label>
           </div>
           {timeOnly && (
             <p className="text-xs text-slate-500">

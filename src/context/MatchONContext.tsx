@@ -32,6 +32,7 @@ import {
   EMPTY_DATA,
   loadAll,
   loadProfile,
+  deleteRegistrationDb,
   pushDiff,
   rpcAdminAdd,
   rpcRegister,
@@ -85,6 +86,7 @@ interface MatchONContextValue {
   ) => Promise<{ id: string; token?: string } | null>;
   simulateRegistrations: (categoryId: string, count?: number) => void;
   updateRegistration: (id: string, patch: Partial<Registration>) => void;
+  deleteRegistration: (id: string) => Promise<boolean>;
   generateBracket: (
     categoryId: string,
     opts: { format: BracketFormat; groups: number; advance: number; seeded: boolean },
@@ -96,7 +98,7 @@ interface MatchONContextValue {
   recordMatchSets: (matchId: string, sets: [number, number][], liveCur?: [number, number] | null, silent?: boolean, force?: boolean) => void;
   adjustLivePoint: (matchId: string, side: 'a' | 'b', delta: 1 | -1) => void;
   updateMatchMeta: (matchId: string, patch: Partial<Match>) => void;
-  runAutoSchedule: (startIso: string, courtNos: number[], timeOnly?: boolean) => number;
+  runAutoSchedule: (startIso: string, courtNos: number[], timeOnly?: boolean, setTime?: boolean) => number;
   callMatchToCourt: (matchId: string, courtNo: number) => void;
   toggleCourtMaintenance: (courtId: string) => void;
   addCourt: () => void;
@@ -512,6 +514,30 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
     [state.categories, reload, toast],
   );
 
+  const deleteRegistration = useCallback(
+    async (id: string): Promise<boolean> => {
+      try {
+        await deleteRegistrationDb(id);
+        setState((prev) => ({
+          ...prev,
+          registrations: prev.registrations.filter((r) => r.id !== id),
+          matches: prev.matches.map((m) => ({
+            ...m,
+            reg_a: m.reg_a === id ? null : m.reg_a,
+            reg_b: m.reg_b === id ? null : m.reg_b,
+            winner: m.winner === id ? null : m.winner,
+          })),
+        }));
+        toast('ลบใบสมัครแล้ว');
+        return true;
+      } catch (e: any) {
+        toast(e?.message || 'ลบใบสมัครไม่สำเร็จ (ต้องเป็นเจ้าของรายการ)', 'err');
+        return false;
+      }
+    },
+    [toast],
+  );
+
   const updateRegistration = useCallback(
     (id: string, patch: Partial<Registration>) => {
       setState((prev) => {
@@ -612,7 +638,7 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
             id: uuid(),
             tournament_id: cat.tournament_id,
             category_id: categoryId,
-            match_no: nextNo++,
+            match_no: null,
             round: 1,
             round_label: 'รอบที่ 1',
             slot: i,
@@ -720,7 +746,7 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
           ...ko,
         ],
       }));
-      toast('สร้างรอบไขว้สาย (Knockout) เรียบร้อย');
+      toast('สร้างรอบน็อคเอาท์ เรียบร้อย');
     },
     [state.categories, state.brackets, state.matches, state.rules, toast],
   );
@@ -752,7 +778,7 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
         id: uuid(),
         tournament_id: cat.tournament_id,
         category_id: categoryId,
-        match_no: maxNo++,
+        match_no: null,
         round: last + 1,
         round_label: `รอบที่ ${last + 1}`,
         slot: i,
@@ -894,7 +920,8 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
   );
 
   const runAutoSchedule = useCallback(
-    (startIso: string, courtNos: number[], timeOnly = false): number => {
+    (startIso: string, courtNos: number[], timeOnly = false, setTime = true): number => {
+      const setCourt = !timeOnly;
       if (!activeTournament) return 0;
       const plan = planAutoSchedule(tMatches, activeTournament, startIso, courtNos, timeOnly);
       if (!plan.length) {
@@ -902,12 +929,29 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
         return 0;
       }
       const map = Object.fromEntries(plan.map((p) => [p.id, p]));
-      setState((prev) => ({
-        ...prev,
-        matches: prev.matches.map((m) =>
-          map[m.id] ? { ...m, court: timeOnly ? m.court : map[m.id].court, scheduled_at: map[m.id].scheduled_at } : m,
-        ),
-      }));
+      setState((prev) => {
+        // ใส่เลขแมตช์ตามลำดับเวลาที่จัดได้ ต่อจากเลขสูงสุดของรายการ
+        let next = Math.max(0, ...prev.matches.filter((m) => m.tournament_id === activeTournament.id).map((m) => m.match_no || 0)) + 1;
+        const order = [...plan].sort((a, b) => +new Date(a.scheduled_at) - +new Date(b.scheduled_at));
+        const noOf: Record<string, number> = {};
+        for (const p of order) {
+          const cur = prev.matches.find((x) => x.id === p.id);
+          if (cur && !cur.match_no) noOf[p.id] = next++;
+        }
+        return {
+          ...prev,
+          matches: prev.matches.map((m) =>
+            map[m.id]
+              ? {
+                  ...m,
+                  court: setCourt ? map[m.id].court : m.court,
+                  scheduled_at: setTime ? map[m.id].scheduled_at : m.scheduled_at,
+                  match_no: m.match_no || noOf[m.id] || null,
+                }
+              : m,
+          ),
+        };
+      });
       toast(`จัดตารางอัตโนมัติแล้ว ${plan.length} แมตช์`);
       return plan.length;
     },
@@ -922,7 +966,7 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
         const now = new Date().toISOString();
         const nextMatches = prev.matches.map((m) => {
           if (m.id === matchId) {
-            return { ...m, court: courtNo, scheduled_at: m.scheduled_at || now, status: 'scheduled' as const };
+            return { ...m, court: courtNo, scheduled_at: m.scheduled_at || now, match_no: m.match_no || Math.max(0, ...prev.matches.filter((x) => x.tournament_id === m.tournament_id).map((x) => x.match_no || 0)) + 1, status: 'scheduled' as const };
           }
           if (m.tournament_id === target.tournament_id && m.court === courtNo && m.status === 'scheduled') {
             return { ...m, court: null };
@@ -1118,6 +1162,7 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
     addRegistration,
     simulateRegistrations,
     updateRegistration,
+    deleteRegistration,
     generateBracket,
     toggleBracketLock,
     clearBracket,

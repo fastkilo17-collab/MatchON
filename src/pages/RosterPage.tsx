@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useMatchON } from '../context/MatchONContext';
 import { TeamAvatars } from '../components/UiKit';
-import { REG_STATUS_TH, teamFullName } from '../utils/bracket';
+import { REG_STATUS_TH, PAY_TH, teamFullName, teamName, teamRealWithNick, byRegTime } from '../utils/bracket';
 
 const TONE: Record<string, string> = {
   pending: 'bg-amber-50 text-amber-700',
@@ -18,7 +18,7 @@ export function RosterPage() {
   const [q, setQ] = useState('');
   if (!t) return <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center text-sm text-slate-500">ยังไม่มีรายการแข่งขัน</div>;
 
-  const regs = tRegistrations.filter((r) => (!st || r.status === st) && (!q || teamFullName(r).toLowerCase().includes(q.toLowerCase()) || (r.club || '').toLowerCase().includes(q.toLowerCase())));
+  const regs = [...tRegistrations].sort(byRegTime).filter((r) => (!st || r.status === st) && (!q || teamFullName(r).toLowerCase().includes(q.toLowerCase()) || (r.club || '').toLowerCase().includes(q.toLowerCase())));
   const cats = tCategories.filter((c) => !cat || c.id === cat);
   const statusCount = (s: string) => tRegistrations.filter((r) => r.status === s).length;
 
@@ -64,10 +64,13 @@ export function RosterPage() {
                     <span className="w-6 text-xs text-slate-400 tabular-nums shrink-0">{i + 1}</span>
                     <TeamAvatars reg={r} size={40} />
                     <div className="min-w-0 flex-1">
-                      <div className="text-sm font-semibold text-slate-900 truncate">{teamFullName(r)}</div>
-                      {r.club && <div className="text-xs text-slate-500 truncate">{r.club}</div>}
+                      <div className="text-sm font-semibold text-slate-900 truncate">{teamName(r)}</div>
+                      <div className="text-xs text-slate-500 truncate">{teamRealWithNick(r)}</div>
                     </div>
-                    <span className={`text-[11px] font-bold px-2 py-1 rounded-lg whitespace-nowrap ${TONE[r.status]}`}>{REG_STATUS_TH[r.status]}</span>
+                    <div className="flex flex-col items-end gap-1 shrink-0">
+                      <span className={`text-[11px] font-bold px-2 py-0.5 rounded-lg whitespace-nowrap ${TONE[r.status]}`}>{REG_STATUS_TH[r.status]}</span>
+                      <span className={`text-[11px] font-bold px-2 py-0.5 rounded-lg whitespace-nowrap ${r.pay_status === 'paid' ? 'bg-emerald-50 text-emerald-700' : r.pay_status === 'slip_sent' ? 'bg-blue-50 text-blue-700' : r.pay_status === 'rejected' ? 'bg-red-50 text-red-600' : 'bg-slate-100 text-slate-500'}`}>{PAY_TH[r.pay_status]}</span>
+                    </div>
                   </li>
                 ))}
               </ul>

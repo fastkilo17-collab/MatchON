@@ -92,7 +92,7 @@ export async function connect(liveId, who) {
   }
   if (who && who.courtNo && who.key) {
     try { await set(ref(db, `refs/${liveId}/c${who.courtNo}/${uid}`), who.key); return { canWrite: true }; }
-    catch { return { canWrite: false, error: 'badkey' }; }
+    catch (e) { return { canWrite: false, error: 'badkey', denied: !!e && e.code === 'PERMISSION_DENIED' }; }
   }
   return { canWrite: false, error: 'nokey' };
 }

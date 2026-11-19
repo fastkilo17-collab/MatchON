@@ -36,7 +36,7 @@ export const FORMAT_TH: Record<BracketFormat, string> = {
   knockout: 'แพ้คัดออก',
   round_robin: 'พบกันหมด',
   group_stage: 'แบ่งกลุ่ม',
-  group_knockout: 'แบ่งกลุ่ม + ไขว้สาย',
+  group_knockout: 'แบ่งกลุ่ม+น็อคเอาท์',
   swiss: 'Swiss',
 };
 
@@ -48,7 +48,7 @@ export const MATCH_TH: Record<MatchStatus, string> = {
 
 export const REG_STATUS_TH: Record<RegStatus, string> = {
   pending: 'รอประเมิน',
-  confirmed: 'ประเมินผ่าน',
+  confirmed: 'ผ่าน',
   waitlist: 'สำรอง',
   rejected: 'ไม่ผ่าน',
   cancelled: 'ยกเลิก',
@@ -307,14 +307,10 @@ export function buildKnockout(
     }
   });
 
-  let no = opts.startMatchNo;
   const flat = grid.flat();
   flat.forEach((m) => {
-    if (m.reg_a && m.reg_b) {
-      m.match_no = no++;
-    } else if (!m.winner) {
-      m.match_no = no++;
-    }
+    // เลขแมตช์ยังไม่กำหนดตอนจัดสาย — จะใส่ตอนจัดตารางแข่ง/เรียกลงสนาม
+    m.match_no = null;
   });
   return flat;
 }
@@ -347,7 +343,7 @@ export function buildRoundRobin(
           id: uuid(),
           tournament_id: opts.tournamentId,
           category_id: opts.categoryId,
-          match_no: no++,
+          match_no: null,
           round: r + 1,
           round_label: groupLetter ? `กลุ่ม ${groupLetter} · นัดที่ ${r + 1}` : `นัดที่ ${r + 1}`,
           slot: i,
@@ -607,3 +603,24 @@ export const catTotal = (c?: { fee?: number; shuttle_fee?: number } | null): num
 /** ข้อความอธิบายค่าลูกแบด เช่น "ค่าลูกแบด ฿600 (10 ลูก)" */
 export const shuttleText = (c: { shuttle_fee?: number; shuttle_qty?: number }): string =>
   c.shuttle_fee ? `ค่าลูกแบด ฿${c.shuttle_fee.toLocaleString('th-TH')}${c.shuttle_qty ? ` (${c.shuttle_qty} ลูก)` : ''}` : '';
+
+const REG_ORDER: Record<string, number> = { pending: 0, confirmed: 1, waitlist: 2, rejected: 3, cancelled: 4 };
+const PAY_ORDER: Record<string, number> = { unpaid: 0, slip_sent: 1, paid: 2, rejected: 3 };
+/** เลขลำดับสมัคร (1 = สมัครก่อนสุด) ต่อรายการ */
+export function regSeqMap(regs: Registration[]): Record<string, number> {
+  const out: Record<string, number> = {};
+  [...regs]
+    .sort((a, b) => +new Date(a.created_at || 0) - +new Date(b.created_at || 0))
+    .forEach((r, i) => { out[r.id] = i + 1; });
+  return out;
+}
+/** เรียงตามลำดับสมัคร เก่า → ใหม่ (สมัครล่าสุดอยู่ท้าย) */
+export const byRegTime = (a: Registration, b: Registration) => +new Date(a.created_at || 0) - +new Date(b.created_at || 0);
+/** เรียงตามสถานะประเมิน แล้วสถานะชำระเงิน แล้วลำดับสมัคร */
+export const byStatusThenPay = (a: Registration, b: Registration) =>
+  (REG_ORDER[a.status] ?? 9) - (REG_ORDER[b.status] ?? 9) || (PAY_ORDER[a.pay_status] ?? 9) - (PAY_ORDER[b.pay_status] ?? 9) || byRegTime(a, b);
+/** ชื่อจริงพร้อมชื่อเล่นในวงเล็บ เช่น "สมชาย ใจดี (ชาย) / ..." */
+export function teamRealWithNick(r: Registration): string {
+  const one = (n?: string, k?: string) => (n ? (k && k !== n ? `${n} (${k})` : n) : '');
+  return [one(r.p1_name, r.p1_nick), one(r.p2_name, r.p2_nick)].filter(Boolean).join(' / ');
+}
