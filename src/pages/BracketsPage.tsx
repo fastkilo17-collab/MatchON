@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { GitBranch, Hand, Lock, Printer, Shuffle, Sparkles, Trash2, Unlock, X } from 'lucide-react';
 import { useMatchON } from '../context/MatchONContext';
 import type { BracketFormat, Match } from '../types/matchon';
-import { computeStandings, standingPtsFor, FORMAT_TH, scoreText, teamName, groupPlan, snakeGroups } from '../utils/bracket';
+import { computeStandings, standingPtsFor, FORMAT_TH, scoreText, teamName, groupPlan, clubKey } from '../utils/bracket';
 import { MatchScoreSheet } from '../components/MatchScoreSheet';
 import { ResponsiveSheet, TeamAvatars } from '../components/UiKit';
 
@@ -519,7 +520,7 @@ export function BracketsPage() {
   );
 }
 
-/* ---------- จัดสายเอง: สุ่มทีมลงกลุ่มทีละทีม พร้อมแอนิเมชันลุ้น ---------- */
+/* ---------- จัดสายเอง: สุ่ม/เลือกทีมลงกลุ่มทีละทีม (ทีม/ก๊วนเดียวกันห้ามอยู่กลุ่มเดียวกัน) ---------- */
 function ManualDraw({
   open, onClose, teams, groupCount, perGroup, onConfirm,
 }: {
@@ -527,43 +528,66 @@ function ManualDraw({
   groupCount: number; perGroup: number; onConfirm: (groups: string[][]) => void;
 }) {
   const [groups, setGroups] = useState<string[][]>([]);
-  const [roll, setRoll] = useState<{ g: number; shown: string } | null>(null);
+  const [roll, setRoll] = useState<{ g: number; shown: string; done: boolean } | null>(null);
+  const [pickFor, setPickFor] = useState<number | null>(null);
+  const [msg, setMsg] = useState('');
   const timer = React.useRef<number | null>(null);
   const byId = Object.fromEntries(teams.map((t) => [t.id, t]));
 
   useEffect(() => {
-    if (open) setGroups(Array.from({ length: groupCount }, () => []));
-    return () => { if (timer.current) window.clearInterval(timer.current); };
+    if (open) { setGroups(Array.from({ length: groupCount }, () => [])); setMsg(''); setRoll(null); setPickFor(null); }
+    return () => { if (timer.current) window.clearTimeout(timer.current); };
   }, [open, groupCount]);
 
   const used = new Set(groups.flat());
   const pool = teams.filter((t) => !used.has(t.id));
   const cap = perGroup;
+  const clash = (g: number, t: import('../types/matchon').Registration) => {
+    const k = clubKey(t);
+    return !!k && groups[g].some((id) => clubKey(byId[id]) === k);
+  };
+  const eligible = (g: number) => (groups[g].length >= cap ? [] : pool.filter((t) => !clash(g, t)));
+  const place = (g: number, id: string) => setGroups((prev) => prev.map((gr, i) => (i === g ? [...gr, id] : gr)));
 
   const drawTo = (g: number) => {
-    if (roll || !pool.length || groups[g].length >= cap) return;
-    const pick = pool[Math.floor(Math.random() * pool.length)];
+    if (roll) return;
+    const el = eligible(g);
+    if (!el.length) {
+      setMsg(groups[g].length >= cap ? `กลุ่ม ${String.fromCharCode(65 + g)} เต็มแล้ว` : `ไม่มีทีมที่ลงกลุ่ม ${String.fromCharCode(65 + g)} ได้ (ทีมที่เหลือซ้ำก๊วนกับทีมในกลุ่ม)`);
+      return;
+    }
+    setMsg('');
+    const pick = el[Math.floor(Math.random() * el.length)];
+    // ช้าลงเรื่อยๆ ช่วงท้ายเพื่อให้ลุ้น
+    const ticks = 26;
     let n = 0;
-    timer.current = window.setInterval(() => {
+    let delay = 55;
+    const step = () => {
       n++;
-      const t = pool[Math.floor(Math.random() * pool.length)];
-      setRoll({ g, shown: teamName(t) });
-      if (n >= 18) {
-        if (timer.current) window.clearInterval(timer.current);
-        setRoll(null);
-        setGroups((prev) => prev.map((gr, i) => (i === g ? [...gr, pick.id] : gr)));
+      if (n >= ticks) {
+        setRoll({ g, shown: teamName(pick), done: true });
+        timer.current = window.setTimeout(() => { place(g, pick.id); setRoll(null); }, 1400);
+        return;
       }
-    }, 80);
-    setRoll({ g, shown: teamName(pick) });
+      const t = el[Math.floor(Math.random() * el.length)];
+      setRoll({ g, shown: teamName(t), done: false });
+      delay = n < 14 ? delay * 1.04 : n < 21 ? delay * 1.25 : delay * 1.55;
+      timer.current = window.setTimeout(step, delay);
+    };
+    setRoll({ g, shown: teamName(pick), done: false });
+    timer.current = window.setTimeout(step, delay);
   };
   const remove = (g: number, id: string) => setGroups((prev) => prev.map((gr, i) => (i === g ? gr.filter((x) => x !== id) : gr)));
   const randomRest = () => {
-    const ids = [...pool].sort(() => Math.random() - 0.5).map((t) => t.id);
+    const ids = [...pool].sort(() => Math.random() - 0.5);
     setGroups((prev) => {
       const next = prev.map((g) => [...g]);
-      for (const id of ids) {
-        const open = next.map((g, i) => ({ g, i })).filter(({ g }) => g.length < cap).sort((a, b) => a.g.length - b.g.length)[0];
-        if (open) open.g.push(id);
+      for (const t of ids) {
+        const k = clubKey(t);
+        const cands = next.map((g, i) => ({ g, i })).filter(({ g }) => g.length < cap);
+        const ok = cands.filter(({ g }) => !k || !g.some((id) => clubKey(byId[id]) === k)).sort((a, b) => a.g.length - b.g.length);
+        const to = ok[0];
+        if (to) to.g.push(t.id);
       }
       return next;
     });
@@ -571,44 +595,52 @@ function ManualDraw({
   const ready = pool.length === 0 && groups.every((g) => g.length >= 2);
 
   return (
-    <ResponsiveSheet open={open} onClose={onClose} title="จัดสายเอง" subtitle={`กดสุ่มทีมเข้ากลุ่มทีละทีม · ${groupCount} กลุ่ม กลุ่มละไม่เกิน ${cap} ทีม · เหลือ ${pool.length}/${teams.length} ทีม`}>
+    <ResponsiveSheet open={open} onClose={onClose} title="จัดสายเอง" subtitle={`ทีม/ก๊วนเดียวกันห้ามอยู่กลุ่มเดียวกัน · ${groupCount} กลุ่ม กลุ่มละไม่เกิน ${cap} ทีม · เหลือ ${pool.length}/${teams.length} ทีม`}>
       <div className="space-y-3">
         <div className="flex flex-wrap gap-2">
           <button type="button" onClick={randomRest} disabled={!!roll || !pool.length} className="min-h-[38px] px-3 rounded-xl bg-slate-100 disabled:opacity-40 text-xs font-semibold inline-flex items-center gap-1.5">
             <Shuffle className="w-3.5 h-3.5" /> สุ่มที่เหลือทั้งหมด
           </button>
-          <button type="button" onClick={() => setGroups(Array.from({ length: groupCount }, () => []))} disabled={!!roll} className="min-h-[38px] px-3 rounded-xl bg-slate-100 text-xs font-semibold">
+          <button type="button" onClick={() => { setGroups(Array.from({ length: groupCount }, () => [])); setMsg(''); }} disabled={!!roll} className="min-h-[38px] px-3 rounded-xl bg-slate-100 text-xs font-semibold">
             ล้างทั้งหมด
           </button>
         </div>
+        {msg && <div className="rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-semibold px-3 py-2">{msg}</div>}
         {pool.length > 0 && (
           <div className="text-[11px] text-slate-500">ยังไม่ได้ลงกลุ่ม: {pool.map((t) => teamName(t)).join(' | ')}</div>
         )}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {groups.map((g, gi) => (
             <div key={gi} className="rounded-2xl border border-slate-200 p-3 space-y-2">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2">
                 <span className="font-bold text-sm text-slate-900">กลุ่ม {String.fromCharCode(65 + gi)} <span className="text-xs font-normal text-slate-500">({g.length}/{cap})</span></span>
-                <button
-                  type="button"
-                  disabled={!!roll || !pool.length || g.length >= cap}
-                  onClick={() => drawTo(gi)}
-                  className="min-h-[34px] px-3 rounded-lg bg-violet-600 disabled:bg-slate-300 text-white text-xs font-semibold inline-flex items-center gap-1"
-                >
-                  <Shuffle className="w-3.5 h-3.5" /> สุ่มทีม
-                </button>
+                <div className="flex gap-1.5">
+                  <button
+                    type="button"
+                    disabled={!!roll || !pool.length || g.length >= cap}
+                    onClick={() => { setMsg(''); setPickFor(gi); }}
+                    className="min-h-[34px] px-3 rounded-lg bg-slate-800 disabled:bg-slate-300 text-white text-xs font-semibold"
+                  >
+                    เลือกทีม
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!!roll || !pool.length || g.length >= cap}
+                    onClick={() => drawTo(gi)}
+                    className="min-h-[34px] px-3 rounded-lg bg-violet-600 disabled:bg-slate-300 text-white text-xs font-semibold inline-flex items-center gap-1"
+                  >
+                    <Shuffle className="w-3.5 h-3.5" /> สุ่มทีม
+                  </button>
+                </div>
               </div>
-              {roll && roll.g === gi && (
-                <div className="rounded-xl bg-amber-50 border border-amber-300 px-3 py-2 text-sm font-bold text-amber-800 animate-pulse truncate">🎲 {roll.shown}</div>
-              )}
               {g.map((id) => (
                 <div key={id} className="flex items-center gap-2 rounded-xl bg-slate-50 px-2.5 py-1.5">
                   <TeamAvatars reg={byId[id]} size={24} flat />
                   <span className="flex-1 min-w-0 text-xs font-semibold text-slate-900 truncate">{teamName(byId[id])}</span>
-                  <button type="button" aria-label="เอาออก" onClick={() => remove(gi, id)} className="w-7 h-7 grid place-items-center rounded-lg bg-red-50 text-red-600"><X className="w-3.5 h-3.5" /></button>
+                  <button type="button" aria-label="เอาออก" disabled={!!roll} onClick={() => remove(gi, id)} className="w-7 h-7 grid place-items-center rounded-lg bg-red-50 text-red-600"><X className="w-3.5 h-3.5" /></button>
                 </div>
               ))}
-              {!g.length && !(roll && roll.g === gi) && <div className="text-[11px] text-slate-400 text-center py-2">ยังไม่มีทีม</div>}
+              {!g.length && <div className="text-[11px] text-slate-400 text-center py-2">ยังไม่มีทีม</div>}
             </div>
           ))}
         </div>
@@ -621,6 +653,45 @@ function ManualDraw({
           {ready ? 'ยืนยันและสร้างสาย' : pool.length ? `ต้องจัดทีมให้ครบก่อน (เหลือ ${pool.length} ทีม)` : 'ทุกกลุ่มต้องมีอย่างน้อย 2 ทีม'}
         </button>
       </div>
+
+      {/* เลือกทีมเอง */}
+      {pickFor !== null && createPortal(
+        <div className="fixed inset-0 z-[300] bg-black/60 flex items-end sm:items-center justify-center p-3" onClick={() => setPickFor(null)}>
+          <div className="w-full max-w-md max-h-[75vh] overflow-y-auto rounded-2xl bg-white p-4 space-y-2" onClick={(e) => e.stopPropagation()}>
+            <div className="font-bold text-sm text-slate-900">เลือกทีมเข้ากลุ่ม {String.fromCharCode(65 + pickFor)}</div>
+            {pool.map((t) => {
+              const bad = clash(pickFor, t);
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  disabled={bad}
+                  onClick={() => { place(pickFor, t.id); setPickFor(null); }}
+                  className="w-full flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-left disabled:opacity-40"
+                >
+                  <TeamAvatars reg={t} size={28} flat />
+                  <span className="flex-1 min-w-0 text-sm font-semibold text-slate-900 truncate">{teamName(t)}</span>
+                  {bad && <span className="text-[11px] text-red-600 font-semibold shrink-0">ซ้ำก๊วน</span>}
+                </button>
+              );
+            })}
+            <button type="button" onClick={() => setPickFor(null)} className="w-full min-h-[40px] rounded-xl bg-slate-100 text-xs font-semibold">ปิด</button>
+          </div>
+        </div>,
+        document.body,
+      )}
+
+      {/* popup แอนิเมชันสุ่มกลางจอ */}
+      {roll && createPortal(
+        <div className="fixed inset-0 z-[320] bg-black/80 flex flex-col items-center justify-center gap-5 p-6">
+          <div className="text-white/80 text-lg font-semibold">กำลังสุ่มทีมเข้า กลุ่ม {String.fromCharCode(65 + roll.g)}</div>
+          <div className={`w-full max-w-2xl rounded-3xl px-6 py-10 text-center font-display text-3xl sm:text-5xl font-extrabold leading-tight transition-colors ${roll.done ? 'bg-emerald-500 text-white scale-105' : 'bg-white text-slate-900'}`}>
+            {roll.shown}
+          </div>
+          {roll.done && <div className="text-emerald-300 text-xl font-bold">🎉 ได้ทีมนี้!</div>}
+        </div>,
+        document.body,
+      )}
     </ResponsiveSheet>
   );
 }

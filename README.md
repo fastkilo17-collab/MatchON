@@ -25,5 +25,6 @@ Deploy ผ่าน GitHub Actions (`.github/workflows/pages.yml`) — ตั้
 ### migration 011–012
 - 011: สถานะใบสมัคร `rejected`, `registrations.note`, ข้อมูลรายการ (poster/format_text/rules_text/notice)
 - 012: ผู้ดูแลระบบ (`super_admin`) อนุมัติคำขอเป็นผู้จัด (`organizer_requests`, RPC request_organizer / list_organizer_requests / decide_organizer_request); ลบ `become_organizer`
+- 014: `categories.prizes` (เงินรางวัลสายบน/ล่าง), `brackets.has_lower`, stage `lower` ใน matches
 - 013: `categories.shuttle_fee/shuttle_qty` (ค่าลูกแบด รวมในยอดชำระ), `win_pts/draw_pts/loss_pts` ในชุดกติกา/รุ่น, อัปเดต my_registration และ admin_add_registration
 - LINE login ใช้ LIFF (`VITE_LIFF_ID`) + edge function `line-login`

@@ -54,24 +54,26 @@ export function ResultsPage() {
     const b = tBrackets.find((x) => x.category_id === cat.id);
     const fmt = b?.format || cat.format;
     const ko = ms.filter((m) => m.stage === 'knockout' || (m.stage === 'main' && fmt === 'knockout'));
+    const lowList = ms.filter((m) => m.stage === 'lower');
+    const finalOf = (list: typeof ms) => {
+      if (!list.length) return { first: null as string | null, second: null as string | null };
+      const top = Math.max(...list.map((m) => m.round));
+      const fm = list.find((m) => m.round === top && m.status === 'finished');
+      return fm && fm.winner
+        ? { first: fm.winner as string | null, second: (fm.winner === fm.reg_a ? fm.reg_b : fm.reg_a) as string | null }
+        : { first: null as string | null, second: null as string | null };
+    };
     if (ko.length) {
-      const top = Math.max(...ko.map((m) => m.round));
-      const finalMatch = ko.find((m) => m.round === top && m.status === 'finished');
-      if (finalMatch && finalMatch.winner) {
-        return {
-          cat,
-          first: finalMatch.winner,
-          second: finalMatch.winner === finalMatch.reg_a ? finalMatch.reg_b : finalMatch.reg_a,
-        };
-      }
-      return { cat, first: null, second: null };
+      const up = finalOf(ko);
+      const lo = finalOf(lowList);
+      return { cat, first: up.first, second: up.second, lFirst: lo.first, lSecond: lo.second, hasLower: lowList.length > 0 };
     }
     if (ms.length && ms.every((m) => m.status === 'finished') && fmt === 'round_robin') {
       const ids = [...new Set(ms.flatMap((m) => [m.reg_a, m.reg_b]).filter(Boolean) as string[])];
       const st = computeStandings(ids, ms, standingPtsFor(cat.id, tCategories, tRules));
-      return { cat, first: st[0]?.id || null, second: st[1]?.id || null };
+      return { cat, first: st[0]?.id || null, second: st[1]?.id || null, lFirst: null, lSecond: null, hasLower: false };
     }
-    return { cat, first: null, second: null };
+    return { cat, first: null, second: null, lFirst: null, lSecond: null, hasLower: false };
   });
 
   return (
@@ -85,7 +87,7 @@ export function ResultsPage() {
 
       {/* Podium Cards */}
       <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {podiums.map(({ cat, first, second }) => (
+        {podiums.map(({ cat, first, second, lFirst, lSecond, hasLower }) => (
           <div key={cat.id} className="bg-white border border-slate-200/80 rounded-2xl p-5 space-y-3">
             <div className="flex items-center justify-between gap-2">
               <h3 className="font-display text-base font-bold text-slate-900">{cat.name}</h3>
@@ -94,13 +96,27 @@ export function ResultsPage() {
             {first ? (
               <div className="space-y-2 text-sm">
                 <div className="p-3 rounded-xl bg-amber-50/70 border border-amber-200/70 flex items-center justify-between gap-2">
-                  <span className="text-xs font-bold text-amber-800">ชนะเลิศ</span>
+                  <span className="text-xs font-bold text-amber-800">ชนะเลิศ{hasLower ? ' สายบน' : ''}</span>
                   <span className="font-bold text-slate-900 truncate">{teamName(regMap[first])}</span>
                 </div>
                 {second && (
                   <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/70 flex items-center justify-between gap-2">
-                    <span className="text-xs font-semibold text-slate-600">รองชนะเลิศ</span>
+                    <span className="text-xs font-semibold text-slate-600">รองชนะเลิศ{hasLower ? ' สายบน' : ''}</span>
                     <span className="font-semibold text-slate-800 truncate">{teamName(regMap[second])}</span>
+                  </div>
+                )}
+                {hasLower && lFirst && (
+                  <div className="p-3 rounded-xl bg-sky-50 border border-sky-200/70 space-y-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-bold text-sky-800">ชนะเลิศ สายล่าง</span>
+                      <span className="font-bold text-slate-900 truncate">{teamName(regMap[lFirst])}</span>
+                    </div>
+                    {lSecond && (
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs font-semibold text-slate-600">รองฯ สายล่าง</span>
+                        <span className="font-semibold text-slate-800 truncate">{teamName(regMap[lSecond])}</span>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

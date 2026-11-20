@@ -17,7 +17,7 @@ import type {
 import {
   buildKnockout,
   buildRoundRobin,
-  snakeGroups,
+  clubGroups,
   computeStandings,
   standingPtsFor,
   matchResult,
@@ -616,7 +616,7 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
           toast('จำนวนทีมน้อยเกินไปสำหรับจำนวนกลุ่มนี้ (อย่างน้อยกลุ่มละ 2 ทีม)', 'err');
           return;
         }
-        const groups: string[][] = opts.manualGroups ? opts.manualGroups.map((g) => [...g]) : snakeGroups(ids, G);
+        const groups: string[][] = opts.manualGroups ? opts.manualGroups.map((g) => [...g]) : clubGroups(order, G);
         groups.forEach((g, gi) => {
           const gm = buildRoundRobin(g, {
             tournamentId: cat.tournament_id,

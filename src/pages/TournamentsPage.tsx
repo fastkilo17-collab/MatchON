@@ -809,12 +809,37 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
 
           <div className="grid grid-cols-2 gap-2.5">
             <label className="block space-y-1">
-              <span className="text-xs font-medium text-slate-600">ค่าลูกแบด (฿) เช่น 600</span>
-              <input type="number" min={0} value={catForm.shuttle_fee} onChange={(e) => setCatForm({ ...catForm, shuttle_fee: Number(e.target.value) })} className="w-full min-h-[44px] px-3 rounded-xl border border-slate-200 text-sm tabular-nums" />
+              <span className="text-xs font-medium text-slate-600">รับสูงสุด (ทีม)</span>
+              <input type="number" min={2} value={catForm.max_teams} onChange={(e) => setCatForm({ ...catForm, max_teams: Number(e.target.value) })} className="w-full min-h-[44px] px-3 rounded-xl border border-slate-200 text-sm tabular-nums" />
             </label>
             <label className="block space-y-1">
-              <span className="text-xs font-medium text-slate-600">จำนวนลูกแบด (ลูก) เช่น 10</span>
-              <input type="number" min={0} value={catForm.shuttle_qty} onChange={(e) => setCatForm({ ...catForm, shuttle_qty: Number(e.target.value) })} className="w-full min-h-[44px] px-3 rounded-xl border border-slate-200 text-sm tabular-nums" />
+              <span className="text-xs font-medium text-slate-600">ระบบสาย</span>
+              <select
+                value={catForm.format}
+                onChange={(e) => setCatForm({ ...catForm, format: e.target.value as BracketFormat })}
+                className="w-full min-h-[44px] px-2.5 rounded-xl border border-slate-200 text-sm bg-white"
+              >
+                <option value="knockout">แพ้คัดออก</option>
+                <option value="round_robin">พบกันหมด</option>
+                <option value="group_stage">แบ่งกลุ่ม</option>
+                <option value="group_knockout">แบ่งกลุ่ม+น็อคเอาท์</option>
+                <option value="swiss">Swiss</option>
+              </select>
+            </label>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2.5">
+            <label className="block space-y-1">
+              <span className="text-xs font-medium text-slate-600">ค่าสมัคร (฿)</span>
+              <input type="number" min={0} value={catForm.fee} onChange={(e) => setCatForm({ ...catForm, fee: Number(e.target.value) })} className="w-full min-h-[44px] px-3 rounded-xl border border-slate-200 text-sm tabular-nums" />
+            </label>
+            <label className="block space-y-1">
+              <span className="text-xs font-medium text-slate-600">ค่าลูกแบด (฿)</span>
+              <input type="number" min={0} placeholder="เช่น 600" value={catForm.shuttle_fee} onChange={(e) => setCatForm({ ...catForm, shuttle_fee: Number(e.target.value) })} className="w-full min-h-[44px] px-3 rounded-xl border border-slate-200 text-sm tabular-nums" />
+            </label>
+            <label className="block space-y-1">
+              <span className="text-xs font-medium text-slate-600">จำนวนลูก</span>
+              <input type="number" min={0} placeholder="เช่น 10" value={catForm.shuttle_qty} onChange={(e) => setCatForm({ ...catForm, shuttle_qty: Number(e.target.value) })} className="w-full min-h-[44px] px-3 rounded-xl border border-slate-200 text-sm tabular-nums" />
             </label>
           </div>
 
@@ -843,43 +868,6 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
                 </div>
               </div>
             ))}
-          </div>
-
-          <div className="grid grid-cols-3 gap-2.5">
-            <label className="block space-y-1">
-              <span className="text-xs font-medium text-slate-600">ค่าสมัคร (฿)</span>
-              <input
-                type="number"
-                min={0}
-                value={catForm.fee}
-                onChange={(e) => setCatForm({ ...catForm, fee: Number(e.target.value) })}
-                className="w-full min-h-[44px] px-3 rounded-xl border border-slate-200 text-sm tabular-nums"
-              />
-            </label>
-            <label className="block space-y-1">
-              <span className="text-xs font-medium text-slate-600">รับสูงสุด (ทีม)</span>
-              <input
-                type="number"
-                min={2}
-                value={catForm.max_teams}
-                onChange={(e) => setCatForm({ ...catForm, max_teams: Number(e.target.value) })}
-                className="w-full min-h-[44px] px-3 rounded-xl border border-slate-200 text-sm tabular-nums"
-              />
-            </label>
-            <label className="block space-y-1">
-              <span className="text-xs font-medium text-slate-600">ระบบสาย</span>
-              <select
-                value={catForm.format}
-                onChange={(e) => setCatForm({ ...catForm, format: e.target.value as BracketFormat })}
-                className="w-full min-h-[44px] px-2.5 rounded-xl border border-slate-200 text-sm bg-white"
-              >
-                <option value="knockout">แพ้คัดออก</option>
-                <option value="round_robin">พบกันหมด</option>
-                <option value="group_stage">แบ่งกลุ่ม</option>
-                <option value="group_knockout">แบ่งกลุ่ม+น็อคเอาท์</option>
-                <option value="swiss">Swiss</option>
-              </select>
-            </label>
           </div>
 
           <div className="flex items-center gap-2 pt-1">

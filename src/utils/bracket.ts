@@ -671,3 +671,24 @@ export function prizeText(c?: { prizes?: { u?: number[]; l?: number[] } } | null
   const u = f(c?.prizes?.u), l = f(c?.prizes?.l);
   return [u && `รางวัล${l ? 'สายบน' : ''} ${u}`, l && `สายล่าง ${l}`].filter(Boolean).join(' · ');
 }
+
+export const clubKey = (r?: Registration | null): string => (r?.club || '').trim().toLowerCase();
+
+/** แบ่งกลุ่มแบบงู แต่ไม่ให้ทีม/ก๊วนเดียวกันอยู่กลุ่มเดียวกัน (ถ้าเลี่ยงได้) */
+export function clubGroups(regs: Registration[], G: number): string[][] {
+  const cap = Math.ceil(regs.length / G);
+  const groups: Registration[][] = Array.from({ length: G }, () => []);
+  regs.forEach((r, i) => {
+    const row = Math.floor(i / G);
+    const pref = row % 2 === 0 ? i % G : G - 1 - (i % G);
+    const k = clubKey(r);
+    const clash = (g: Registration[]) => !!k && g.some((x) => clubKey(x) === k);
+    const order = [pref, ...groups.map((_, gi) => gi).filter((gi) => gi !== pref).sort((a, b) => groups[a].length - groups[b].length || a - b)];
+    const pick =
+      order.find((gi) => groups[gi].length < cap && !clash(groups[gi])) ??
+      order.find((gi) => groups[gi].length < cap) ??
+      pref;
+    groups[pick].push(r);
+  });
+  return groups.map((g) => g.map((r) => r.id));
+}

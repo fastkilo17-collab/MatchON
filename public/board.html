@@ -22,6 +22,8 @@ main{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1
 .st{font:700 13px 'Noto Sans Thai';color:#7d8fb3}.st.l{color:#ff6b6b}
 .cat{font-size:14px;color:#a9bbdd;line-height:1.3}.rule{font-size:12px;color:#7d8fb3}
 .row{display:grid;grid-template-columns:1fr auto auto auto auto;align-items:center;gap:10px;padding:6px 0;border-top:1px solid #1d2a47}
+.ph{display:flex;gap:4px}.ph img,.ph i{width:44px;height:44px;border-radius:50%;object-fit:cover;background:#1d2a47;border:2px solid #2b4170;display:grid;place-items:center;font:700 16px 'Noto Sans Thai';color:#9fb0d0;font-style:normal}
+.who{display:flex;align-items:center;gap:10px;min-width:0}
 .tn{font:700 20px/1.2 'Noto Sans Thai';min-width:0;overflow:hidden;text-overflow:ellipsis}.tn small{display:block;font:500 12px 'Noto Sans Thai';color:#7d8fb3}
 .sc{font:800 22px 'Prompt';min-width:34px;text-align:center;color:#7d8fb3}.sc.act{color:#fff;background:#1c3a74;border-radius:10px;padding:2px 8px}
 .cur{font:800 38px 'Prompt';min-width:56px;text-align:center;color:#ffd24a}
@@ -43,7 +45,9 @@ const ruleTxt = (r) => {
 };
 function side(c, k) {
   const t = c['team' + k], club = c['club' + k];
-  return `<div class="tn">${esc(club ? club + ' · ' + t : t)}</div>`;
+  const real = c['real' + k] || [];
+  const ph = (c['photo' + k] || []).map((u, i) => u ? `<img src="${esc(u)}" alt="" referrerpolicy="no-referrer">` : `<i>${esc(([...(real[i] || t || '?')][0]) || '?')}</i>`).join('');
+  return `<div class="who"><div class="ph">${ph}</div><div class="tn">${esc(club || t)}${club ? `<small>${esc(t)}</small>` : ''}</div></div>`;
 }
 function card(c) {
   const live = c.status === 'LIVE';
