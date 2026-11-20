@@ -533,7 +533,7 @@ function ManualDraw({
   groupCount: number; perGroup: number; onConfirm: (groups: string[][]) => void;
 }) {
   const [groups, setGroups] = useState<string[][]>([]);
-  const [roll, setRoll] = useState<{ g: number; shown: string; done: boolean } | null>(null);
+  const [roll, setRoll] = useState<{ g: number; shown: string; done: boolean; pickId?: string } | null>(null);
   const [pickFor, setPickFor] = useState<number | null>(null);
   const [msg, setMsg] = useState('');
   const timer = React.useRef<number | null>(null);
@@ -554,8 +554,8 @@ function ManualDraw({
   const eligible = (g: number) => (groups[g].length >= cap ? [] : pool.filter((t) => !clash(g, t)));
   const place = (g: number, id: string) => setGroups((prev) => prev.map((gr, i) => (i === g ? [...gr, id] : gr)));
 
-  const drawTo = (g: number) => {
-    if (roll) return;
+  const drawTo = (g: number, force = false) => {
+    if (roll && !force) return;
     const el = eligible(g);
     if (!el.length) {
       setMsg(groups[g].length >= cap ? `กลุ่ม ${String.fromCharCode(65 + g)} เต็มแล้ว` : `ไม่มีทีมที่ลงกลุ่ม ${String.fromCharCode(65 + g)} ได้ (ทีมที่เหลือซ้ำก๊วนกับทีมในกลุ่ม)`);
@@ -570,8 +570,7 @@ function ManualDraw({
     const step = () => {
       n++;
       if (n >= ticks) {
-        setRoll({ g, shown: teamName(pick), done: true });
-        timer.current = window.setTimeout(() => { place(g, pick.id); setRoll(null); }, 900);
+        setRoll({ g, shown: teamName(pick), done: true, pickId: pick.id });
         return;
       }
       const t = el[Math.floor(Math.random() * el.length)];
@@ -690,10 +689,19 @@ function ManualDraw({
       {roll && createPortal(
         <div className="fixed inset-0 z-[320] bg-black/80 flex flex-col items-center justify-center gap-5 p-6">
           <div className="text-white/80 text-lg font-semibold">กำลังสุ่มทีมเข้า กลุ่ม {String.fromCharCode(65 + roll.g)}</div>
-          <div className={`w-full max-w-2xl rounded-3xl px-6 py-10 text-center font-display text-3xl sm:text-5xl font-extrabold leading-tight transition-colors ${roll.done ? 'bg-emerald-500 text-white scale-105' : 'bg-white text-slate-900'}`}>
+          <div className={`w-full max-w-2xl rounded-3xl px-6 py-10 text-center font-display text-3xl sm:text-5xl font-extrabold leading-tight transition-colors ${roll.done ? 'bg-emerald-500 text-white' : 'bg-white text-slate-900'}`}>
             {roll.shown}
           </div>
-          {roll.done && <div className="text-emerald-300 text-xl font-bold">🎉 ได้ทีมนี้!</div>}
+          {roll.done && (
+            <>
+              <div className="text-emerald-300 text-xl font-bold">🎉 ได้ทีมนี้!</div>
+              <div className="flex flex-wrap items-center justify-center gap-3">
+                <button type="button" onClick={() => { place(roll.g, roll.pickId!); setRoll(null); }} className="min-h-[48px] px-8 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-base font-bold">บันทึก</button>
+                <button type="button" onClick={() => { const g = roll.g; setRoll(null); window.setTimeout(() => drawTo(g, true), 50); }} className="min-h-[48px] px-8 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-base font-bold">สุ่มใหม่</button>
+                <button type="button" onClick={() => setRoll(null)} className="min-h-[48px] px-8 rounded-xl bg-white/15 hover:bg-white/25 text-white text-base font-bold">ปิด</button>
+              </div>
+            </>
+          )}
         </div>,
         document.body,
       )}

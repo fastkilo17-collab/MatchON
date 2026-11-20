@@ -217,7 +217,7 @@ export function useLiveBridge(a: Args) {
           }
           continue;
         }
-        if (!m && existing && existing.status === 'LIVE') continue; // never wipe a referee's running match
+        if (!m && existing && existing.status === 'LIVE' && (existing.startedAt || existing.scores.some((s) => s[0] || s[1]))) continue; // never wipe a referee's running match (called-only courts are cleared)
         lastSig.current[ct.no] = sig;
         try {
           await FB.current.writeCourts(cfg.current!.live_id, [payload(ct.no, m)]);
