@@ -21,6 +21,7 @@ import {
   STATUS_TH,
   catTotal,
   shuttleText,
+  prizeText,
 } from '../utils/bracket';
 import { ResponsiveSheet } from '../components/UiKit';
 import { resizeImage } from '../lib/supabase';
@@ -81,6 +82,8 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
     fee: 450,
     shuttle_fee: 0,
     shuttle_qty: 0,
+    pu: ['', '', '', ''] as string[],
+    pl: ['', '', '', ''] as string[],
     format: 'knockout' as BracketFormat,
     best_of: 3,
     points: 21,
@@ -200,6 +203,8 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
       fee: 450,
       shuttle_fee: 0,
       shuttle_qty: 0,
+      pu: ['', '', '', ''],
+      pl: ['', '', '', ''],
       format: 'knockout',
       best_of: 3,
       points: 21,
@@ -221,6 +226,8 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
       fee: opts.fee ?? 450,
       shuttle_fee: 0,
       shuttle_qty: 0,
+      pu: ['', '', '', ''],
+      pl: ['', '', '', ''],
       best_of: opts.best_of ?? 3,
       points: opts.points ?? 21,
       cap: opts.cap ?? 30,
@@ -240,6 +247,8 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
       fee: c.fee,
       shuttle_fee: c.shuttle_fee || 0,
       shuttle_qty: c.shuttle_qty || 0,
+      pu: [0, 1, 2, 3].map((i) => String(c.prizes?.u?.[i] || '')),
+      pl: [0, 1, 2, 3].map((i) => String(c.prizes?.l?.[i] || '')),
       format: c.format,
       best_of: c.best_of,
       points: c.points,
@@ -264,6 +273,7 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
       fee: Number(catForm.fee) || 0,
       shuttle_fee: Number(catForm.shuttle_fee) || 0,
       shuttle_qty: Number(catForm.shuttle_qty) || 0,
+      prizes: { u: catForm.pu.map((x: string) => Number(x) || 0), l: catForm.pl.map((x: string) => Number(x) || 0) },
       format: catForm.format,
       best_of: Number(catForm.best_of) || 3,
       points: Number(catForm.points) || 21,
@@ -711,7 +721,7 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
                     <div className="text-sm font-semibold text-slate-900 truncate">{c.name}</div>
                     <div className="text-xs text-slate-500 truncate mt-0.5 tabular-nums">
                       {KIND_TH[c.kind]} · {GENDER_TH[c.gender]} · {FORMAT_TH[c.format]} ·{' '}
-                      {c.fee ? baht(c.fee) : 'ฟรี'}{c.shuttle_fee ? ` + ${shuttleText(c)}` : ''} · รับ {c.max_teams} ทีม
+                      {c.fee ? baht(c.fee) : 'ฟรี'}{c.shuttle_fee ? ` + ${shuttleText(c)}` : ''} · รับ {c.max_teams} ทีม{prizeText(c) ? ` · ${prizeText(c)}` : ''}
                     </div>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
@@ -806,6 +816,33 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
               <span className="text-xs font-medium text-slate-600">จำนวนลูกแบด (ลูก) เช่น 10</span>
               <input type="number" min={0} value={catForm.shuttle_qty} onChange={(e) => setCatForm({ ...catForm, shuttle_qty: Number(e.target.value) })} className="w-full min-h-[44px] px-3 rounded-xl border border-slate-200 text-sm tabular-nums" />
             </label>
+          </div>
+
+          <div className="space-y-2 rounded-xl border border-slate-200 p-3">
+            <div className="text-xs font-semibold text-slate-700">เงินรางวัล (บาท) อันดับ 1 – 4</div>
+            {([['pu', 'สายบน / รุ่นนี้'], ['pl', 'สายล่าง (ถ้ามี)']] as const).map(([k, label]) => (
+              <div key={k} className="space-y-1">
+                <div className="text-[11px] text-slate-500">{label}</div>
+                <div className="grid grid-cols-4 gap-2">
+                  {[0, 1, 2, 3].map((i) => (
+                    <input
+                      key={i}
+                      type="number"
+                      min={0}
+                      inputMode="numeric"
+                      placeholder={`อันดับ ${i + 1}`}
+                      value={(catForm as any)[k][i]}
+                      onChange={(e) => {
+                        const arr = [...(catForm as any)[k]];
+                        arr[i] = e.target.value;
+                        setCatForm({ ...catForm, [k]: arr } as any);
+                      }}
+                      className="w-full min-h-[40px] px-2 rounded-lg border border-slate-200 text-xs tabular-nums"
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
 
           <div className="grid grid-cols-3 gap-2.5">

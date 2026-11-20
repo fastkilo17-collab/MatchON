@@ -245,5 +245,5 @@ export function useLiveBridge(a: Args) {
     [error, tid, fb, payload],
   );
 
-  return { fb, bridgeOn, error, refereeUrl };
+  return { fb, bridgeOn, error, refereeUrl, liveId };
 }

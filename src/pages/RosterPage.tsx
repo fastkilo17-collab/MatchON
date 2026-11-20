@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useMatchON } from '../context/MatchONContext';
 import { TeamAvatars } from '../components/UiKit';
-import { REG_STATUS_TH, PAY_TH, teamFullName, teamName, teamRealWithNick, byRegTime } from '../utils/bracket';
+import { REG_STATUS_TH, PAY_TH, teamFullName, playersNick, teamRealWithNick, byRegTime } from '../utils/bracket';
 
 const TONE: Record<string, string> = {
   pending: 'bg-amber-50 text-amber-700',
@@ -64,7 +64,7 @@ export function RosterPage() {
                     <span className="w-6 text-xs text-slate-400 tabular-nums shrink-0">{i + 1}</span>
                     <TeamAvatars reg={r} size={40} />
                     <div className="min-w-0 flex-1">
-                      <div className="text-sm font-semibold text-slate-900 truncate">{teamName(r)}</div>
+                      <div className="text-sm font-semibold text-slate-900 truncate">{r.club || playersNick(r)}</div>
                       <div className="text-xs text-slate-500 truncate">{teamRealWithNick(r)}</div>
                     </div>
                     <div className="flex flex-col items-end gap-1 shrink-0">

@@ -134,6 +134,7 @@ const categoryFromDb = (r: any): Category => ({
   fee: r.fee || 0,
   shuttle_fee: r.shuttle_fee || 0,
   shuttle_qty: r.shuttle_qty || 0,
+  prizes: r.prizes && typeof r.prizes === 'object' ? r.prizes : {},
   format: r.format || 'knockout',
   best_of: r.best_of || 3,
   points: r.points || 21,
@@ -157,6 +158,7 @@ const categoryToDb = (c: Category, ruleIds: Set<string>) => ({
   fee: Math.max(0, c.fee || 0),
   shuttle_fee: Math.max(0, c.shuttle_fee || 0),
   shuttle_qty: Math.max(0, c.shuttle_qty || 0),
+  prizes: c.prizes || {},
   format: c.format,
   best_of: [1, 3, 5].includes(c.best_of) ? c.best_of : 3,
   points: Math.min(50, Math.max(5, c.points || 21)),
@@ -191,6 +193,7 @@ export const registrationFromDb = (r: any): Registration => ({
 });
 
 const registrationToDb = (r: Registration) => ({
+  category_id: r.category_id,
   club: r.club || null,
   p1_name: r.p1_name,
   p1_nick: r.p1_nick || null,
@@ -418,6 +421,7 @@ export async function loadAll(profile: Profile | null): Promise<Loaded> {
         advance: b.advance || 2,
         seeded: !!b.seeded,
         locked: !!b.locked,
+        has_lower: !!b.has_lower,
       })),
       rules: rules.map((r: any) => ({ id: r.id, tournament_id: r.tournament_id, name: r.name, best_of: r.best_of, points: r.points, deuce: r.deuce, cap: r.cap, play_two: !!r.play_two, win_pts: r.win_pts ?? 2, draw_pts: r.draw_pts ?? 1, loss_pts: r.loss_pts ?? 0 })),
       referees,
@@ -510,7 +514,7 @@ export async function pushDiff(prev: Data, next: Data, uid: string, manageable: 
   const bd = diff(prev.brackets.map(key), next.brackets.map(key));
   const bRows = [...bd.added, ...bd.changed].filter((b) => ok(b.tournament_id)).map((b) => ({
     tournament_id: b.tournament_id, category_id: b.category_id, format: b.format,
-    groups: Math.min(16, Math.max(1, b.groups || 1)), advance: Math.min(8, Math.max(1, b.advance || 1)), seeded: b.seeded, locked: b.locked,
+    groups: Math.min(16, Math.max(1, b.groups || 1)), advance: Math.min(8, Math.max(1, b.advance || 1)), seeded: b.seeded, locked: b.locked, has_lower: !!b.has_lower,
   }));
   if (bRows.length) await must(sb.from('brackets').upsert(bRows, { onConflict: 'category_id' }));
 

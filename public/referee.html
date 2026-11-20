@@ -65,6 +65,7 @@ button:disabled{opacity:.38;cursor:not-allowed}
 .sv svg{width:30px;height:30px}
 
 .cn{flex:1;position:relative;min-width:0}
+.rulet{position:absolute;right:calc(50% + 148px);top:6px;max-width:calc(50% - 150px);text-align:right;font:600 17px/1.25 'Noto Sans Thai';color:#9fb0d0;z-index:2;overflow:hidden}
 .cat{position:absolute;left:50%;top:0;transform:translateX(-50%);width:276px;height:54px;border-radius:14px 14px 0 0;background:linear-gradient(#6a2fd6,#4a1aa6);border:2px solid #8e63ff;border-bottom:0;display:grid;place-items:center;font:700 31px 'Noto Sans Thai';z-index:2;clip-path:polygon(7% 0,93% 0,100% 100%,0 100%);padding:0 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cat:empty{visibility:hidden}
 .sb{position:absolute;top:54px;bottom:0;width:262px;display:flex;flex-direction:column;overflow:hidden}
@@ -348,6 +349,7 @@ body.pt .logo .lgt{font-size:30px}body.pt .logo .lgi{width:36px;height:36px}
   <section class="bd">
     <div class="tc" id="tcL" data-side="L"><h2 id="hL"></h2><div class="ph" id="phL"></div></div>
     <div class="cn">
+      <div class="rulet" id="rulet"></div>
       <div class="cat" id="cat"></div>
       <div class="sb L" id="sbL"><div class="n num" id="nL">0</div><div class="l" id="lL">คะแนนปัจจุบัน</div></div>
       <div class="mid"><div class="s" id="setlab">SET 1</div><div class="w num" id="won">0 - 0</div><div class="st" id="midst">กำลังแข่งขัน</div></div>
@@ -591,6 +593,9 @@ function draw() {
     $('n' + sd).textContent = c.scores[vi][T(t)];
     $('l' + sd).textContent = viewingLive ? 'คะแนนปัจจุบัน' : 'คะแนนเซตที่ ' + (vi + 1);
   }
+  { const r = R(c);
+    const sets = r.playTwo ? 'แข่ง 2 เซต' : r.best_of === 1 ? '1 เซต' : (r.best_of === 3 ? '2 ใน 3 เซต' : r.best_of === 5 ? '3 ใน 5 เซต' : r.best_of + ' เซต');
+    $('rulet').textContent = 'กติกา : ' + sets + ' ' + r.points + ' แต้ม ' + (r.deuce ? 'ดิวถึง ' + r.cap : 'ไม่ดิว'); }
   $('cat').textContent = catTxt || ''; $('setlab').textContent = 'SET ' + (vi + 1);
   const wl = v.L === 'A' ? wa : wb, wr = v.L === 'A' ? wb : wa;
   $('won').innerHTML = `<b>${wl}</b> <b>-</b> ${wr}`;

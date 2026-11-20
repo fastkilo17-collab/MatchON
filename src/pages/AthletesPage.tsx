@@ -22,6 +22,7 @@ import {
   regSeqMap,
   byRegTime,
   teamRealWithNick,
+  playersNick,
 } from '../utils/bracket';
 import { slipSignedUrl } from '../lib/db';
 import { PhotoThumb, PhotoLightbox, ResponsiveSheet } from '../components/UiKit';
@@ -266,7 +267,7 @@ export function AthletesPage() {
                 </div>
                 <div className="min-w-0 flex-1 space-y-0.5">
                   <div className="text-sm font-bold text-slate-900 truncate">
-                    {teamName(r)}{cat ? <span className="font-semibold text-slate-500"> • {cat.name}</span> : null}
+                    {r.club || playersNick(r)}{cat ? <span className="font-semibold text-slate-500"> • {cat.name}</span> : null}
                     {r.seed != null && <span className="font-mono text-xs font-bold text-blue-700"> · มือวาง {r.seed}</span>}
                   </div>
                   <div className="text-xs text-slate-500 truncate">{teamRealWithNick(r)}</div>
@@ -314,6 +315,22 @@ export function AthletesPage() {
                 </button>
               )}
             </div>
+
+            <label className="block space-y-1">
+              <span className="text-xs font-semibold text-slate-700">รุ่นที่สมัคร</span>
+              <select
+                value={draft.category_id}
+                onChange={(e) => setDraft({ ...draft, category_id: e.target.value })}
+                className="w-full min-h-[44px] px-3 rounded-xl border border-slate-200 bg-white text-sm"
+              >
+                {tCategories.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+              {draft.category_id !== selectedReg.category_id && (
+                <span className="block text-[11px] text-amber-700">ย้ายรุ่น: ถ้ารุ่นเดิมจัดสายไปแล้ว ควรล้างสาย/จัดสายใหม่ และค่าสมัครจะเปลี่ยนตามรุ่นใหม่</span>
+              )}
+            </label>
 
             <div className="grid grid-cols-2 gap-3">
               <label className="block space-y-1">
@@ -386,7 +403,7 @@ export function AthletesPage() {
                 <button
                   type="button"
                   onClick={() => {
-                    updateRegistration(selectedReg.id, { status: draft.status, pay_status: draft.pay_status, note: draft.note, seed: draft.seed });
+                    updateRegistration(selectedReg.id, { category_id: draft.category_id, status: draft.status, pay_status: draft.pay_status, note: draft.note, seed: draft.seed });
                     closeReg();
                   }}
                   className="inline-flex items-center justify-center gap-1.5 min-h-[46px] rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold"

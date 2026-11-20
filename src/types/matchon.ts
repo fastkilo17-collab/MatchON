@@ -7,7 +7,7 @@ export type BracketFormat = 'knockout' | 'round_robin' | 'group_stage' | 'group_
 export type RegStatus = 'pending' | 'confirmed' | 'waitlist' | 'rejected' | 'cancelled';
 export type PayStatus = 'unpaid' | 'slip_sent' | 'paid' | 'rejected';
 export type MatchStatus = 'scheduled' | 'live' | 'finished';
-export type MatchStage = 'main' | 'group' | 'knockout' | 'swiss';
+export type MatchStage = 'main' | 'group' | 'knockout' | 'lower' | 'swiss';
 export type CourtStatus = 'available' | 'maintenance';
 
 export type NavRoute =
@@ -67,6 +67,8 @@ export interface Category {
   fee: number;
   shuttle_fee?: number;
   shuttle_qty?: number;
+  /** เงินรางวัล (บาท) อันดับ 1-4 ของสายบน(u) และสายล่าง(l) */
+  prizes?: { u?: number[]; l?: number[] };
   format: BracketFormat;
   best_of: number;
   points: number;
@@ -143,6 +145,7 @@ export interface BracketMeta {
   advance: number;
   seeded: boolean;
   locked: boolean;
+  has_lower?: boolean;
 }
 
 export interface RulePreset {

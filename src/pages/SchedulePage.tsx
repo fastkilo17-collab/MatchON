@@ -18,6 +18,7 @@ export function SchedulePage() {
     state,
     activeTournament,
     tMatches,
+    tCategories,
     tCourts,
     regMap,
     catMap,
@@ -38,6 +39,7 @@ export function SchedulePage() {
   }, []);
   const [startDT, setStartDT] = useState(defaultStart);
   const [selectedCourts, setSelectedCourts] = useState<number[]>([]);
+  const [catStart, setCatStart] = useState<Record<string, string>>({});
   const [useCourt, setUseCourt] = useState(false);
   const [useTime, setUseTime] = useState(true);
   const timeOnly = !useCourt;
@@ -62,7 +64,9 @@ export function SchedulePage() {
   const handleRunAuto = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedCourts.length || (!useCourt && !useTime)) return;
-    runAutoSchedule(new Date(startDT).toISOString(), selectedCourts, timeOnly, useTime);
+    const cs: Record<string, string> = {};
+    Object.entries(catStart).forEach(([k, v]) => { if (v) cs[k] = new Date(v).toISOString(); });
+    runAutoSchedule(new Date(startDT).toISOString(), selectedCourts, timeOnly, useTime, cs);
     setAutoOpen(false);
   };
 
@@ -251,6 +255,26 @@ export function SchedulePage() {
               className="w-full min-h-[44px] px-3 rounded-xl border border-slate-200 text-sm"
             />
           </label>
+
+          {(() => {
+            const cats = tCategories.filter((c) => tMatches.some((m) => m.category_id === c.id && m.status === 'scheduled' && !m.scheduled_at));
+            return cats.length > 1 ? (
+              <div className="space-y-2 rounded-xl border border-slate-200 p-3">
+                <div className="text-xs font-semibold text-slate-700">เวลาเริ่มแต่ละรุ่น (เว้นว่าง = ใช้เวลาเริ่มด้านบน)</div>
+                {cats.map((c) => (
+                  <label key={c.id} className="flex items-center gap-2">
+                    <span className="w-28 shrink-0 text-xs font-semibold text-slate-600 truncate">{c.name}</span>
+                    <input
+                      type="datetime-local"
+                      value={catStart[c.id] || ''}
+                      onChange={(e) => setCatStart({ ...catStart, [c.id]: e.target.value })}
+                      className="flex-1 min-w-0 min-h-[40px] px-2 rounded-lg border border-slate-200 text-xs"
+                    />
+                  </label>
+                ))}
+              </div>
+            ) : null;
+          })()}
 
           <div className="flex items-center gap-4 p-3 bg-slate-100 rounded-xl text-sm font-semibold text-slate-700">
             <span className="text-xs text-slate-500">จัด:</span>

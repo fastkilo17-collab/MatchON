@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MatchON · Live Score</title>
+<link rel="icon" type="image/png" href="img/matchon-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700;800&family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0}
+html,body{height:100%;background:#0b1220;color:#e8eefc;font-family:'Noto Sans Thai',sans-serif}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 20px;border-bottom:1px solid #1d2a47}
+.logo{font:800 22px 'Prompt';letter-spacing:.2px}.logo b{color:#f5b301}
+#tname{font:700 20px 'Noto Sans Thai';color:#cfe0ff;text-align:center;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#conn{font-size:12px;color:#7d8fb3}
+main{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:14px;padding:16px 20px}
+.card{background:#111b30;border:1px solid #22345a;border-radius:18px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.card.live{border-color:#ef4444;box-shadow:0 0 0 1px #ef444455}
+.top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.court{font:800 22px 'Prompt'}.court small{font:700 13px 'Noto Sans Thai';color:#7fb0ff;background:#16294d;border-radius:8px;padding:2px 8px;margin-left:6px;vertical-align:middle}
+.st{font:700 13px 'Noto Sans Thai';color:#7d8fb3}.st.l{color:#ff6b6b}
+.cat{font-size:14px;color:#a9bbdd;line-height:1.3}.rule{font-size:12px;color:#7d8fb3}
+.row{display:grid;grid-template-columns:1fr auto auto auto auto;align-items:center;gap:10px;padding:6px 0;border-top:1px solid #1d2a47}
+.tn{font:700 20px/1.2 'Noto Sans Thai';min-width:0;overflow:hidden;text-overflow:ellipsis}.tn small{display:block;font:500 12px 'Noto Sans Thai';color:#7d8fb3}
+.sc{font:800 22px 'Prompt';min-width:34px;text-align:center;color:#7d8fb3}.sc.act{color:#fff;background:#1c3a74;border-radius:10px;padding:2px 8px}
+.cur{font:800 38px 'Prompt';min-width:56px;text-align:center;color:#ffd24a}
+.empty{color:#51618a;text-align:center;padding:24px 0;font-size:14px}
+</style>
+</head>
+<body>
+<header><div class="logo">Match<b>ON</b></div><div id="tname">Live Score</div><div id="conn">กำลังเชื่อมต่อ…</div></header>
+<main id="g"></main>
+<script type="module">
+import * as Live from './js/live.js';
+const liveId = new URLSearchParams(location.search).get('live');
+const $ = (i) => document.getElementById(i);
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const ruleTxt = (r) => {
+  if (!r) return '';
+  const sets = r.playTwo ? 'แข่ง 2 เซต' : r.best_of === 1 ? '1 เซต' : (Math.floor(r.best_of / 2) + 1) + ' ใน ' + r.best_of + ' เซต';
+  return 'กติกา : ' + sets + ' ' + r.points + ' แต้ม ' + (r.deuce ? 'ดิวถึง ' + r.cap : 'ไม่ดิว');
+};
+function side(c, k) {
+  const t = c['team' + k], club = c['club' + k];
+  return `<div class="tn">${esc(club ? club + ' · ' + t : t)}</div>`;
+}
+function card(c) {
+  const live = c.status === 'LIVE';
+  const act = c.activeSet >= 0 ? c.activeSet : 0;
+  const done = [0, 1, 2].filter((i) => i !== act && (c.scores[i][0] || c.scores[i][1]));
+  const cell = (k, i) => `<div class="sc${i === act ? ' act' : ''}">${c.scores[i][k]}</div>`;
+  const rows = ['A', 'B'].map((L, k) => `<div class="row">${side(c, L)}${[0, 1, 2].filter((i) => i < act).map((i) => cell(k, i)).join('')}<div class="cur">${c.scores[act][k]}</div></div>`).join('');
+  const head = `<div class="top"><div class="court">สนาม ${c.courtNo}${c.matchNo ? '<small>แมตช์ #' + c.matchNo + '</small>' : ''}</div><div class="st${live ? ' l' : ''}">${live ? '● LIVE' : 'ว่าง'}</div></div>`;
+  if (!live) return `<div class="card">${head}<div class="empty">รอเรียกคู่แข่งขัน</div></div>`;
+  return `<div class="card live">${head}<div class="cat">${esc([c.catName, c.roundLabel].filter(Boolean).join(' · ') || c.round)}</div><div class="rule">${esc(ruleTxt(c.rule))}</div>${rows}</div>`;
+}
+if (!liveId) { $('g').innerHTML = '<div class="empty">ลิงก์ไม่ถูกต้อง (ไม่มีรหัสรายการ)</div>'; }
+else {
+  Live.watchConnection((on) => { $('conn').textContent = on ? '● ออนไลน์' : 'ออฟไลน์'; });
+  Live.watchCourts(liveId, (list) => {
+    if (!list || !list.length) { $('g').innerHTML = '<div class="empty">ยังไม่มีข้อมูลสนาม</div>'; return; }
+    $('tname').textContent = (list.find((c) => c.tournament) || {}).tournament || 'Live Score';
+    $('g').innerHTML = list.map(card).join('');
+  });
+}
+</script>
+</body>
+</html>

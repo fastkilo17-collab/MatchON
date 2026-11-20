@@ -192,14 +192,14 @@ export function PhotoThumb({ photo, name, size = 44, className = '' }: { photo?:
   );
 }
 
-export function TeamAvatars({ reg, size = 36 }: { reg?: Registration | null; size?: number }) {
+export function TeamAvatars({ reg, size = 36, flat = false }: { reg?: Registration | null; size?: number; flat?: boolean }) {
   if (!reg) return null;
   const people = [
     { n: reg.p1_name, ph: reg.p1_photo },
     ...(reg.p2_name ? [{ n: reg.p2_name, ph: reg.p2_photo }] : []),
   ];
   return (
-    <span className="inline-flex -space-x-2 shrink-0 align-middle">
+    <span className={`inline-flex shrink-0 align-middle ${flat ? "gap-1" : "-space-x-2"}`}>
       {people.map((p, i) => (
         <PhotoThumb key={i} photo={p.ph} name={p.n} size={size} />
       ))}

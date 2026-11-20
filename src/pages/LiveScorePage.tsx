@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Minus, Plus, QrCode, Radio, SlidersHorizontal } from 'lucide-react';
+import { ExternalLink, Minus, Plus, QrCode, Radio, SlidersHorizontal } from 'lucide-react';
 import { useMatchON } from '../context/MatchONContext';
 import type { Match } from '../types/matchon';
-import { fmtTime, ruleForMatch, ruleText, teamName } from '../utils/bracket';
+import { fmtTime, ruleForMatch, ruleShort, teamName } from '../utils/bracket';
 import { MatchScoreSheet } from '../components/MatchScoreSheet';
 import { QrCodeSvg, ResponsiveSheet, TeamAvatars } from '../components/UiKit';
 import { useLiveBridge } from '../lib/liveBridge';
@@ -28,10 +28,17 @@ export function LiveScorePage() {
   const [qrCourtNo, setQrCourtNo] = useState<number | null>(null);
   const [editMatch, setEditMatch] = useState<Match | null>(null);
   const [refUrl, setRefUrl] = useState('');
+  const [compact, setCompact] = useState<boolean>(() => {
+    try { return localStorage.getItem('matchon.liveCompact') === '1'; } catch { return false; }
+  });
+  const setSize = (v: boolean) => {
+    setCompact(v);
+    try { localStorage.setItem('matchon.liveCompact', v ? '1' : '0'); } catch { /* ignore */ }
+  };
   const [refMode, setRefMode] = useState(state.role === 'referee' || state.role === 'organizer');
 
   const canOperate = !!activeTournament && isManagerOf(activeTournament.id);
-  const { fb, bridgeOn, error: bridgeError, refereeUrl } = useLiveBridge({
+  const { fb, bridgeOn, error: bridgeError, refereeUrl, liveId } = useLiveBridge({
     tournament: activeTournament,
     courts: tCourts,
     matches: tMatches,
@@ -111,6 +118,22 @@ export function LiveScorePage() {
           </h2>
         </div>
 
+        <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+        <div className="flex items-center gap-1 p-1 bg-slate-200/70 rounded-xl">
+          {([[false, 'การ์ดใหญ่'], [true, 'การ์ดเล็ก']] as const).map(([v, label]) => (
+            <button key={label} type="button" onClick={() => setSize(v)} className={`min-h-[38px] px-3 rounded-lg text-xs font-semibold ${compact === v ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600'}`}>{label}</button>
+          ))}
+        </div>
+        {(liveId || activeTournament.live_id) && (
+          <a
+            href={`${import.meta.env.BASE_URL}board.html?live=${liveId || activeTournament.live_id}`}
+            target="_blank"
+            rel="noreferrer"
+            className="min-h-[38px] px-3 rounded-xl bg-slate-900 text-white text-xs font-semibold inline-flex items-center gap-1.5"
+          >
+            <ExternalLink className="w-3.5 h-3.5" /> เปิดหน้าคะแนนสด (จอใหญ่)
+          </a>
+        )}
         {canOperate && (
           <div className="flex items-center gap-1 p-1 bg-slate-200/70 rounded-xl self-start sm:self-auto">
             <button
@@ -133,6 +156,7 @@ export function LiveScorePage() {
             </button>
           </div>
         )}
+        </div>
       </div>
 
       {canOperate && (
@@ -146,7 +170,7 @@ export function LiveScorePage() {
       )}
 
       {/* Live Courts Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className={`grid grid-cols-1 gap-4 ${compact ? "sm:grid-cols-2 xl:grid-cols-3 gap-2.5" : "md:grid-cols-2"}`}>
         {tCourts.map((court) => {
           const liveM = tMatches.find((m) => m.court === court.no && m.status === 'live');
           const nextM = !liveM
@@ -185,6 +209,7 @@ export function LiveScorePage() {
                       {catMap[m.category_id]?.name || ''} · {m.round_label}
                     </div>
                   )}
+                  {m && rule && <div className="text-[11px] text-slate-400 truncate">{ruleShort(rule)}</div>}
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0">
@@ -216,7 +241,14 @@ export function LiveScorePage() {
 
               {m ? (
                 <>
-                  {/* Scoreboard Face */}
+                  {compact ? (
+                    <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 py-1">
+                      <div className="min-w-0 text-right text-xs font-bold text-slate-900 line-clamp-2">{teamName(m.reg_a ? regMap[m.reg_a] : null)}</div>
+                      <div className="font-display text-2xl font-extrabold tabular-nums whitespace-nowrap"><span className="text-blue-600">{shownCur[0]}</span><span className="text-slate-300 mx-1">-</span><span className="text-slate-900">{shownCur[1]}</span></div>
+                      <div className="min-w-0 text-left text-xs font-bold text-slate-900 line-clamp-2">{teamName(m.reg_b ? regMap[m.reg_b] : null)}</div>
+                    </div>
+                  ) : (
+                  <>
                   <div className="grid grid-cols-11 items-center gap-2 py-2">
                     <div className="col-span-5 text-center space-y-2">
                       <div className="flex justify-center"><TeamAvatars reg={m.reg_a ? regMap[m.reg_a] : null} size={44} /></div>
@@ -241,18 +273,11 @@ export function LiveScorePage() {
                     </div>
                   </div>
 
-                  {/* Completed Sets & Rule */}
-                  <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500 pt-2 border-t border-slate-100">
-                    <div className="font-mono tabular-nums">
-                      {shownSets.length > 0
-                        ? `เซตที่ผ่านมา: ${shownSets.map(([a, b]) => `${a}-${b}`).join(' · ')}`
-                        : `เซตที่ 1`}
-                    </div>
-                    {rule && <span>{ruleText(rule)}</span>}
-                  </div>
+                  </>
+                  )}
 
                   {/* Tactile Referee Controls (+1 / -1) */}
-                  {canOperate && refMode && (
+                  {canOperate && refMode && !compact && (
                     <div className="grid grid-cols-2 gap-3 pt-1">
                       <div className="flex items-center gap-1.5">
                         <button
@@ -294,7 +319,7 @@ export function LiveScorePage() {
                     </div>
                   )}
 
-                  {canOperate && (
+                  {canOperate && !compact && (
                     <button
                       type="button"
                       onClick={() => setEditMatch(m)}

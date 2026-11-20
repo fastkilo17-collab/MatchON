@@ -87,11 +87,19 @@ export function baht(amount: number): string {
   return `฿${Number(amount || 0).toLocaleString('th-TH')}`;
 }
 
-export function teamName(r?: Registration | null): string {
-  if (!r) return 'รอผลการแข่ง';
+/** ชื่อนักกีฬาแบบชื่อเล่น เช่น "ชาย / โอ๊ต" */
+export function playersNick(r?: Registration | null): string {
+  if (!r) return '';
   const a = r.p1_nick || r.p1_name;
   const b = r.p2_nick || r.p2_name;
   return b ? `${a} / ${b}` : a;
+}
+
+/** ชื่อที่แสดงทั่วระบบ: ทีมขึ้นก่อน แล้วตามด้วยนักกีฬา เช่น "ก็วนเจอแน่ · ชาย / โอ๊ต" */
+export function teamName(r?: Registration | null): string {
+  if (!r) return 'รอผลการแข่ง';
+  const p = playersNick(r);
+  return r.club ? `${r.club} · ${p}` : p;
 }
 
 export function teamFullName(r?: Registration | null): string {
@@ -238,7 +246,7 @@ export function shuffle<T>(arr: T[]): T[] {
 
 export function buildKnockout(
   teams: string[],
-  opts: { tournamentId: string; categoryId: string; startMatchNo: number; stage?: 'main' | 'knockout' },
+  opts: { tournamentId: string; categoryId: string; startMatchNo: number; stage?: 'main' | 'knockout' | 'lower' },
 ): Match[] {
   const n = teams.length;
   if (n < 2) throw new Error('ต้องมีอย่างน้อย 2 ทีมเพื่อจัดสาย');
@@ -488,11 +496,14 @@ export function planAutoSchedule(
   startIso: string,
   courts: number[],
   timeOnly = false,
+  catStarts: Record<string, string> = {},
 ): Array<{ id: string; court: number | null; scheduled_at: string }> {
   const dur = (t.match_minutes || 30) * MIN;
   const rest = (t.rest_minutes || 0) * MIN;
   const start = +new Date(startIso);
-  const courtFree: Record<number, number> = Object.fromEntries(courts.map((c) => [c, start]));
+  const catStart = (cid: string) => (catStarts[cid] ? +new Date(catStarts[cid]) : start);
+  const earliest = Math.min(start, ...Object.values(catStarts).filter(Boolean).map((x) => +new Date(x)));
+  const courtFree: Record<number, number> = Object.fromEntries(courts.map((c) => [c, earliest]));
   const teamFree: Record<string, number> = {};
   const ends: Record<string, number> = {};
 
@@ -517,11 +528,11 @@ export function planAutoSchedule(
 
   const todo = matches
     .filter((m) => m.status === 'scheduled' && (timeOnly ? !m.scheduled_at : !m.court || !m.scheduled_at) && (m.reg_a || m.reg_b || feeders[m.id]))
-    .sort((a, b) => a.round - b.round || (a.match_no || 0) - (b.match_no || 0) || a.slot - b.slot);
+    .sort((a, b) => catStart(a.category_id) - catStart(b.category_id) || a.round - b.round || (a.match_no || 0) - (b.match_no || 0) || a.slot - b.slot);
 
   const plan: Array<{ id: string; court: number | null; scheduled_at: string }> = [];
   for (const m of todo) {
-    let ready = start;
+    let ready = catStart(m.category_id);
     for (const id of [m.reg_a, m.reg_b]) {
       if (id) ready = Math.max(ready, teamFree[id] || 0);
     }
@@ -623,4 +634,40 @@ export const byStatusThenPay = (a: Registration, b: Registration) =>
 export function teamRealWithNick(r: Registration): string {
   const one = (n?: string, k?: string) => (n ? (k && k !== n ? `${n} (${k})` : n) : '');
   return [one(r.p1_name, r.p1_nick), one(r.p2_name, r.p2_nick)].filter(Boolean).join(' / ');
+}
+
+/** กติกาแบบสั้น เช่น "กติกา : 2 ใน 3 เซต 21 แต้ม ดิวถึง 30" */
+export function ruleShort(r: { best_of: number; points: number; deuce: boolean; cap: number; play_two?: boolean }): string {
+  const sets = r.play_two ? 'แข่ง 2 เซต' : r.best_of === 1 ? '1 เซต' : `${Math.floor(r.best_of / 2) + 1} ใน ${r.best_of} เซต`;
+  return `กติกา : ${sets} ${r.points} แต้ม ${r.deuce ? `ดิวถึง ${r.cap}` : 'ไม่ดิว'}`;
+}
+
+/** คำนวณกลุ่ม/ทีมต่อกลุ่มอัตโนมัติ */
+export function groupPlan(n: number, mode: 'groups' | 'perGroup', value: number): { groups: number; perGroup: number } {
+  const v = Math.max(1, Math.floor(value) || 1);
+  if (mode === 'groups') {
+    const g = Math.min(v, Math.max(1, Math.floor(n / 2)));
+    return { groups: g, perGroup: Math.ceil(n / g) };
+  }
+  const per = Math.max(2, v);
+  const g = Math.max(1, Math.round(n / per));
+  return { groups: g, perGroup: Math.ceil(n / g) };
+}
+
+/** แบ่งทีมลงกลุ่มแบบงู (snake) ตามลำดับที่ให้มา */
+export function snakeGroups(ids: string[], G: number): string[][] {
+  const groups: string[][] = Array.from({ length: G }, () => []);
+  ids.forEach((id, i) => {
+    const r = Math.floor(i / G);
+    groups[r % 2 === 0 ? i % G : G - 1 - (i % G)].push(id);
+  });
+  return groups;
+}
+
+export const sumPrizes = (c?: { prizes?: { u?: number[]; l?: number[] } } | null): number =>
+  [...(c?.prizes?.u || []), ...(c?.prizes?.l || [])].reduce((s, x) => s + (x || 0), 0);
+export function prizeText(c?: { prizes?: { u?: number[]; l?: number[] } } | null): string {
+  const f = (a?: number[]) => (a || []).map((x, i) => (x ? `${i + 1}:฿${x.toLocaleString('th-TH')}` : '')).filter(Boolean).join(' ');
+  const u = f(c?.prizes?.u), l = f(c?.prizes?.l);
+  return [u && `รางวัล${l ? 'สายบน' : ''} ${u}`, l && `สายล่าง ${l}`].filter(Boolean).join(' · ');
 }

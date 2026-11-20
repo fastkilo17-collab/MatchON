@@ -17,6 +17,7 @@ import type {
 import {
   buildKnockout,
   buildRoundRobin,
+  snakeGroups,
   computeStandings,
   standingPtsFor,
   matchResult,
@@ -89,16 +90,17 @@ interface MatchONContextValue {
   deleteRegistration: (id: string) => Promise<boolean>;
   generateBracket: (
     categoryId: string,
-    opts: { format: BracketFormat; groups: number; advance: number; seeded: boolean },
+    opts: { format: BracketFormat; groups: number; advance: number; seeded: boolean; hasLower?: boolean; manualGroups?: string[][] },
   ) => void;
   toggleBracketLock: (categoryId: string) => void;
   clearBracket: (categoryId: string) => void;
   generateGroupKnockoutStage: (categoryId: string) => void;
   generateNextSwissRound: (categoryId: string) => void;
+  setGroupTeams: (categoryId: string, groupNo: number, teamIds: string[]) => boolean;
   recordMatchSets: (matchId: string, sets: [number, number][], liveCur?: [number, number] | null, silent?: boolean, force?: boolean) => void;
   adjustLivePoint: (matchId: string, side: 'a' | 'b', delta: 1 | -1) => void;
   updateMatchMeta: (matchId: string, patch: Partial<Match>) => void;
-  runAutoSchedule: (startIso: string, courtNos: number[], timeOnly?: boolean, setTime?: boolean) => number;
+  runAutoSchedule: (startIso: string, courtNos: number[], timeOnly?: boolean, setTime?: boolean, catStarts?: Record<string, string>) => number;
   callMatchToCourt: (matchId: string, courtNo: number) => void;
   toggleCourtMaintenance: (courtId: string) => void;
   addCourt: () => void;
@@ -564,7 +566,7 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
   );
 
   const generateBracket = useCallback(
-    (categoryId: string, opts: { format: BracketFormat; groups: number; advance: number; seeded: boolean }) => {
+    (categoryId: string, opts: { format: BracketFormat; groups: number; advance: number; seeded: boolean; hasLower?: boolean; manualGroups?: string[][] }) => {
       const cat = state.categories.find((c) => c.id === categoryId);
       if (!cat) return;
       const teams = state.registrations.filter(
@@ -609,17 +611,12 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
           stage: 'main',
         });
       } else if (opts.format === 'group_stage' || opts.format === 'group_knockout') {
-        const G = Math.max(1, opts.groups || 2);
-        if (ids.length < G * 2) {
+        const G = Math.max(1, opts.manualGroups ? opts.manualGroups.length : opts.groups || 2);
+        if (opts.manualGroups ? opts.manualGroups.some((g) => g.length < 2) : ids.length < G * 2) {
           toast('จำนวนทีมน้อยเกินไปสำหรับจำนวนกลุ่มนี้ (อย่างน้อยกลุ่มละ 2 ทีม)', 'err');
           return;
         }
-        const groups: string[][] = Array.from({ length: G }, () => []);
-        ids.forEach((id, i) => {
-          const r = Math.floor(i / G);
-          const idx = r % 2 === 0 ? i % G : G - 1 - (i % G);
-          groups[idx].push(id);
-        });
+        const groups: string[][] = opts.manualGroups ? opts.manualGroups.map((g) => [...g]) : snakeGroups(ids, G);
         groups.forEach((g, gi) => {
           const gm = buildRoundRobin(g, {
             tournamentId: cat.tournament_id,
@@ -672,6 +669,7 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
             advance: opts.advance,
             seeded: opts.seeded,
             locked: false,
+            has_lower: !!opts.hasLower && opts.format === 'group_knockout',
           },
         ],
       }));
@@ -722,33 +720,67 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
         return computeStandings(ids, gm, standingPtsFor(categoryId, state.categories, state.rules)).map((r) => r.id);
       });
       const adv = b?.advance || 2;
+      const hasLower = !!b?.has_lower;
       const order: string[] = [];
       for (let k = 0; k < adv; k++) {
         tops.forEach((g) => {
           if (g[k]) order.push(g[k]);
         });
       }
+      const lowerOrder: string[] = [];
+      if (hasLower) {
+        const maxLen = Math.max(0, ...tops.map((g) => g.length));
+        for (let k = adv; k < maxLen; k++) {
+          tops.forEach((g) => {
+            if (g[k]) lowerOrder.push(g[k]);
+          });
+        }
+      }
       if (order.length < 2) {
         toast('มีผู้เข้ารอบน้อยเกินไป', 'err');
         return;
       }
-      const maxNo = Math.max(0, ...state.matches.map((m) => m.match_no || 0)) + 1;
-      const ko = buildKnockout(order, {
-        tournamentId: cat.tournament_id,
-        categoryId,
-        startMatchNo: maxNo,
-        stage: 'knockout',
-      });
+      const tag = (rows: Match[], label: string) => (hasLower ? rows.map((m) => ({ ...m, round_label: `${label} · ${m.round_label}` })) : rows);
+      const ko = tag(buildKnockout(order, { tournamentId: cat.tournament_id, categoryId, startMatchNo: 1, stage: 'knockout' }), 'สายบน');
+      const low = hasLower && lowerOrder.length >= 2
+        ? tag(buildKnockout(lowerOrder, { tournamentId: cat.tournament_id, categoryId, startMatchNo: 1, stage: 'lower' }), 'สายล่าง')
+        : [];
       setState((prev) => ({
         ...prev,
         matches: [
-          ...prev.matches.filter((m) => !(m.category_id === categoryId && m.stage === 'knockout')),
+          ...prev.matches.filter((m) => !(m.category_id === categoryId && (m.stage === 'knockout' || m.stage === 'lower'))),
           ...ko,
+          ...low,
         ],
       }));
       toast('สร้างรอบน็อคเอาท์ เรียบร้อย');
     },
     [state.categories, state.brackets, state.matches, state.rules, toast],
+  );
+
+  /** แก้ทีมในกลุ่มหลังจัดสาย: สร้างแมตช์พบกันหมดของกลุ่มนั้นใหม่ (ทำได้เมื่อกลุ่มนั้นยังไม่มีผลแข่ง) */
+  const setGroupTeams = useCallback(
+    (categoryId: string, groupNo: number, teamIds: string[]): boolean => {
+      const cat = state.categories.find((c) => c.id === categoryId);
+      if (!cat) return false;
+      const old = state.matches.filter((m) => m.category_id === categoryId && m.stage === 'group' && (m.group_no ?? 0) === groupNo);
+      if (old.some((m) => m.status !== 'scheduled' || m.sets.length || m.cur_a || m.cur_b)) {
+        toast('กลุ่มนี้เริ่มแข่งหรือมีผลแล้ว แก้ทีมไม่ได้', 'err');
+        return false;
+      }
+      if (teamIds.length < 2) {
+        toast('กลุ่มต้องมีอย่างน้อย 2 ทีม', 'err');
+        return false;
+      }
+      const rows = buildRoundRobin(teamIds, { tournamentId: cat.tournament_id, categoryId, startMatchNo: 1, stage: 'group', groupNo });
+      setState((prev) => ({
+        ...prev,
+        matches: [...prev.matches.filter((m) => !(m.category_id === categoryId && m.stage === 'group' && (m.group_no ?? 0) === groupNo)), ...rows],
+      }));
+      toast('แก้ทีมในกลุ่มแล้ว');
+      return true;
+    },
+    [state.categories, state.matches, toast],
   );
 
   const generateNextSwissRound = useCallback(
@@ -920,10 +952,10 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
   );
 
   const runAutoSchedule = useCallback(
-    (startIso: string, courtNos: number[], timeOnly = false, setTime = true): number => {
+    (startIso: string, courtNos: number[], timeOnly = false, setTime = true, catStarts: Record<string, string> = {}): number => {
       const setCourt = !timeOnly;
       if (!activeTournament) return 0;
-      const plan = planAutoSchedule(tMatches, activeTournament, startIso, courtNos, timeOnly);
+      const plan = planAutoSchedule(tMatches, activeTournament, startIso, courtNos, timeOnly, catStarts);
       if (!plan.length) {
         toast('ไม่มีแมตช์ที่รอจัดตาราง (หรือจัดครบแล้ว)', 'info');
         return 0;
@@ -1168,6 +1200,7 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
     clearBracket,
     generateGroupKnockoutStage,
     generateNextSwissRound,
+    setGroupTeams,
     recordMatchSets,
     adjustLivePoint,
     updateMatchMeta,

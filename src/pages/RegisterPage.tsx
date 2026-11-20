@@ -20,6 +20,7 @@ import {
   teamName,
   catTotal,
   shuttleText,
+  prizeText,
 } from '../utils/bracket';
 import { PhotoThumb, QrCodeSvg } from '../components/UiKit';
 
@@ -302,6 +303,7 @@ function RegisterForm() {
                   <div className="font-mono text-sm font-bold tabular-nums text-blue-700 shrink-0">
                     {catTotal(c) ? baht(catTotal(c)) : 'ฟรี'}
                     {c.shuttle_fee ? <div className="text-[10px] font-normal text-slate-500 text-right">ค่าสมัคร {baht(c.fee)} + {shuttleText(c)}</div> : null}
+                    {prizeText(c) ? <div className="text-[10px] font-normal text-amber-700 text-right">🏆 {prizeText(c)}</div> : null}
                   </div>
                 </label>
               );
