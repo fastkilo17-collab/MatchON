@@ -23,6 +23,7 @@ export function LiveScorePage() {
     toast,
     tReferees,
     assignReferee,
+    updateMatchMeta,
   } = useMatchON();
 
   const [qrCourtNo, setQrCourtNo] = useState<number | null>(null);
@@ -219,7 +220,14 @@ export function LiveScorePage() {
                       LIVE
                     </span>
                   ) : nextM ? (
-                    <span className="text-xs font-semibold text-amber-700">รอเริ่มแข่ง</span>
+                    <span className="inline-flex items-center gap-2 text-xs font-semibold text-amber-700">
+                      รอเริ่มแข่ง
+                      {canOperate && (
+                        <button type="button" onClick={() => updateMatchMeta(nextM.id, { court: null })} className="min-h-[30px] px-2 rounded-lg bg-red-50 text-red-700 font-semibold">
+                          ยกเลิกการเรียก
+                        </button>
+                      )}
+                    </span>
                   ) : (
                     <span className="text-xs text-slate-400">
                       {court.status === 'maintenance' ? 'งดใช้งาน' : 'ว่าง'}
@@ -243,9 +251,15 @@ export function LiveScorePage() {
                 <>
                   {compact ? (
                     <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 py-1">
-                      <div className="min-w-0 text-right text-xs font-bold text-slate-900 line-clamp-2">{teamName(m.reg_a ? regMap[m.reg_a] : null)}</div>
+                      <div className="min-w-0 flex flex-col items-end gap-1">
+                        <TeamAvatars reg={m.reg_a ? regMap[m.reg_a] : null} size={30} flat />
+                        <div className="text-right text-xs font-bold text-slate-900 line-clamp-2">{teamName(m.reg_a ? regMap[m.reg_a] : null)}</div>
+                      </div>
                       <div className="font-display text-2xl font-extrabold tabular-nums whitespace-nowrap"><span className="text-blue-600">{shownCur[0]}</span><span className="text-slate-300 mx-1">-</span><span className="text-slate-900">{shownCur[1]}</span></div>
-                      <div className="min-w-0 text-left text-xs font-bold text-slate-900 line-clamp-2">{teamName(m.reg_b ? regMap[m.reg_b] : null)}</div>
+                      <div className="min-w-0 flex flex-col items-start gap-1">
+                        <TeamAvatars reg={m.reg_b ? regMap[m.reg_b] : null} size={30} flat />
+                        <div className="text-left text-xs font-bold text-slate-900 line-clamp-2">{teamName(m.reg_b ? regMap[m.reg_b] : null)}</div>
+                      </div>
                     </div>
                   ) : (
                   <>

@@ -26,7 +26,7 @@ export function SchedulePage() {
   } = useMatchON();
 
   const [statusFilter, setStatusFilter] = useState<'all' | 'scheduled' | 'live' | 'finished'>('all');
-  const [courtFilter, setCourtFilter] = useState<string>('');
+  const [catFilter, setCatFilter] = useState<string>('');
   const [query, setQuery] = useState('');
   const [editingMatch, setEditingMatch] = useState<Match | null>(null);
   const [autoOpen, setAutoOpen] = useState(false);
@@ -73,8 +73,7 @@ export function SchedulePage() {
   const filtered = tMatches
     .filter((m) => {
       if (statusFilter !== 'all' && m.status !== statusFilter) return false;
-      if (courtFilter === 'unassigned' && m.court != null) return false;
-      if (courtFilter && courtFilter !== 'unassigned' && String(m.court) !== courtFilter) return false;
+      if (catFilter && m.category_id !== catFilter) return false;
       const q = query.trim().toLowerCase();
       if (!q) return true;
       const names = [
@@ -144,15 +143,14 @@ export function SchedulePage() {
             />
           </div>
           <select
-            aria-label="กรองตามสนาม"
-            value={courtFilter}
-            onChange={(e) => setCourtFilter(e.target.value)}
+            aria-label="กรองตามรุ่น"
+            value={catFilter}
+            onChange={(e) => setCatFilter(e.target.value)}
             className="min-h-[44px] px-3 rounded-xl border border-slate-200 bg-white text-sm"
           >
-            <option value="">ทุกสนาม</option>
-            <option value="unassigned">ยังไม่ระบุสนาม</option>
-            {tCourts.map((c) => (
-              <option key={c.id} value={c.no}>
+            <option value="">ทุกรุ่น</option>
+            {tCategories.map((c) => (
+              <option key={c.id} value={c.id}>
                 {c.name}
               </option>
             ))}

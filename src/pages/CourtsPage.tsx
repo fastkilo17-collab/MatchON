@@ -204,6 +204,15 @@ export function CourtsPage() {
                       </button>
                     </>
                   )}
+                  {kind === 'wait' && m && (
+                    <button
+                      type="button"
+                      onClick={() => updateMatchMeta(m.id, { court: null })}
+                      className="inline-flex items-center gap-1.5 min-h-[42px] px-3 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 text-xs font-semibold"
+                    >
+                      ยกเลิกการเรียก
+                    </button>
+                  )}
                   {(kind === 'free' || kind === 'wait') && (
                     <button
                       type="button"

@@ -27,8 +27,8 @@ export function BracketsPage() {
 
   const [catId, setCatId] = useState<string>('');
   const [format, setFormat] = useState<BracketFormat>('knockout');
-  const [gMode, setGMode] = useState<'groups' | 'perGroup'>('groups');
-  const [gVal, setGVal] = useState(2);
+  const [gMode, setGMode] = useState<'groups' | 'perGroup'>('perGroup');
+  const [gVal, setGVal] = useState(4);
   const [advance, setAdvance] = useState(2);
   const [seeded, setSeeded] = useState(false);
   const [hasLower, setHasLower] = useState(false);
@@ -377,18 +377,20 @@ export function BracketsPage() {
                   const teamIds = [...new Set(gm.flatMap((m) => [m.reg_a, m.reg_b]).filter(Boolean) as string[])];
                   const rows = computeStandings(teamIds, gm, standingPtsFor(activeCat.id, tCategories, tRules));
                   return (
-                    <div key={gNo} className="bg-white border border-slate-200/80 rounded-2xl p-5 space-y-4">
-                      <button
-                        type="button"
-                        disabled={!isManager}
-                        onClick={() => setEditGroup(gNo)}
-                        className="w-full flex items-center justify-between text-left"
-                      >
+                    <div
+                      key={gNo}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => setEditGroup(gNo)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') setEditGroup(gNo); }}
+                      className="bg-white border border-slate-200/80 rounded-2xl p-5 space-y-4 cursor-pointer hover:border-blue-300 transition-colors"
+                    >
+                      <div className="w-full flex items-center justify-between text-left">
                         <h3 className="font-display text-base font-bold text-slate-900">
                           กลุ่ม {String.fromCharCode(65 + gNo)}
                         </h3>
-                        {isManager && <span className="text-[11px] font-semibold text-blue-700 noprint">แตะเพื่อแก้ไขทีม</span>}
-                      </button>
+                        <span className="text-[11px] font-semibold text-blue-700 noprint">{isManager ? 'แตะเพื่อดู/แก้ไข' : 'แตะเพื่อดูแมตช์'}</span>
+                      </div>
                       <div className="overflow-x-auto">
                         <table className="w-full text-xs">
                           <thead>
@@ -420,7 +422,6 @@ export function BracketsPage() {
                           </tbody>
                         </table>
                       </div>
-                      <div className="space-y-2">{gm.map(renderMatchCard)}</div>
                     </div>
                   );
                 })}
@@ -514,6 +515,10 @@ export function BracketsPage() {
         current={editGroup === null ? [] : [...new Set(groupMatches.filter((m) => (m.group_no ?? 0) === editGroup).flatMap((m) => [m.reg_a, m.reg_b]).filter(Boolean) as string[])]}
         assigned={new Set(groupMatches.flatMap((m) => [m.reg_a, m.reg_b]).filter(Boolean) as string[])}
         teams={confirmedTeams}
+        regs={regMap}
+        canEdit={isManager}
+        matches={editGroup === null ? [] : groupMatches.filter((m) => (m.group_no ?? 0) === editGroup)}
+        renderMatch={renderMatchCard}
         onSave={(ids) => { if (editGroup !== null && setGroupTeams(activeCat.id, editGroup, ids)) setEditGroup(null); }}
       />
     </div>
@@ -559,19 +564,19 @@ function ManualDraw({
     setMsg('');
     const pick = el[Math.floor(Math.random() * el.length)];
     // ช้าลงเรื่อยๆ ช่วงท้ายเพื่อให้ลุ้น
-    const ticks = 26;
+    const ticks = 20;
     let n = 0;
-    let delay = 55;
+    let delay = 60;
     const step = () => {
       n++;
       if (n >= ticks) {
         setRoll({ g, shown: teamName(pick), done: true });
-        timer.current = window.setTimeout(() => { place(g, pick.id); setRoll(null); }, 1400);
+        timer.current = window.setTimeout(() => { place(g, pick.id); setRoll(null); }, 900);
         return;
       }
       const t = el[Math.floor(Math.random() * el.length)];
       setRoll({ g, shown: teamName(t), done: false });
-      delay = n < 14 ? delay * 1.04 : n < 21 ? delay * 1.25 : delay * 1.55;
+      delay = Math.min(300, n < 12 ? delay * 1.05 : delay * 1.22);
       timer.current = window.setTimeout(step, delay);
     };
     setRoll({ g, shown: teamName(pick), done: false });
@@ -696,45 +701,64 @@ function ManualDraw({
   );
 }
 
-/* ---------- แก้ทีมในกลุ่มหลังจัดสาย ---------- */
+/* ---------- popup กลุ่ม: ดูทีม/แมตช์ (ย่อขยายได้) และแก้ทีมหลังจัดสาย ---------- */
 function GroupEditSheet({
-  open, onClose, groupNo, current, assigned, teams, onSave,
+  open, onClose, groupNo, current, assigned, teams, regs, canEdit, matches, renderMatch, onSave,
 }: {
   open: boolean; onClose: () => void; groupNo: number; current: string[]; assigned: Set<string>;
-  teams: import('../types/matchon').Registration[]; onSave: (ids: string[]) => void;
+  teams: import('../types/matchon').Registration[]; regs: Record<string, import('../types/matchon').Registration>; canEdit: boolean;
+  matches: Match[]; renderMatch: (m: Match) => React.ReactNode; onSave: (ids: string[]) => void;
 }) {
   const [ids, setIds] = useState<string[]>([]);
   const [add, setAdd] = useState('');
-  useEffect(() => { if (open) { setIds(current); setAdd(''); } /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [open, groupNo]);
-  const byId = Object.fromEntries(teams.map((t) => [t.id, t]));
+  const [showMatches, setShowMatches] = useState(true);
+  useEffect(() => { if (open) { setIds(current); setAdd(''); setShowMatches(true); } /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [open, groupNo]);
+  const byId = regs;
   const free = teams.filter((t) => !assigned.has(t.id) && !ids.includes(t.id));
+  const changed = ids.length !== current.length || ids.some((x) => !current.includes(x));
   return (
-    <ResponsiveSheet open={open} onClose={onClose} title={`แก้ไขกลุ่ม ${String.fromCharCode(65 + groupNo)}`} subtitle="ลบ/เปลี่ยน/เพิ่มทีม แล้วกด บันทึก (แก้ได้เฉพาะกลุ่มที่ยังไม่มีผลแข่ง)">
-      <div className="space-y-3">
-        {ids.map((id) => (
-          <div key={id} className="flex items-center gap-2 rounded-xl border border-slate-200 p-2">
-            <TeamAvatars reg={byId[id]} size={26} flat />
-            <span className="flex-1 min-w-0 text-sm font-semibold text-slate-900 truncate">{teamName(byId[id])}</span>
-            <select
-              aria-label="เปลี่ยนทีม"
-              value=""
-              onChange={(e) => e.target.value && setIds(ids.map((x) => (x === id ? e.target.value : x)))}
-              className="max-w-[40%] min-h-[36px] px-2 rounded-lg border border-slate-200 bg-white text-xs"
-            >
-              <option value="">เปลี่ยนเป็น…</option>
-              {free.map((t) => <option key={t.id} value={t.id}>{teamName(t)}</option>)}
-            </select>
-            <button type="button" aria-label="ลบ" onClick={() => setIds(ids.filter((x) => x !== id))} className="w-9 h-9 grid place-items-center rounded-lg bg-red-50 text-red-600"><X className="w-4 h-4" /></button>
-          </div>
-        ))}
-        <div className="flex gap-2">
-          <select value={add} onChange={(e) => setAdd(e.target.value)} className="flex-1 min-h-[42px] px-3 rounded-xl border border-slate-200 bg-white text-sm">
-            <option value="">เพิ่มทีม (ที่ยังไม่อยู่ในกลุ่มใด)…</option>
-            {free.map((t) => <option key={t.id} value={t.id}>{teamName(t)}</option>)}
-          </select>
-          <button type="button" disabled={!add} onClick={() => { setIds([...ids, add]); setAdd(''); }} className="min-h-[42px] px-4 rounded-xl bg-slate-100 disabled:opacity-40 text-xs font-semibold">เพิ่ม</button>
+    <ResponsiveSheet open={open} onClose={onClose} title={`กลุ่ม ${String.fromCharCode(65 + groupNo)}`} subtitle={canEdit ? 'ลบ/เพิ่มทีม แล้วกด บันทึก (แก้ได้เฉพาะกลุ่มที่ยังไม่มีผลแข่ง)' : `${ids.length} ทีม · ${matches.length} แมตช์`}>
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <div className="text-xs font-semibold text-slate-700">ทีมในกลุ่ม ({ids.length})</div>
+          {ids.map((id) => (
+            <div key={id} className="flex items-center gap-2 rounded-xl border border-slate-200 p-2">
+              <TeamAvatars reg={byId[id]} size={26} flat />
+              <span className="flex-1 min-w-0 text-sm font-semibold text-slate-900 truncate">{teamName(byId[id])}</span>
+              {canEdit && (
+                <button type="button" aria-label="ลบ" onClick={() => setIds(ids.filter((x) => x !== id))} className="w-9 h-9 grid place-items-center rounded-lg bg-red-50 text-red-600"><X className="w-4 h-4" /></button>
+              )}
+            </div>
+          ))}
+          {canEdit && (
+            <div className="flex gap-2">
+              <select value={add} onChange={(e) => setAdd(e.target.value)} className="flex-1 min-w-0 min-h-[42px] px-3 rounded-xl border border-slate-200 bg-white text-sm">
+                <option value="">เพิ่มทีม (ที่ยังไม่อยู่ในกลุ่มใด)…</option>
+                {free.map((t) => <option key={t.id} value={t.id}>{teamName(t)}</option>)}
+              </select>
+              <button type="button" disabled={!add} onClick={() => { setIds([...ids, add]); setAdd(''); }} className="min-h-[42px] px-4 rounded-xl bg-slate-100 disabled:opacity-40 text-xs font-semibold">เพิ่ม</button>
+            </div>
+          )}
         </div>
-        <button type="button" onClick={() => onSave(ids)} className="w-full min-h-[46px] rounded-xl bg-blue-600 text-white text-sm font-semibold">บันทึก</button>
+
+        <div className="space-y-2">
+          <button type="button" onClick={() => setShowMatches(!showMatches)} className="w-full flex items-center justify-between min-h-[40px] px-3 rounded-xl bg-slate-100 text-xs font-bold text-slate-700">
+            <span>การจับคู่แมตช์ ({matches.length})</span>
+            <span>{showMatches ? 'ย่อ ▲' : 'ขยาย ▼'}</span>
+          </button>
+          {showMatches && (
+            <div className="space-y-2">
+              {matches.map((m) => (
+                <div key={m.id} onClick={onClose}>{renderMatch(m)}</div>
+              ))}
+              {!matches.length && <div className="text-xs text-slate-400 text-center py-3">ยังไม่มีแมตช์</div>}
+            </div>
+          )}
+        </div>
+
+        {canEdit && (
+          <button type="button" disabled={!changed} onClick={() => onSave(ids)} className="w-full min-h-[46px] rounded-xl bg-blue-600 disabled:bg-slate-300 text-white text-sm font-semibold">บันทึก</button>
+        )}
       </div>
     </ResponsiveSheet>
   );
