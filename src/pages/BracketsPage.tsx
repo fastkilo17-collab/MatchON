@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { GitBranch, Hand, Lock, Printer, Shuffle, Sparkles, Trash2, Unlock, X } from 'lucide-react';
+import { ChevronDown, GitBranch, Hand, Lock, Printer, Shuffle, Sparkles, Trash2, Unlock, X } from 'lucide-react';
 import { useMatchON } from '../context/MatchONContext';
-import type { BracketFormat, Match } from '../types/matchon';
-import { computeStandings, standingPtsFor, FORMAT_TH, scoreText, teamName, groupPlan, clubKey } from '../utils/bracket';
+import type { BracketFormat, Match, Registration } from '../types/matchon';
+import { computeStandings, standingPtsFor, FORMAT_TH, scoreText, teamName, groupPlan, clubKey, regSeqMap, teamRealWithNick } from '../utils/bracket';
+import type { StandingRow, StandingPts } from '../utils/bracket';
 import { MatchScoreSheet } from '../components/MatchScoreSheet';
 import { ResponsiveSheet, TeamAvatars } from '../components/UiKit';
 
@@ -23,6 +24,7 @@ export function BracketsPage() {
     generateGroupKnockoutStage,
     generateNextSwissRound,
     setGroupTeams,
+    toast,
   } = useMatchON();
 
   const [catId, setCatId] = useState<string>('');
@@ -36,6 +38,8 @@ export function BracketsPage() {
   const [view, setView] = useState<'groups' | 'upper' | 'lower'>('groups');
   const [editGroup, setEditGroup] = useState<number | null>(null);
   const [editingMatch, setEditingMatch] = useState<Match | null>(null);
+  const [openTeams, setOpenTeams] = useState<Set<string>>(new Set());
+  const toggleTeam = (k: string) => setOpenTeams((o) => { const n = new Set(o); if (n.has(k)) n.delete(k); else n.add(k); return n; });
 
   useEffect(() => {
     if (!tCategories.length) return;
@@ -66,10 +70,24 @@ export function BracketsPage() {
   const swissMatches = catMatches.filter((m) => m.stage === 'swiss');
   const koMatches = catMatches.filter((m) => m.stage === 'knockout' || m.stage === 'main');
   const lowMatches = catMatches.filter((m) => m.stage === 'lower');
-  const avail = ([['groups', 'แบ่งกลุ่ม', groupMatches.length], ['upper', 'น็อคเอาท์สายบน', koMatches.length], ['lower', 'น็อคเอาท์สายล่าง', lowMatches.length]] as const).filter(([, , n]) => n > 0);
-  const effView = avail.some(([k]) => k === view) ? view : avail[0]?.[0];
+  const lowerOn = Boolean(meta?.has_lower) || lowMatches.length > 0;
+  const sections = ([
+    { k: 'groups', label: 'แบ่งกลุ่ม', n: groupMatches.length, why: 'รุ่นนี้ไม่มีรอบแบ่งกลุ่ม' },
+    ...(lowerOn
+      ? [
+          { k: 'upper', label: 'น็อคเอาท์สายบน', n: koMatches.length, why: 'สายน็อคเอาท์สายบนยังไม่ถูกสร้าง (รอจบรอบแบ่งกลุ่ม)' },
+          { k: 'lower', label: 'น็อคเอาท์สายล่าง', n: lowMatches.length, why: 'สายน็อคเอาท์สายล่างยังไม่ถูกสร้าง (รอจบรอบแบ่งกลุ่ม)' },
+        ]
+      : [{ k: 'upper', label: 'น็อคเอาท์', n: koMatches.length, why: 'สายน็อคเอาท์ยังไม่ถูกสร้าง' }]),
+  ] as Array<{ k: 'groups' | 'upper' | 'lower'; label: string; n: number; why: string }>).map((x) => ({
+    ...x,
+    why: catMatches.length === 0 ? 'ยังไม่ได้จัดสายการแข่งขันของรุ่นนี้' : x.why,
+  }));
+  const firstOn = sections.find((x) => x.n > 0)?.k;
+  const effView = sections.some((x) => x.k === view && x.n > 0) ? view : firstOn;
   const isRoundRobinMain = meta?.format === 'round_robin';
   const plan = groupPlan(confirmedTeams.length, gMode, gVal);
+  const seqMap = regSeqMap(tRegistrations);
   const isGroupFmt = format === 'group_stage' || format === 'group_knockout';
 
   const renderMatchCard = (m: Match) => {
@@ -135,27 +153,7 @@ export function BracketsPage() {
     );
   };
 
-  const renderTree = (list: Match[], title: string) => (
-    <div className="bg-white border border-slate-200/80 rounded-2xl p-5 space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="font-display text-base font-bold text-slate-900">{title}</h3>
-        <span className="text-xs text-slate-400 noprint">ปัดซ้าย-ขวาเพื่อดูรอบถัดไป</span>
-      </div>
-      <div className="flex items-stretch gap-5 overflow-x-auto pb-2">
-        {[...new Set(list.map((m) => m.round))]
-          .sort((a, b) => a - b)
-          .map((roundNum) => {
-            const roundMatches = list.filter((m) => m.round === roundNum).sort((a, b) => a.slot - b.slot);
-            return (
-              <div key={roundNum} className="w-[260px] shrink-0 flex flex-col gap-3">
-                <div className="text-xs font-bold text-slate-500 px-1">{roundMatches[0]?.round_label || `รอบที่ ${roundNum}`}</div>
-                <div className="flex-1 flex flex-col justify-around gap-3">{roundMatches.map(renderMatchCard)}</div>
-              </div>
-            );
-          })}
-      </div>
-    </div>
-  );
+  const renderTree = (list: Match[], title: string) => <KnockoutTree list={list} title={title} renderCard={renderMatchCard} />;
 
   return (
     <div className="space-y-5">
@@ -363,20 +361,28 @@ export function BracketsPage() {
         </div>
       )}
 
-      {avail.length > 1 && (
+      {!isRoundRobinMain && swissMatches.length === 0 && (
         <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar noprint">
-          {avail.map(([k, label]) => (
-            <button
-              key={k}
-              type="button"
-              onClick={() => setView(k)}
-              className={`min-h-[40px] px-4 rounded-xl text-xs font-semibold whitespace-nowrap shrink-0 border transition-colors ${
-                effView === k ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
+          {sections.map((x) => {
+            const on = x.n > 0;
+            return (
+              <button
+                key={x.k}
+                type="button"
+                aria-disabled={!on}
+                onClick={() => (on ? setView(x.k) : toast(x.why, 'info'))}
+                className={`min-h-[40px] px-4 rounded-xl text-xs font-semibold whitespace-nowrap shrink-0 border transition-colors ${
+                  !on
+                    ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed'
+                    : effView === x.k
+                      ? 'bg-blue-600 border-blue-600 text-white'
+                      : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                }`}
+              >
+                {x.label}
+              </button>
+            );
+          })}
         </div>
       )}
 
@@ -388,7 +394,7 @@ export function BracketsPage() {
       ) : (
         <div className="space-y-5">
           {/* Group Stage Tables */}
-          {groupMatches.length > 0 && (effView === 'groups' || avail.length <= 1) && (
+          {groupMatches.length > 0 && effView === 'groups' && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {[...new Set(groupMatches.map((m) => m.group_no ?? 0))]
                 .sort((a, b) => a - b)
@@ -396,51 +402,33 @@ export function BracketsPage() {
                   const gm = groupMatches.filter((m) => (m.group_no ?? 0) === gNo);
                   const teamIds = [...new Set(gm.flatMap((m) => [m.reg_a, m.reg_b]).filter(Boolean) as string[])];
                   const rows = computeStandings(teamIds, gm, standingPtsFor(activeCat.id, tCategories, tRules));
+                  const sp = standingPtsFor(activeCat.id, tCategories, tRules);
+                  const letter = String.fromCharCode(65 + gNo);
                   return (
-                    <div
-                      key={gNo}
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => setEditGroup(gNo)}
-                      onKeyDown={(e) => { if (e.key === 'Enter') setEditGroup(gNo); }}
-                      className="bg-white border border-slate-200/80 rounded-2xl p-5 space-y-4 cursor-pointer hover:border-blue-300 transition-colors"
-                    >
-                      <div className="w-full flex items-center justify-between text-left">
-                        <h3 className="font-display text-base font-bold text-slate-900">
-                          กลุ่ม {String.fromCharCode(65 + gNo)}
-                        </h3>
-                        <span className="text-[11px] font-semibold text-blue-700 noprint">{isManager ? 'แตะเพื่อดู/แก้ไข' : 'แตะเพื่อดูแมตช์'}</span>
-                      </div>
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-xs">
-                          <thead>
-                            <tr className="border-b border-slate-200 text-slate-500">
-                              <th className="py-2 text-left font-semibold">#</th>
-                              <th className="py-2 text-left font-semibold">ทีม</th>
-                              <th className="py-2 text-right font-semibold">แข่ง</th>
-                              <th className="py-2 text-right font-semibold">คะแนน</th>
-                              <th className="py-2 text-right font-semibold">เกม+/-</th>
-                              <th className="py-2 text-right font-semibold">แต้ม+/-</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-100 tabular-nums font-mono">
-                            {rows.map((r, idx) => (
-                              <tr key={r.id}>
-                                <td className="py-2 font-bold text-slate-700">{String.fromCharCode(65 + gNo)}{idx + 1}</td>
-                                <td className="py-2 font-sans font-semibold text-slate-900">
-                                  <span className="inline-flex items-center gap-1.5">
-                                    <TeamAvatars reg={regMap[r.id]} size={22} flat />
-                                    <span>{teamName(regMap[r.id])}</span>
-                                  </span>
-                                </td>
-                                <td className="py-2 text-right">{r.played}</td>
-                                <td className="py-2 text-right font-bold text-blue-700">{r.pts}</td>
-                                <td className="py-2 text-right">{r.gf - r.ga}</td>
-                                <td className="py-2 text-right">{r.pf - r.pa}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                    <div key={gNo} className="bg-white border border-slate-200/80 rounded-2xl p-3 sm:p-4 space-y-2">
+                      <button
+                        type="button"
+                        onClick={() => setEditGroup(gNo)}
+                        className="w-full flex items-center justify-between text-left"
+                      >
+                        <h3 className="font-display text-base font-bold text-slate-900">กลุ่ม {letter}</h3>
+                        <span className="text-[11px] font-semibold text-blue-700 noprint">{isManager ? 'ดูแมตช์/แก้ไขกลุ่ม ›' : 'ดูแมตช์ ›'}</span>
+                      </button>
+                      <div className="space-y-1.5">
+                        {rows.map((r, idx) => (
+                          <TeamStandCard
+                            key={r.id}
+                            row={r}
+                            rankLabel={`${letter}${idx + 1}`}
+                            reg={regMap[r.id]}
+                            seq={seqMap[r.id]}
+                            pts={sp}
+                            matches={gm.filter((m) => m.reg_a === r.id || m.reg_b === r.id)}
+                            regMap={regMap}
+                            open={openTeams.has(`${gNo}:${r.id}`)}
+                            onToggle={() => toggleTeam(`${gNo}:${r.id}`)}
+                          />
+                        ))}
                       </div>
                     </div>
                   );
@@ -509,8 +497,8 @@ export function BracketsPage() {
           )}
 
           {/* Horizontal Scrollable Knockout Tree */}
-          {!isRoundRobinMain && koMatches.length > 0 && (effView === 'upper' || avail.length <= 1) && renderTree(koMatches, lowMatches.length ? 'สายบน (Knockout)' : 'สายการแข่งขัน (Knockout)')}
-          {!isRoundRobinMain && lowMatches.length > 0 && (effView === 'lower' || avail.length <= 1) && renderTree(lowMatches, 'สายล่าง (Knockout)')}
+          {!isRoundRobinMain && koMatches.length > 0 && effView === 'upper' && renderTree(koMatches, lowMatches.length ? 'สายบน (Knockout)' : 'สายการแข่งขัน (Knockout)')}
+          {!isRoundRobinMain && lowMatches.length > 0 && effView === 'lower' && renderTree(lowMatches, 'สายล่าง (Knockout)')}
         </div>
       )}
 
@@ -543,6 +531,155 @@ export function BracketsPage() {
         renderMatch={renderMatchCard}
         onSave={(ids) => { if (editGroup !== null && setGroupTeams(activeCat.id, editGroup, ids)) setEditGroup(null); }}
       />
+    </div>
+  );
+}
+
+/* ---------- สายน็อคเอาท์ + เส้นเชื่อมแต่ละแมตช์ไปรอบถัดไป ---------- */
+function KnockoutTree({ list, title, renderCard }: { list: Match[]; title: string; renderCard: (m: Match) => React.ReactNode }) {
+  const wrap = useRef<HTMLDivElement>(null);
+  const [paths, setPaths] = useState<Array<{ d: string; done: boolean }>>([]);
+  const [size, setSize] = useState({ w: 0, h: 0 });
+  const sig = list.map((m) => `${m.id}${m.status}${m.reg_a}${m.reg_b}${m.sets.length}`).join('|');
+
+  useLayoutEffect(() => {
+    const el = wrap.current;
+    if (!el) return;
+    const calc = () => {
+      const box = el.getBoundingClientRect();
+      const pos: Record<string, DOMRect> = {};
+      el.querySelectorAll<HTMLElement>('[data-mid]').forEach((n) => { pos[n.dataset.mid as string] = n.getBoundingClientRect(); });
+      const out: Array<{ d: string; done: boolean }> = [];
+      for (const m of list) {
+        if (!m.next_match || !pos[m.id] || !pos[m.next_match]) continue;
+        const a = pos[m.id];
+        const b = pos[m.next_match];
+        const x1 = a.right - box.left;
+        const y1 = a.top + a.height / 2 - box.top;
+        const x2 = b.left - box.left;
+        const y2 = b.top + b.height / 2 - box.top;
+        const mx = x1 + (x2 - x1) / 2;
+        out.push({ d: `M${x1} ${y1} H${mx} V${y2} H${x2}`, done: m.status === 'finished' });
+      }
+      setPaths((old) => (JSON.stringify(old) === JSON.stringify(out) ? old : out));
+      setSize((o) => (o.w === box.width && o.h === box.height ? o : { w: box.width, h: box.height }));
+    };
+    calc();
+    const ro = new ResizeObserver(calc);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [sig]);
+
+  return (
+    <div className="bg-white border border-slate-200/80 rounded-2xl p-5 space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="font-display text-base font-bold text-slate-900">{title}</h3>
+        <span className="text-xs text-slate-400 noprint">ปัดซ้าย-ขวาเพื่อดูรอบถัดไป</span>
+      </div>
+      <div className="overflow-x-auto pb-2">
+        <div ref={wrap} className="relative flex items-stretch gap-10 w-max">
+          <svg className="absolute inset-0 pointer-events-none" width={size.w} height={size.h} aria-hidden="true">
+            {paths.map((p, i) => (
+              <path key={i} d={p.d} fill="none" strokeWidth={p.done ? 2 : 1.5} className={p.done ? 'stroke-blue-500' : 'stroke-slate-300'} />
+            ))}
+          </svg>
+          {[...new Set(list.map((m) => m.round))]
+            .sort((a, b) => a - b)
+            .map((roundNum) => {
+              const roundMatches = list.filter((m) => m.round === roundNum).sort((a, b) => a.slot - b.slot);
+              return (
+                <div key={roundNum} className="w-[260px] shrink-0 flex flex-col gap-3">
+                  <div className="text-xs font-bold text-slate-500 px-1">{roundMatches[0]?.round_label || `รอบที่ ${roundNum}`}</div>
+                  <div className="flex-1 flex flex-col justify-around gap-3">
+                    {roundMatches.map((m) => (
+                      <div key={m.id} data-mid={m.id} className="relative">{renderCard(m)}</div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- การ์ดทีมในกลุ่ม (ย่อ/ขยาย) ---------- */
+function TeamStandCard({
+  row, rankLabel, reg, seq, pts, matches, regMap, open, onToggle,
+}: {
+  row: StandingRow; rankLabel: string; reg?: Registration; seq?: number; pts: StandingPts;
+  matches: Match[]; regMap: Record<string, Registration>; open: boolean; onToggle: () => void;
+}) {
+  const fin = matches.filter((m) => m.status === 'finished' && m.reg_a && m.reg_b);
+  const real = reg ? teamRealWithNick(reg) : '';
+  const stat = (label: string, v: React.ReactNode, tone = 'text-slate-900') => (
+    <div className="rounded-lg bg-slate-50 py-1 text-center">
+      <div className={`text-sm font-bold tabular-nums ${tone}`}>{v}</div>
+      <div className="text-[10px] text-slate-500 leading-tight">{label}</div>
+    </div>
+  );
+  return (
+    <div className={`rounded-xl border ${open ? 'border-blue-300 bg-blue-50/20' : 'border-slate-200'} overflow-hidden`}>
+      <button type="button" onClick={onToggle} aria-expanded={open} className="w-full flex items-center gap-2 px-2 py-1.5 text-left">
+        <span className="w-8 shrink-0 text-center text-xs font-bold text-blue-700 bg-blue-50 rounded-md py-1 tabular-nums">{rankLabel}</span>
+        <TeamAvatars reg={reg} size={28} flat />
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-[13px] font-bold text-slate-900 leading-tight">
+            {reg?.club || teamName(reg)}
+            {seq ? <span className="ml-1 text-[10px] font-medium text-slate-400">ทีม {seq}</span> : null}
+          </span>
+          <span className="block truncate text-[11px] text-slate-500 leading-tight">{real}</span>
+        </span>
+        <span className="shrink-0 text-center tabular-nums font-mono leading-tight">
+          <span className="block text-[11px] text-slate-600">{row.won}-{row.drawn}-{row.lost}</span>
+          <span className="block text-[9px] font-sans text-slate-400">ชนะ-เสมอ-แพ้</span>
+        </span>
+        <span className="shrink-0 w-9 text-center leading-tight">
+          <span className="block text-base font-bold tabular-nums text-blue-700">{row.pts}</span>
+          <span className="block text-[9px] text-slate-400">คะแนน</span>
+        </span>
+        <ChevronDown className={`w-4 h-4 text-slate-400 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && (
+        <div className="px-2 pb-2 space-y-2 border-t border-slate-100 pt-2">
+          <div className="grid grid-cols-4 sm:grid-cols-8 gap-1">
+            {stat('แข่ง', row.played)}
+            {stat('ชนะ', row.won, 'text-emerald-700')}
+            {stat('เสมอ', row.drawn)}
+            {stat('แพ้', row.lost, 'text-red-600')}
+            {stat('เกม +/-', row.gf - row.ga)}
+            {stat('แต้มได้', row.pf)}
+            {stat('แต้มเสีย', row.pa)}
+            {stat('แต้ม +/-', row.pf - row.pa)}
+          </div>
+          <div className="text-[11px] text-slate-600 tabular-nums">
+            ชนะ {row.won}×{pts.win} + เสมอ {row.drawn}×{pts.draw} + แพ้ {row.lost}×{pts.loss} = <b className="text-blue-700">{row.pts} คะแนน</b>
+          </div>
+          <div className="space-y-1">
+            {matches.map((m) => {
+              const isA = m.reg_a === row.id;
+              const opp = regMap[(isA ? m.reg_b : m.reg_a) || ''];
+              const done = m.status === 'finished' && m.reg_a && m.reg_b;
+              const res = !done ? null : !m.winner ? 'draw' : m.winner === row.id ? 'win' : 'loss';
+              const got = res === 'win' ? pts.win : res === 'draw' ? pts.draw : res === 'loss' ? pts.loss : null;
+              const sc = m.sets.map((x) => (isA ? `${x[0]}-${x[1]}` : `${x[1]}-${x[0]}`)).join('  ');
+              return (
+                <div key={m.id} className="flex items-center gap-2 text-[11px]">
+                  <span className="truncate flex-1 text-slate-700">พบ {opp ? (opp.club || teamName(opp)) : 'รอผลการแข่ง'}</span>
+                  <span className="font-mono tabular-nums text-slate-500 shrink-0">{done ? sc || '-' : m.status === 'live' ? 'กำลังแข่ง' : 'รอแข่ง'}</span>
+                  {res ? (
+                    <span className={`shrink-0 w-14 text-center rounded-md py-0.5 font-bold ${res === 'win' ? 'bg-emerald-100 text-emerald-700' : res === 'loss' ? 'bg-red-50 text-red-600' : 'bg-slate-100 text-slate-600'}`}>
+                      {res === 'win' ? 'ชนะ' : res === 'loss' ? 'แพ้' : 'เสมอ'} +{got}
+                    </span>
+                  ) : <span className="w-14 shrink-0" />}
+                </div>
+              );
+            })}
+          </div>
+          {fin.length === 0 && <div className="text-[11px] text-slate-400">ยังไม่มีผลการแข่งขัน</div>}
+        </div>
+      )}
     </div>
   );
 }
