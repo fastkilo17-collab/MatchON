@@ -10,9 +10,9 @@ import {
 } from 'lucide-react';
 import { useMatchON } from '../context/MatchONContext';
 import type { Match } from '../types/matchon';
-import { fmtTime, scoreText, teamName } from '../utils/bracket';
+import { fmtDate, fmtTime, scoreText, teamName } from '../utils/bracket';
 import { MatchScoreSheet } from '../components/MatchScoreSheet';
-import { ResponsiveSheet, TeamAvatars } from '../components/UiKit';
+import { MatchNo, ResponsiveSheet, TeamAvatars } from '../components/UiKit';
 
 export function CourtsPage() {
   const {
@@ -52,7 +52,11 @@ export function CourtsPage() {
         !busyPlayers.has(m.reg_a) &&
         !busyPlayers.has(m.reg_b),
     )
-    .sort((a, b) => a.round - b.round || (a.match_no || 0) - (b.match_no || 0));
+    .sort((a, b) => {
+      const ta = a.scheduled_at ? +new Date(a.scheduled_at) : Number.MAX_SAFE_INTEGER;
+      const tb = b.scheduled_at ? +new Date(b.scheduled_at) : Number.MAX_SAFE_INTEGER;
+      return ta - tb || (a.match_no || 9999) - (b.match_no || 9999) || a.round - b.round;
+    });
 
   const freeCount = tCourts.filter(
     (c) => c.status === 'available' && !liveMatches.some((m) => m.court === c.no),
@@ -114,7 +118,7 @@ export function CourtsPage() {
             live: { label: 'กำลังแข่ง', textCls: 'text-red-600', cardCls: 'border-red-200 bg-white' },
             wait: { label: 'รอเริ่มแข่ง', textCls: 'text-amber-700', cardCls: 'border-amber-200 bg-white' },
             free: { label: 'สนามว่าง', textCls: 'text-emerald-700', cardCls: 'border-slate-200/80 bg-white' },
-            off: { label: 'งดใช้งาน', textCls: 'text-slate-400', cardCls: 'border-slate-200 bg-slate-50/80' },
+            off: { label: 'งดใช้งาน', textCls: 'text-slate-400', cardCls: 'border-slate-300 bg-slate-100 opacity-75' },
           }[kind];
 
           const courtRefs = tReferees
@@ -125,22 +129,38 @@ export function CourtsPage() {
           return (
             <div
               key={court.id}
-              className={`rounded-2xl border p-5 flex flex-col justify-between gap-4 ${statusMeta.cardCls}`}
+              className={`rounded-2xl border p-3 flex flex-col justify-between gap-2 ${statusMeta.cardCls}`}
             >
-              <div className="space-y-3">
+              <div className="space-y-2">
                 <div className="flex items-center justify-between gap-2">
-                  <h3 className="font-display text-lg font-bold text-slate-900">{court.name}</h3>
-                  <span className={`text-xs font-bold ${statusMeta.textCls}`}>{statusMeta.label}</span>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <h3 className="font-display text-lg font-bold text-slate-900 truncate">{court.name}</h3>
+                    {isManager && (
+                      <button
+                        type="button"
+                        onClick={() => toggleCourtMaintenance(court.id)}
+                        className={`inline-flex items-center gap-1 min-h-[30px] px-2.5 rounded-lg border text-xs font-semibold shrink-0 ${
+                          court.status === 'maintenance'
+                            ? 'bg-emerald-600 border-emerald-600 text-white hover:bg-emerald-700'
+                            : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                        }`}
+                      >
+                        {court.status === 'maintenance' ? <PauseCircle className="w-3.5 h-3.5" /> : <Wrench className="w-3.5 h-3.5 text-slate-400" />}
+                        {court.status === 'maintenance' ? 'เปิดใช้' : 'งดใช้'}
+                      </button>
+                    )}
+                  </div>
+                  <span className={`text-xs font-bold shrink-0 ${statusMeta.textCls}`}>{statusMeta.label}</span>
                 </div>
 
                 {m ? (
-                  <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/60 space-y-2">
+                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/60 space-y-2">
                     <div className="flex items-center justify-between text-xs text-slate-500">
-                      <span>
-                        {m.match_no ? `แมตช์ #${m.match_no} · ` : ''}
-                        {catMap[m.category_id]?.name || ''} · {m.round_label}
+                      <span className="flex items-center gap-1.5 min-w-0">
+                        <MatchNo n={m.match_no} />
+                        <span className="truncate">{catMap[m.category_id]?.name || ''} · {m.round_label}</span>
                       </span>
-                      {m.scheduled_at && <span className="tabular-nums">{fmtTime(m.scheduled_at)}</span>}
+                      {m.scheduled_at && <span className="tabular-nums font-semibold text-slate-700">{fmtTime(m.scheduled_at)}</span>}
                     </div>
                     <div className="space-y-1 text-sm font-bold text-slate-900">
                       <div className="flex items-center justify-between gap-2">
@@ -164,7 +184,7 @@ export function CourtsPage() {
                   </div>
                 ) : (
                   <div className="py-6 text-center text-xs text-slate-400">
-                    {kind === 'off' ? 'สนามปิดปรับปรุงชั่วคราว' : 'พร้อมเรียกแมตช์ลงสนาม'}
+                    {kind === 'off' ? 'งดใช้สนามชั่วคราว (พักการใช้งาน)' : 'พร้อมเรียกแมตช์ลงสนาม'}
                   </div>
                 )}
 
@@ -173,7 +193,7 @@ export function CourtsPage() {
                 )}
               </div>
 
-              {isManager && (
+              {isManager && kind !== 'off' && (
                 <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100">
                   {kind === 'wait' && m && (
                     <button
@@ -223,23 +243,6 @@ export function CourtsPage() {
                       เรียกแมตช์
                     </button>
                   )}
-                  <button
-                    type="button"
-                    onClick={() => toggleCourtMaintenance(court.id)}
-                    className="inline-flex items-center gap-1 min-h-[42px] px-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 text-xs font-medium ml-auto"
-                  >
-                    {court.status === 'maintenance' ? (
-                      <>
-                        <PauseCircle className="w-3.5 h-3.5 text-emerald-600" />
-                        เปิดใช้
-                      </>
-                    ) : (
-                      <>
-                        <Wrench className="w-3.5 h-3.5 text-slate-400" />
-                        งดใช้
-                      </>
-                    )}
-                  </button>
                 </div>
               )}
             </div>
@@ -267,17 +270,18 @@ export function CourtsPage() {
                 className="w-full p-3.5 min-h-[60px] rounded-xl border border-slate-200 hover:border-blue-400 hover:bg-blue-50/40 text-left flex items-center justify-between gap-3 transition-colors"
               >
                 <div className="min-w-0">
-                  <div className="text-xs text-slate-500">
-                    {m.match_no ? `แมตช์ #${m.match_no} · ` : ''}
-                    {catMap[m.category_id]?.name || ''} · {m.round_label}
+                  <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                    <MatchNo n={m.match_no} />
+                    <span className="truncate">{catMap[m.category_id]?.name || ''} · {m.round_label}</span>
                   </div>
                   <div className="text-sm font-bold text-slate-900 truncate mt-0.5">
                     {teamName(m.reg_a ? regMap[m.reg_a] : null)} vs{' '}
                     {teamName(m.reg_b ? regMap[m.reg_b] : null)}
                   </div>
                 </div>
-                <span className="text-xs font-semibold text-blue-600 shrink-0">
-                  {idx === 0 ? 'คิวถัดไป' : 'เลือก'}
+                <span className="shrink-0 text-right leading-tight">
+                  <span className="block text-sm font-bold tabular-nums text-slate-800">{m.scheduled_at ? `${fmtDate(m.scheduled_at)} ${fmtTime(m.scheduled_at)}` : 'ยังไม่จัดเวลา'}</span>
+                  <span className="block text-xs font-semibold text-blue-600">{idx === 0 ? 'คิวถัดไป' : 'เลือก'}</span>
                 </span>
               </button>
             ))}

@@ -1,3 +1,4 @@
+import { MatchNo } from '../components/UiKit';
 import React, { useState } from 'react';
 import {
   Activity,
@@ -276,9 +277,7 @@ export function DashboardPage() {
               >
                 <div className="min-w-0 space-y-0.5">
                   <div className="flex items-center gap-2 text-xs text-slate-500">
-                    <span className="font-mono font-semibold tabular-nums text-slate-700">
-                      {m.match_no ? `แมตช์ #${m.match_no}` : 'แมตช์'}
-                    </span>
+                    {m.match_no ? <MatchNo n={m.match_no} className="text-sm px-2 py-1" /> : <span>แมตช์</span>}
                     <span aria-hidden="true">·</span>
                     <span>{catMap[m.category_id]?.name || ''}</span>
                     <span aria-hidden="true">·</span>

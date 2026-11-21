@@ -107,6 +107,7 @@ interface MatchONContextValue {
   addCourt: () => void;
   addRulePreset: (rule: Omit<RulePreset, 'id'>) => void;
   deleteRulePreset: (id: string) => void;
+  updateRulePreset: (id: string, patch: Partial<RulePreset>) => void;
   assignCategoryRule: (catId: string, kind: 'group' | 'ko', ruleId: string | null) => void;
   addReferee: (ref: Omit<Referee, 'id'>) => void;
   updateReferee: (id: string, patch: Partial<Referee>) => void;
@@ -1092,6 +1093,14 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
     [toast],
   );
 
+  const updateRulePreset = useCallback(
+    (id: string, patch: Partial<RulePreset>) => {
+      setState((prev) => ({ ...prev, rules: prev.rules.map((r) => (r.id === id ? { ...r, ...patch } : r)) }));
+      toast('แก้ไขชุดกติกาแล้ว');
+    },
+    [toast],
+  );
+
   const deleteRulePreset = useCallback(
     (id: string) => {
       setState((prev) => ({
@@ -1232,6 +1241,7 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
     addCourt,
     addRulePreset,
     deleteRulePreset,
+    updateRulePreset,
     assignCategoryRule,
     addReferee,
     updateReferee,

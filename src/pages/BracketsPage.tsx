@@ -3,10 +3,10 @@ import { createPortal } from 'react-dom';
 import { ChevronDown, GitBranch, Hand, Lock, Printer, Shuffle, Sparkles, Trash2, Unlock, X } from 'lucide-react';
 import { useMatchON } from '../context/MatchONContext';
 import type { BracketFormat, Match, Registration } from '../types/matchon';
-import { computeStandings, standingPtsFor, FORMAT_TH, scoreText, teamName, groupPlan, clubKey } from '../utils/bracket';
+import { computeStandings, standingPtsFor, fmtDate, fmtTime, FORMAT_TH, scoreText, teamName, groupPlan, clubKey } from '../utils/bracket';
 import type { StandingRow, StandingPts } from '../utils/bracket';
 import { MatchScoreSheet } from '../components/MatchScoreSheet';
-import { ResponsiveSheet, TeamAvatars } from '../components/UiKit';
+import { MatchNo, ResponsiveSheet, TeamAvatars } from '../components/UiKit';
 
 export function BracketsPage() {
   const {
@@ -104,9 +104,10 @@ export function BracketsPage() {
         }`}
       >
         <div className="flex items-center justify-between text-[11px] text-slate-500">
-          <span className="font-mono font-semibold tabular-nums">
-            {m.match_no ? `แมตช์ #${m.match_no}` : 'แมตช์'}
-            {m.court ? ` · สนาม ${m.court}` : ''}
+          <span className="flex items-center gap-1.5 font-semibold tabular-nums">
+            {m.match_no ? <MatchNo n={m.match_no} className="text-sm px-2 py-1" /> : 'แมตช์'}
+            {m.scheduled_at ? <span className="text-slate-700">{fmtDate(m.scheduled_at)} {fmtTime(m.scheduled_at)}</span> : null}
+            {m.court ? <span>· สนาม {m.court}</span> : null}
           </span>
           <span
             className={
@@ -526,6 +527,7 @@ export function BracketsPage() {
         open={editGroup !== null}
         onClose={() => setEditGroup(null)}
         groupNo={editGroup ?? 0}
+        showTeams={isManager}
         current={editGroup === null ? [] : [...new Set(groupMatches.filter((m) => (m.group_no ?? 0) === editGroup).flatMap((m) => [m.reg_a, m.reg_b]).filter(Boolean) as string[])]}
         assigned={new Set(groupMatches.flatMap((m) => [m.reg_a, m.reg_b]).filter(Boolean) as string[])}
         teams={confirmedTeams}
@@ -626,19 +628,19 @@ function TeamStandCard({
   const sec = (title: string) => <div className="text-xs font-bold text-slate-500 mb-1.5">{title}</div>;
   return (
     <div className={`rounded-2xl border ${open ? 'border-blue-300 bg-blue-50/30' : 'border-slate-200 bg-white'} overflow-hidden`}>
-      <button type="button" onClick={onToggle} aria-expanded={open} className="w-full px-3 py-2.5 text-left space-y-2">
+      <button type="button" onClick={onToggle} aria-expanded={open} className="w-full px-2.5 py-2 text-left space-y-1.5">
         <span className="flex items-center gap-2.5">
-          <span className="w-8 h-8 shrink-0 grid place-items-center text-sm font-bold text-blue-700 bg-blue-50 rounded-lg tabular-nums">{rank}</span>
-          <span className="min-w-0 flex-1 truncate text-base font-bold text-slate-900">{reg?.club || teamName(reg)}</span>
+          <span className="w-7 h-7 shrink-0 grid place-items-center text-xs font-bold text-blue-700 bg-blue-50 rounded-lg tabular-nums">{rank}</span>
+          <span className="min-w-0 flex-1 truncate text-sm font-bold text-slate-900">{reg?.club || teamName(reg)}</span>
           <span className="shrink-0 text-right leading-tight">
-            <span className="block text-xl font-bold tabular-nums text-blue-700">{row.pts}</span>
-            <span className="block text-xs text-slate-400">คะแนน</span>
+            <span className="block text-base font-bold tabular-nums text-blue-700">{row.pts}</span>
+            <span className="block text-[10px] text-slate-400">คะแนน</span>
           </span>
           <ChevronDown className={`w-5 h-5 text-slate-400 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
         </span>
         <span className="flex items-center gap-2.5">
-          <TeamAvatars reg={reg} size={40} flat />
-          <span className="min-w-0 flex-1 text-sm text-slate-700 leading-snug">
+          <TeamAvatars reg={reg} size={34} flat />
+          <span className="min-w-0 flex-1 text-xs text-slate-700 leading-snug">
             {people.map((n, i) => <span key={i} className="block truncate">{n}</span>)}
           </span>
         </span>
@@ -894,9 +896,9 @@ function ManualDraw({
 
 /* ---------- popup กลุ่ม: ดูทีม/แมตช์ (ย่อขยายได้) และแก้ทีมหลังจัดสาย ---------- */
 function GroupEditSheet({
-  open, onClose, groupNo, current, assigned, teams, regs, canEdit, matches, renderMatch, onSave,
+  open, onClose, groupNo, current, assigned, teams, regs, canEdit, showTeams, matches, renderMatch, onSave,
 }: {
-  open: boolean; onClose: () => void; groupNo: number; current: string[]; assigned: Set<string>;
+  showTeams: boolean; open: boolean; onClose: () => void; groupNo: number; current: string[]; assigned: Set<string>;
   teams: import('../types/matchon').Registration[]; regs: Record<string, import('../types/matchon').Registration>; canEdit: boolean;
   matches: Match[]; renderMatch: (m: Match) => React.ReactNode; onSave: (ids: string[]) => void;
 }) {
@@ -910,7 +912,7 @@ function GroupEditSheet({
   return (
     <ResponsiveSheet open={open} onClose={onClose} title={`กลุ่ม ${String.fromCharCode(65 + groupNo)}`} subtitle={canEdit ? 'ลบ/เพิ่มทีม แล้วกด บันทึก (แก้ได้เฉพาะกลุ่มที่ยังไม่มีผลแข่ง)' : `${ids.length} ทีม · ${matches.length} แมตช์`}>
       <div className="space-y-4">
-        <div className="space-y-2">
+        {showTeams && <div className="space-y-2">
           <div className="text-xs font-semibold text-slate-700">ทีมในกลุ่ม ({ids.length})</div>
           {ids.map((id, ti) => (
             <div key={id} className="flex items-center gap-2 rounded-xl border border-slate-200 p-2">
@@ -931,7 +933,7 @@ function GroupEditSheet({
               <button type="button" disabled={!add} onClick={() => { setIds([...ids, add]); setAdd(''); }} className="min-h-[42px] px-4 rounded-xl bg-slate-100 disabled:opacity-40 text-xs font-semibold">เพิ่ม</button>
             </div>
           )}
-        </div>
+        </div>}
 
         <div className="space-y-2">
           <button type="button" onClick={() => setShowMatches(!showMatches)} className="w-full flex items-center justify-between min-h-[40px] px-3 rounded-xl bg-slate-100 text-xs font-bold text-slate-700">

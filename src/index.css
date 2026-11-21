@@ -52,3 +52,96 @@
     background: #ffffff !important;
   }
 }
+
+/* ============================================================
+   ธีมสี — เขียวป่า (จากพาเลตต์ #051F20 #0B2B26 #163832 #235347 #8EB69B #DAF1DE)
+   ใช้ทับสเกล blue-* (สีหลัก) และ slate-* (สีกลาง) ของ Tailwind ทั้งเว็บ
+   สลับกลับธีมเดิม (น้ำเงิน): ตั้ง <html data-theme="classic"> หรือกดสลับในหน้า "ตั้งค่า"
+   ============================================================ */
+:root {
+  --color-blue-50: #eef8f0;
+  --color-blue-100: #daf1de;
+  --color-blue-200: #bfe0c8;
+  --color-blue-300: #8eb69b;
+  --color-blue-400: #5a9680;
+  --color-blue-500: #357262;
+  --color-blue-600: #235347;
+  --color-blue-700: #163832;
+  --color-blue-800: #0f2e28;
+  --color-blue-900: #0b2b26;
+  --color-blue-950: #051f20;
+
+  --color-slate-50: #f3f9f4;
+  --color-slate-100: #e8f3ea;
+  --color-slate-200: #d3e6d8;
+  --color-slate-300: #b3ccba;
+  --color-slate-400: #86a393;
+  --color-slate-500: #5d7d6f;
+  --color-slate-600: #456357;
+  --color-slate-700: #2f4a40;
+  --color-slate-800: #163832;
+  --color-slate-900: #0b2b26;
+  --color-slate-950: #051f20;
+}
+
+/* แถบเมนูด้านข้างโทนเขียวเข้ม (กลับค่าสีเฉพาะในกล่องนี้) */
+.side-dark {
+  --color-white: #0b2b26;
+  --color-slate-50: #163832;
+  --color-slate-100: #163832;
+  --color-slate-200: #1d4a3f;
+  --color-slate-400: #8eb69b;
+  --color-slate-500: #8eb69b;
+  --color-slate-600: #b8d6c1;
+  --color-slate-700: #daf1de;
+  --color-slate-800: #daf1de;
+  --color-slate-900: #ffffff;
+  --color-blue-50: #235347;
+  --color-blue-100: #235347;
+  --color-blue-600: #8eb69b;
+  --color-blue-700: #daf1de;
+  background: #0b2b26;
+}
+
+/* ธีมเดิม (น้ำเงิน) — ค่าเดิมของ Tailwind เก็บไว้เผื่อสลับกลับ */
+html[data-theme="classic"] {
+  --color-blue-50: oklch(97% 0.014 254.604);
+  --color-blue-100: oklch(93.2% 0.032 255.585);
+  --color-blue-200: oklch(88.2% 0.059 254.128);
+  --color-blue-300: oklch(80.9% 0.105 251.813);
+  --color-blue-400: oklch(70.7% 0.165 254.624);
+  --color-blue-500: oklch(62.3% 0.214 259.815);
+  --color-blue-600: oklch(54.6% 0.245 262.881);
+  --color-blue-700: oklch(48.8% 0.243 264.376);
+  --color-blue-800: oklch(42.4% 0.199 265.638);
+  --color-blue-900: oklch(37.9% 0.146 265.522);
+  --color-blue-950: oklch(28.2% 0.091 267.935);
+  --color-slate-50: oklch(98.4% 0.003 247.858);
+  --color-slate-100: oklch(96.8% 0.007 247.896);
+  --color-slate-200: oklch(92.9% 0.013 255.508);
+  --color-slate-300: oklch(86.9% 0.022 252.894);
+  --color-slate-400: oklch(70.4% 0.04 256.788);
+  --color-slate-500: oklch(55.4% 0.046 257.417);
+  --color-slate-600: oklch(44.6% 0.043 257.281);
+  --color-slate-700: oklch(37.2% 0.044 257.287);
+  --color-slate-800: oklch(27.9% 0.041 260.031);
+  --color-slate-900: oklch(20.8% 0.042 265.755);
+  --color-slate-950: oklch(12.9% 0.042 264.695);
+}
+html[data-theme="classic"] .side-dark {
+  --color-white: #ffffff;
+  --color-slate-50: oklch(98.4% 0.003 247.858);
+  --color-slate-100: oklch(96.8% 0.007 247.896);
+  --color-slate-200: oklch(92.9% 0.013 255.508);
+  --color-slate-400: oklch(70.4% 0.04 256.788);
+  --color-slate-500: oklch(55.4% 0.046 257.417);
+  --color-slate-600: oklch(44.6% 0.043 257.281);
+  --color-slate-700: oklch(37.2% 0.044 257.287);
+  --color-slate-800: oklch(27.9% 0.041 260.031);
+  --color-slate-900: oklch(20.8% 0.042 265.755);
+  --color-blue-50: oklch(97% 0.014 254.604);
+  --color-blue-100: oklch(93.2% 0.032 255.585);
+  --color-blue-600: oklch(54.6% 0.245 262.881);
+  --color-blue-700: oklch(48.8% 0.243 264.376);
+  background: #fff;
+}

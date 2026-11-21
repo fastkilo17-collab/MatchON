@@ -102,7 +102,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-dvh bg-slate-50 text-slate-900 flex flex-col lg:flex-row">
       {/* Desktop Bright Light Sidebar */}
-      <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:shrink-0 bg-white border-r border-slate-200 sticky top-0 h-dvh noprint">
+      <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:shrink-0 side-dark bg-white border-r border-slate-200 sticky top-0 h-dvh noprint">
         <div className="h-16 px-5 flex items-center gap-3 border-b border-slate-100 shrink-0">
           <button type="button" onClick={() => handleNav('home')} className="flex items-center gap-2.5 min-w-0" aria-label="MatchON">
             <img src={`${import.meta.env.BASE_URL}img/app-icon-192.png`} alt="" className="w-10 h-10 rounded-xl object-cover shrink-0" />

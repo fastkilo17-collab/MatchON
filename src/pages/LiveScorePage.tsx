@@ -4,7 +4,7 @@ import { useMatchON } from '../context/MatchONContext';
 import type { Match } from '../types/matchon';
 import { fmtTime, ruleForMatch, ruleShort, teamName } from '../utils/bracket';
 import { MatchScoreSheet } from '../components/MatchScoreSheet';
-import { QrCodeSvg, ResponsiveSheet, TeamAvatars } from '../components/UiKit';
+import { MatchNo, QrCodeSvg, ResponsiveSheet, TeamAvatars } from '../components/UiKit';
 import { useLiveBridge } from '../lib/liveBridge';
 
 export function LiveScorePage() {
@@ -23,7 +23,6 @@ export function LiveScorePage() {
     toast,
     tReferees,
     assignReferee,
-    updateMatchMeta,
   } = useMatchON();
 
   const [qrCourtNo, setQrCourtNo] = useState<number | null>(null);
@@ -121,7 +120,7 @@ export function LiveScorePage() {
 
         <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
         <div className="flex items-center gap-1 p-1 bg-slate-200/70 rounded-xl">
-          {([[false, 'การ์ดใหญ่'], [true, 'การ์ดเล็ก']] as const).map(([v, label]) => (
+          {([[true, 'แบบย่อ'], [false, 'แบบขยาย']] as const).map(([v, label]) => (
             <button key={label} type="button" onClick={() => setSize(v)} className={`min-h-[38px] px-3 rounded-lg text-xs font-semibold ${compact === v ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600'}`}>{label}</button>
           ))}
         </div>
@@ -171,7 +170,7 @@ export function LiveScorePage() {
       )}
 
       {/* Live Courts Grid */}
-      <div className={`grid grid-cols-1 gap-4 ${compact ? "sm:grid-cols-2 xl:grid-cols-3 gap-2.5" : "md:grid-cols-2"}`}>
+      <div className={`grid grid-cols-1 gap-2.5 ${compact ? "sm:grid-cols-2 xl:grid-cols-3" : "md:grid-cols-2"}`}>
         {tCourts.map((court) => {
           const liveM = tMatches.find((m) => m.court === court.no && m.status === 'live');
           const nextM = !liveM
@@ -190,7 +189,7 @@ export function LiveScorePage() {
           return (
             <div
               key={court.id}
-              className={`rounded-3xl border p-4 flex flex-col justify-between gap-2.5 bg-white ${
+              className={`rounded-2xl border p-2.5 flex flex-col justify-between gap-1.5 bg-white ${
                 liveM ? 'border-blue-200 shadow-sm' : 'border-slate-200/80'
               }`}
             >
@@ -199,11 +198,8 @@ export function LiveScorePage() {
                 <div className="min-w-0 leading-tight">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-display font-bold text-base text-slate-900">{court.name}</span>
-                    {m && (m.match_no || m.scheduled_at) && (
-                      <span className="text-[11px] font-bold text-blue-700 bg-blue-50 rounded-md px-1.5 py-0.5 shrink-0 tabular-nums">
-                        {m.match_no ? `แมตช์ #${m.match_no}` : ''}{m.match_no && m.scheduled_at ? ' · ' : ''}{m.scheduled_at ? fmtTime(m.scheduled_at) : ''}
-                      </span>
-                    )}
+                    {m && <MatchNo n={m.match_no} className="text-sm px-2 py-1" />}
+                    {m?.scheduled_at && <span className="text-xs font-bold text-slate-700 tabular-nums">{fmtTime(m.scheduled_at)}</span>}
                   </div>
                   {m && (
                     <div className="text-xs text-slate-500 truncate mt-0.5">
@@ -222,11 +218,6 @@ export function LiveScorePage() {
                   ) : nextM ? (
                     <span className="inline-flex items-center gap-2 text-xs font-semibold text-amber-700">
                       รอเริ่มแข่ง
-                      {canOperate && (
-                        <button type="button" onClick={() => updateMatchMeta(nextM.id, { court: null })} className="min-h-[30px] px-2 rounded-lg bg-red-50 text-red-700 font-semibold">
-                          ยกเลิกการเรียก
-                        </button>
-                      )}
                     </span>
                   ) : (
                     <span className="text-xs text-slate-400">
@@ -239,7 +230,11 @@ export function LiveScorePage() {
                       type="button"
                       onClick={() => openQr(court.no)}
                       aria-label={`QR กรรมการ ${court.name}`}
-                      className="min-h-[38px] min-w-[38px] flex items-center justify-center rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700"
+                      className={`min-h-[38px] min-w-[38px] flex items-center justify-center rounded-xl text-slate-700 ${
+                        tReferees.some((r) => r.court_no === court.no)
+                          ? 'bg-white border-2 border-emerald-500 text-emerald-700'
+                          : 'bg-slate-100 hover:bg-slate-200'
+                      }`}
                     >
                       <QrCode className="w-4 h-4" />
                     </button>

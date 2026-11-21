@@ -29,3 +29,6 @@ Deploy ผ่าน GitHub Actions (`.github/workflows/pages.yml`) — ตั้
 - 015: `tournaments.posters jsonb` (โปสเตอร์หลายรูป แสดงเป็นสไลด์)
 - 013: `categories.shuttle_fee/shuttle_qty` (ค่าลูกแบด รวมในยอดชำระ), `win_pts/draw_pts/loss_pts` ในชุดกติกา/รุ่น, อัปเดต my_registration และ admin_add_registration
 - LINE login ใช้ LIFF (`VITE_LIFF_ID`) + edge function `line-login`
+
+## ธีมสี
+ค่าเริ่มต้น = เขียวป่า (src/index.css ท้ายไฟล์). ธีมน้ำเงินเดิมเก็บไว้ใน `html[data-theme="classic"]` — สลับได้ที่หน้า โปรไฟล์ & บัญชี หรือใส่ data-theme="classic" ที่ <html>.

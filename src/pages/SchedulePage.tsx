@@ -12,7 +12,7 @@ import {
   teamName,
 } from '../utils/bracket';
 import { MatchScoreSheet } from '../components/MatchScoreSheet';
-import { ResponsiveSheet } from '../components/UiKit';
+import { MatchNo, ResponsiveSheet } from '../components/UiKit';
 
 export function SchedulePage() {
   const {
@@ -135,6 +135,9 @@ export function SchedulePage() {
       return names.some((s) => s.toLowerCase().includes(q));
     })
     .sort((a, b) => {
+      const fa = a.status === 'finished' ? 1 : 0;
+      const fb = b.status === 'finished' ? 1 : 0;
+      if (fa !== fb) return fa - fb; // แมตช์ที่จบแล้วไปต่อท้าย
       const ta = a.scheduled_at ? +new Date(a.scheduled_at) : Number.MAX_SAFE_INTEGER;
       const tb = b.scheduled_at ? +new Date(b.scheduled_at) : Number.MAX_SAFE_INTEGER;
       if (ta !== tb) return ta - tb;
@@ -196,8 +199,22 @@ export function SchedulePage() {
 
       {/* Filter Bar */}
       <div className="bg-white border border-slate-200/80 rounded-2xl p-4 space-y-3">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div className="relative sm:col-span-2">
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar p-1 bg-slate-200/70 rounded-2xl">
+          {[{ id: '', name: 'ทุกรุ่น' }, ...tCategories].map((c) => (
+            <button
+              key={c.id || 'all'}
+              type="button"
+              onClick={() => setCatFilter(c.id)}
+              className={`min-h-[40px] px-4 rounded-xl text-xs font-semibold whitespace-nowrap shrink-0 transition-colors ${
+                catFilter === c.id ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              {c.name}
+            </button>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 gap-3">
+          <div className="relative">
             <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               value={query}
@@ -206,19 +223,6 @@ export function SchedulePage() {
               className="w-full min-h-[44px] pl-10 pr-4 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-blue-500 focus:outline-none text-sm"
             />
           </div>
-          <select
-            aria-label="กรองตามรุ่น"
-            value={catFilter}
-            onChange={(e) => setCatFilter(e.target.value)}
-            className="min-h-[44px] px-3 rounded-xl border border-slate-200 bg-white text-sm"
-          >
-            <option value="">ทุกรุ่น</option>
-            {tCategories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
         </div>
 
         <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar p-1 bg-slate-100 rounded-xl">
@@ -249,9 +253,10 @@ export function SchedulePage() {
         {filtered.length ? (
           (() => {
             const dayKey = (m: Match) => {
-              if (!m.scheduled_at) return 'none';
+              const f = m.status === 'finished' ? 'fin:' : '';
+              if (!m.scheduled_at) return f + 'none';
               const d = new Date(m.scheduled_at);
-              return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+              return `${f}${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
             };
             const days: Array<{ key: string; items: Match[] }> = [];
             for (const m of filtered) {
@@ -263,7 +268,7 @@ export function SchedulePage() {
             return days.map((d) => (
               <section key={d.key} className="space-y-1.5">
                 <h3 className="text-sm font-bold text-slate-700 px-1">
-                  {d.key === 'none' ? 'ยังไม่กำหนดเวลา' : fmtDate(d.items[0].scheduled_at!)}
+                  {d.key.startsWith('fin:') ? 'จบแล้ว · ' : ''}{d.key.endsWith('none') ? 'ยังไม่กำหนดเวลา' : fmtDate(d.items[0].scheduled_at!)}
                   <span className="ml-2 text-xs font-medium text-slate-400"> {d.items.length} แมตช์</span>
                 </h3>
                 <div className="bg-white border border-slate-200/80 rounded-2xl divide-y divide-slate-100 overflow-hidden">
@@ -272,13 +277,16 @@ export function SchedulePage() {
                       key={m.id}
                       type="button"
                       onClick={() => isManager && setEditingMatch(m)}
-                      className="w-full p-4 text-left hover:bg-slate-50/70 transition-colors space-y-1.5"
+                      className={`w-full p-4 text-left transition-colors space-y-1.5 ${m.status === 'live' ? 'bg-red-50 border-l-4 border-red-500 hover:bg-red-50' : m.status === 'finished' ? 'opacity-75 hover:bg-slate-50/70' : 'hover:bg-slate-50/70'}`}
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex items-center gap-2 min-w-0 text-xs text-slate-500">
-                          <span className="font-mono font-bold text-slate-800 tabular-nums shrink-0">
-                            {m.match_no ? `แมตช์ #${m.match_no}` : '—'}
-                          </span>
+                          {m.match_no ? <MatchNo n={m.match_no} className="text-sm px-2 py-1" /> : <span className="text-slate-400">—</span>}
+                          {m.status === 'live' && (
+                            <span className="inline-flex items-center gap-1 rounded-md bg-red-600 text-white px-1.5 py-0.5 text-[11px] font-extrabold shrink-0">
+                              <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />LIVE
+                            </span>
+                          )}
                           <span aria-hidden="true">·</span>
                           <span className="truncate">{catMap[m.category_id]?.name || ''}</span>
                           <span aria-hidden="true">·</span>

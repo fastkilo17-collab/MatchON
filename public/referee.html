@@ -388,6 +388,7 @@ body.pt .logo .lgt{font-size:30px}body.pt .logo .lgi{width:36px;height:36px}
 
 <div class="msg" id="msg"><div id="msgTxt"></div></div>
 <div class="toast" id="toast"></div>
+<div class="modal" id="ask"><div class="sheet"><h3 id="askT"></h3><div id="askB" style="white-space:pre-line;line-height:1.7;margin:6px 0 14px"></div><div style="display:flex;gap:10px"><button class="close" id="askNo" style="flex:1"></button><button class="close" id="askYes" style="flex:1;background:linear-gradient(#22b04e,#0f7a36)"></button></div></div></div>
 <div class="modal" id="modal"><div class="sheet"><button class="xb" id="xModal" aria-label="ปิด">✕</button>
   <h3>ตั้งค่า</h3>
   <button class="row" id="optWake"><div>เปิดหน้าจอค้างไว้<small>กันจอดับระหว่างแมตช์</small></div><span class="sw" id="swWake"></span></button>
@@ -664,13 +665,40 @@ async function commit(mutate, extraLocal) {
   } else { local.edit(mutate, extraLocal); court = local.court(); }
   draw(); return true;
 }
+// in-page confirm (the browser confirm() is blocked or ignored in some phone webviews / fullscreen)
+function ask(title, body, yes = 'ตกลง', no = 'ยกเลิก') {
+  return new Promise((res) => {
+    $('askT').textContent = title; $('askB').textContent = body; $('askYes').textContent = yes; $('askNo').textContent = no;
+    $('ask').classList.add('on');
+    const done = (v) => { $('ask').classList.remove('on'); $('askYes').onclick = $('askNo').onclick = null; res(v); };
+    $('askYes').onclick = () => done(true); $('askNo').onclick = () => done(false);
+  });
+}
 const vibe = () => { try { navigator.vibrate && navigator.vibrate(18); } catch {} };
 
-// after a point: if the set is won, offer to move to the next set
+// sets won so far (the set being played counts once it has a winner)
+function wonSets(c) {
+  const cur = act(c); let a = 0, b = 0;
+  c.scores.forEach((s, i) => { if (i > cur) return; if (i < cur || setWinner(s, c)) { if (s[0] > s[1]) a++; else if (s[1] > s[0]) b++; } });
+  return [a, b];
+}
+const matchDecided = (c) => {
+  const r = R(c), i = act(c), [a, b] = wonSets(c);
+  if (r.playTwo) return i >= 1 && !!setWinner(c.scores[i], c);
+  const need = Math.floor(Math.max(1, r.best_of || 3) / 2) + 1;
+  return a >= need || b >= need;
+};
+// after a point: if the set is won, offer to move on (next set, or finish the match)
 async function maybeEndSet() {
   const c = court && ensure(court), i = c && act(c);
-  if (!c || i >= maxSets(c) - 1 || !setWinner(c.scores[i], c)) return;
-  if (confirm(`เซตที่ ${i + 1} จบแล้ว (${c.scores[i][0]} - ${c.scores[i][1]})\nไปเซตถัดไปเลยไหม?`)) await commit(endSetMut);
+  if (!c || !setWinner(c.scores[i], c)) return;
+  const sc = `${c.scores[i][0]} - ${c.scores[i][1]}`;
+  const w = setWinner(c.scores[i], c);
+  if (matchDecided(c) || i >= maxSets(c) - 1) {
+    if (await ask(`เซตที่ ${i + 1} จบแล้ว (${sc})`, `${teamName(c, w)} ชนะเซตนี้ — จบการแข่งขันเลยไหม?`, 'จบการแข่งขัน', 'ยังไม่จบ (แก้คะแนน)')) await finishMatch(true);
+    return;
+  }
+  if (await ask(`เซตที่ ${i + 1} จบแล้ว (${sc})`, `${teamName(c, w)} ชนะเซตนี้ — ไปเซตถัดไปเลยไหม?`, 'ไปเซตถัดไป', 'ยังไม่ (แก้คะแนน)')) await commit(endSetMut);
 }
 
 $('sc').addEventListener('click', async (e) => {
@@ -692,10 +720,10 @@ $('srvSwap').onclick = () => commit((c) => { ensure(c); c.server = c.server === 
 $('shInc').onclick = () => commit((c) => { ensure(c); c.shuttleUsed += 1; pushEv(c, `ลูกที่ ${c.shuttleUsed} ${teamName(c, server(c) || 'A')}`); });
 $('shDec').onclick = () => commit((c) => { if (c.shuttleUsed > 0) c.shuttleUsed -= 1; });
 $('pp').onclick = () => { requestWake(); commit(playPause); };
-$('endSet').onclick = () => {
+$('endSet').onclick = async () => {
   const c = ensure(court), i = act(c);
   if (i >= maxSets(c) - 1) return toast('นี่คือเซตสุดท้าย กด "จบการแข่งขัน"');
-  if (!setWinner(c.scores[i], c) && !confirm(`คะแนนยังไม่ถึงเกณฑ์จบเซต (${R(c).points} แต้ม) จบเซตนี้เลยไหม?`)) return;
+  if (!setWinner(c.scores[i], c) && !(await ask('จบเซตนี้?', `คะแนนยังไม่ถึงเกณฑ์จบเซต (${R(c).points} แต้ม) จบเซตนี้เลยไหม?`, 'จบเซต', 'ยกเลิก'))) return;
   commit(endSetMut);
 };
 $('setbtns').addEventListener('click', (e) => { const b = e.target.closest('[data-set]'); if (b) { viewSet = Number(b.dataset.set); draw(); } });
@@ -704,17 +732,18 @@ const wipe = (x) => {
   x.scores = [[0, 0], [0, 0], [0, 0]]; x.shuttleUsed = 1; x.activeSet = 0; x.server = ''; x.swapA = false; x.swapB = false; x.firstSrv = ['', '', '']; x.paused = false;
   x.startedAt = 0; x.pausedAt = 0; x.pausedTotal = 0; x.log = []; x.events = [];
 };
-$('reset').onclick = () => {
-  if (!confirm('ยกเลิก/รีเซ็ตแมตช์นี้?\nคะแนน เซต ลูกแบด และประวัติเหตุการณ์จะถูกล้างทั้งหมด (ทีมยังคงอยู่)')) return;
+$('reset').onclick = async () => {
+  if (!(await ask('ยกเลิก/รีเซ็ตแมตช์นี้?', 'คะแนน เซต ลูกแบด และประวัติเหตุการณ์จะถูกล้างทั้งหมด (ทีมยังคงอยู่)', 'รีเซ็ต', 'ไม่'))) return;
   viewSet = null; commit((c) => { ensure(c); wipe(c); pushEv(c, 'รีเซ็ตแมตช์'); });
 };
-$('endMatch').onclick = async () => {
+$('endMatch').onclick = () => finishMatch(false);
+async function finishMatch(skipAsk) {
   const c = ensure(court), cur = act(c);
   let a = 0, b = 0;
   c.scores.forEach((s, i) => { if (i <= cur && (s[0] || s[1])) { if (s[0] > s[1]) a++; else if (s[1] > s[0]) b++; } });
-  const draw = R(c).playTwo && a === b;
+  const isDraw = R(c).playTwo && a === b;
   const aWin = a !== b ? a > b : c.scores.reduce((n, s) => n + s[0] - s[1], 0) >= 0;
-  if (!confirm(`จบการแข่งขัน?\nเซตที่ชนะ ${a} - ${b}  ${draw ? 'ผลเสมอ (ทีมละ 1 คะแนน)' : 'ผู้ชนะ ' + teamName(c, aWin ? 'A' : 'B')}`)) return;
+  if (!skipAsk && !(await ask('จบการแข่งขัน?', `เซตที่ชนะ ${a} - ${b}\n${isDraw ? 'ผลเสมอ (ทีมละ 1 คะแนน)' : 'ผู้ชนะ ' + teamName(c, aWin ? 'A' : 'B')}`, 'จบการแข่งขัน', 'ยกเลิก'))) return;
   const label = (t) => `${players(c, t)} (${clubOf(c, t)})`;
   const done = {
     courtNo, slot: 'c' + courtNo,
@@ -737,7 +766,7 @@ $('endMatch').onclick = async () => {
   } else {
     await commit(reset, (st) => { (st.completedMatches = st.completedMatches || []).unshift(done); });
   }
-};
+}
 
 /* ---------------- events dialog, settings, fullscreen, wake lock ---------------- */
 $('evAll').onclick = () => {

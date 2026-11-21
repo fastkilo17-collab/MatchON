@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   Award,
   Download,
+  Pencil,
   Plus,
   Printer,
   Trash2,
@@ -11,6 +12,7 @@ import { AccountBox, LineLoginCard } from '../components/AuthDialog';
 import { rpcUpdateProfile, type StaffRow } from '../lib/db';
 import { sb } from '../lib/supabase';
 import { useMatchON } from '../context/MatchONContext';
+import { MatchNo, ResponsiveSheet } from '../components/UiKit';
 import {
   baht,
   computeStandings,
@@ -159,8 +161,8 @@ export function ResultsPage() {
                   className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2"
                 >
                   <div className="min-w-0">
-                    <div className="text-xs text-slate-500">
-                      {m.match_no ? `แมตช์ #${m.match_no} · ` : ''}
+                    <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                      <MatchNo n={m.match_no} className="text-sm px-2 py-1" />
                       {catMap[m.category_id]?.name || ''} · {m.round_label}
                     </div>
                     <div className="text-sm font-bold text-slate-900 mt-0.5">
@@ -196,6 +198,7 @@ export function RulesStaffPage() {
     tReferees,
     addRulePreset,
     deleteRulePreset,
+    updateRulePreset,
     assignCategoryRule,
     addReferee,
     updateReferee,
@@ -214,6 +217,11 @@ export function RulesStaffPage() {
 
   const [refName, setRefName] = useState('');
   const [refPhone, setRefPhone] = useState('');
+  const [tab, setTab] = useState<'rules' | 'refs'>('rules');
+  const [ruleOpen, setRuleOpen] = useState(false);
+  const [editRuleId, setEditRuleId] = useState<string | null>(null);
+  const [refOpen, setRefOpen] = useState(false);
+  const [delRuleId, setDelRuleId] = useState<string | null>(null);
 
   if (!activeTournament) {
     return (
@@ -225,11 +233,21 @@ export function RulesStaffPage() {
 
   const isOrganizer = state.role === 'organizer';
 
+  const openNewRule = () => {
+    setEditRuleId(null); setRuleName(''); setMode('bo3'); setPoints(21); setCap(30); setDeuce(true); setWinPts(2); setDrawPts(1); setLossPts(0);
+    setRuleOpen(true);
+  };
+  const openEditRule = (r: (typeof tRules)[number]) => {
+    setEditRuleId(r.id); setRuleName(r.name);
+    setMode(r.play_two ? 'two' : r.best_of === 1 ? 'one' : r.best_of === 5 ? 'bo5' : 'bo3');
+    setPoints(r.points); setCap(r.cap); setDeuce(r.deuce);
+    setWinPts(r.win_pts ?? 2); setDrawPts(r.draw_pts ?? 1); setLossPts(r.loss_pts ?? 0);
+    setRuleOpen(true);
+  };
   const handleAddRule = (e: React.FormEvent) => {
     e.preventDefault();
     if (!ruleName.trim()) return;
-    addRulePreset({
-      tournament_id: activeTournament.id,
+    const body = {
       name: ruleName.trim(),
       best_of: mode === 'one' ? 1 : mode === 'bo5' ? 5 : 3,
       play_two: mode === 'two',
@@ -239,8 +257,10 @@ export function RulesStaffPage() {
       win_pts: winPts,
       draw_pts: drawPts,
       loss_pts: lossPts,
-    });
-    setRuleName('');
+    };
+    if (editRuleId) updateRulePreset(editRuleId, body);
+    else addRulePreset({ tournament_id: activeTournament.id, ...body });
+    setRuleOpen(false);
   };
 
   const handleAddRef = (e: React.FormEvent) => {
@@ -254,6 +274,7 @@ export function RulesStaffPage() {
     });
     setRefName('');
     setRefPhone('');
+    setRefOpen(false);
   };
 
   return (
@@ -267,99 +288,53 @@ export function RulesStaffPage() {
         </p>
       </div>
 
+      <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl w-fit">
+        {([['rules', 'กติกา'], ['refs', 'กรรมการ']] as const).map(([k, l]) => (
+          <button key={k} type="button" onClick={() => setTab(k)} className={`min-h-[40px] px-5 rounded-lg text-sm font-semibold ${tab === k ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600'}`}>{l}</button>
+        ))}
+      </div>
+
       {/* Rules Section */}
+      {tab === 'rules' && (<>
       <section className="bg-white border border-slate-200/80 rounded-2xl p-5 space-y-4">
         <h3 className="font-display text-base font-bold text-slate-900">ชุดกติกาการแข่งขัน ({tRules.length})</h3>
         <div className="divide-y divide-slate-100">
           {tRules.map((r) => (
             <div key={r.id} className="py-3 flex items-center justify-between gap-3">
-              <div>
+              <div className="min-w-0">
                 <div className="text-sm font-bold text-slate-900">{r.name}</div>
                 <div className="text-xs text-slate-500">{ruleText(r)}</div>
               </div>
               {isOrganizer && (
-                <button
-                  type="button"
-                  onClick={() => deleteRulePreset(r.id)}
-                  className="min-h-[40px] min-w-[40px] flex items-center justify-center rounded-xl hover:bg-red-50 text-red-600"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                <div className="flex items-center gap-1 shrink-0">
+                  <button type="button" aria-label="แก้ไขกติกา" onClick={() => openEditRule(r)} className="min-h-[40px] min-w-[40px] flex items-center justify-center rounded-xl hover:bg-blue-50 text-blue-600">
+                    <Pencil className="w-4 h-4" />
+                  </button>
+                  {delRuleId === r.id ? (
+                    <>
+                      <button type="button" onClick={() => { deleteRulePreset(r.id); setDelRuleId(null); }} className="min-h-[40px] px-3 rounded-xl bg-red-600 text-white text-xs font-semibold">ยืนยันลบ</button>
+                      <button type="button" onClick={() => setDelRuleId(null)} className="min-h-[40px] px-3 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold">ไม่</button>
+                    </>
+                  ) : (
+                    <button type="button" aria-label="ลบกติกา" onClick={() => setDelRuleId(r.id)} className="min-h-[40px] min-w-[40px] flex items-center justify-center rounded-xl hover:bg-red-50 text-red-600">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
               )}
             </div>
           ))}
         </div>
 
         {isOrganizer && (
-          <button
-            type="button"
-            onClick={addStandardRules}
-            className="min-h-[40px] px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-semibold text-slate-700"
-          >
-            + เพิ่มชุดมาตรฐาน (1 เซต / 2 ใน 3 เซต / 3 ใน 5 เซต / 2 เซต)
-          </button>
-        )}
-        {isOrganizer && (
-          <form onSubmit={handleAddRule} className="grid grid-cols-2 sm:grid-cols-7 gap-2.5 pt-3 border-t border-slate-100">
-            <input
-              required
-              value={ruleName}
-              onChange={(e) => setRuleName(e.target.value)}
-              placeholder="ชื่อชุดกติกา เช่น 1 เกม 30 แต้ม"
-              className="col-span-2 min-h-[44px] px-3 rounded-xl border border-slate-200 text-sm"
-            />
-            <select
-              value={mode}
-              onChange={(e) => setMode(e.target.value as typeof mode)}
-              className="min-h-[44px] px-3 rounded-xl border border-slate-200 bg-white text-sm"
-            >
-              <option value="one">1 เซต</option>
-              <option value="bo3">2 ใน 3 เซต</option>
-              <option value="bo5">3 ใน 5 เซต</option>
-              <option value="two">2 เซต (2-0 ได้ 2, 1-1 ได้ 1)</option>
-            </select>
-            <input
-              type="number"
-              min={5}
-              max={50}
-              value={points}
-              onChange={(e) => setPoints(Number(e.target.value))}
-              aria-label="แต้มต่อเซต"
-              title="แต้มต่อเซต"
-              className="min-h-[44px] px-3 rounded-xl border border-slate-200 text-sm tabular-nums"
-            />
-            <label className="flex items-center gap-2 text-xs text-slate-600 px-1">
-              <input type="checkbox" checked={deuce} onChange={(e) => setDeuce(e.target.checked)} className="w-4 h-4" />
-              ดิว
-            </label>
-            <input
-              type="number"
-              min={5}
-              max={99}
-              value={cap}
-              disabled={!deuce}
-              onChange={(e) => setCap(Number(e.target.value))}
-              aria-label="แต้มสูงสุด"
-              title="แต้มสูงสุด (ปิดเซต)"
-              className="min-h-[44px] px-3 rounded-xl border border-slate-200 text-sm tabular-nums disabled:bg-slate-100"
-            />
-            <button
-              type="submit"
-              className="col-span-2 sm:col-span-1 min-h-[44px] rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold"
-            >
-              + เพิ่มกติกา
+          <div className="flex flex-wrap gap-2">
+            <button type="button" onClick={openNewRule} className="inline-flex items-center gap-1 min-h-[44px] px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold">
+              <Plus className="w-4 h-4" /> เพิ่มกติกา
             </button>
-            <div className="col-span-2 sm:col-span-7 flex flex-wrap items-center gap-2 text-xs text-slate-600">
-              <span className="font-semibold">คะแนนผลแข่ง (เก็บแต้มตารางคะแนน):</span>
-              {([['ชนะ', winPts, setWinPts], ['เสมอ', drawPts, setDrawPts], ['แพ้', lossPts, setLossPts]] as const).map(([l, v, set]) => (
-                <label key={l} className="inline-flex items-center gap-1.5">
-                  {l}
-                  <input type="number" min={0} max={20} value={v} onChange={(e) => set(Math.max(0, Math.min(20, Number(e.target.value) || 0)))} className="w-16 min-h-[40px] px-2 rounded-xl border border-slate-200 text-sm tabular-nums" />
-                </label>
-              ))}
-              <span className="text-slate-400">คะแนน</span>
-            </div>
-          </form>
+            <button type="button" onClick={addStandardRules} className="min-h-[44px] px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-semibold text-slate-700">
+              + เพิ่มชุดมาตรฐาน (1 เซต / 2 ใน 3 เซต / 3 ใน 5 เซต / 2 เซต)
+            </button>
+          </div>
         )}
       </section>
 
@@ -415,7 +390,56 @@ export function RulesStaffPage() {
         </section>
       )}
 
+      </>)}
+
+      {/* Rule popup */}
+      <ResponsiveSheet open={ruleOpen} onClose={() => setRuleOpen(false)} title={editRuleId ? 'แก้ไขชุดกติกา' : 'เพิ่มชุดกติกา'}>
+        <form onSubmit={handleAddRule} className="space-y-3">
+          <label className="block space-y-1">
+            <span className="text-xs font-semibold text-slate-700">ชื่อชุดกติกา</span>
+            <input required value={ruleName} onChange={(e) => setRuleName(e.target.value)} placeholder="เช่น 1 เกม 30 แต้ม" className="w-full min-h-[44px] px-3 rounded-xl border border-slate-200 text-sm" />
+          </label>
+          <label className="block space-y-1">
+            <span className="text-xs font-semibold text-slate-700">จำนวนเซต</span>
+            <select value={mode} onChange={(e) => setMode(e.target.value as typeof mode)} className="w-full min-h-[44px] px-3 rounded-xl border border-slate-200 bg-white text-sm">
+              <option value="one">1 เซต</option>
+              <option value="bo3">2 ใน 3 เซต</option>
+              <option value="bo5">3 ใน 5 เซต</option>
+              <option value="two">2 เซต (2-0 ได้ 2, 1-1 ได้ 1)</option>
+            </select>
+          </label>
+          <div className="grid grid-cols-2 gap-3">
+            <label className="block space-y-1">
+              <span className="text-xs font-semibold text-slate-700">แต้มต่อเซต</span>
+              <input type="number" min={5} max={50} value={points} onChange={(e) => setPoints(Number(e.target.value))} className="w-full min-h-[44px] px-3 rounded-xl border border-slate-200 text-sm tabular-nums" />
+            </label>
+            <label className="block space-y-1">
+              <span className="text-xs font-semibold text-slate-700">แต้มสูงสุด (ปิดเซต)</span>
+              <input type="number" min={5} max={99} value={cap} disabled={!deuce} onChange={(e) => setCap(Number(e.target.value))} className="w-full min-h-[44px] px-3 rounded-xl border border-slate-200 text-sm tabular-nums disabled:bg-slate-100" />
+            </label>
+          </div>
+          <label className="flex items-center gap-2 text-sm text-slate-700">
+            <input type="checkbox" checked={deuce} onChange={(e) => setDeuce(e.target.checked)} className="w-4 h-4" /> ดิว (ต้องชนะห่าง 2 แต้ม)
+          </label>
+          <div className="rounded-xl bg-slate-50 border border-slate-200 p-3 space-y-2">
+            <div className="text-xs font-semibold text-slate-700">คะแนนผลแข่ง (เก็บแต้มตารางคะแนน)</div>
+            <div className="grid grid-cols-3 gap-2">
+              {([['ชนะ', winPts, setWinPts], ['เสมอ', drawPts, setDrawPts], ['แพ้', lossPts, setLossPts]] as const).map(([l, v, set]) => (
+                <label key={l} className="block space-y-1">
+                  <span className="text-xs text-slate-600">{l}</span>
+                  <input type="number" min={0} max={20} value={v} onChange={(e) => set(Math.max(0, Math.min(20, Number(e.target.value) || 0)))} className="w-full min-h-[44px] px-2 rounded-xl border border-slate-200 text-sm tabular-nums bg-white" />
+                </label>
+              ))}
+            </div>
+          </div>
+          <button type="submit" className="w-full min-h-[48px] rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold">
+            {editRuleId ? 'บันทึกการแก้ไข' : 'เพิ่มกติกา'}
+          </button>
+        </form>
+      </ResponsiveSheet>
+
       {/* Referees */}
+      {tab === 'refs' && (
       <section className="bg-white border border-slate-200/80 rounded-2xl p-5 space-y-4">
         <h3 className="font-display text-base font-bold text-slate-900">รายชื่อกรรมการ ({tReferees.length})</h3>
         <p className="text-xs text-slate-500">
@@ -486,31 +510,27 @@ export function RulesStaffPage() {
         </div>
 
         {isOrganizer && (
-          <form onSubmit={handleAddRef} className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-3 border-t border-slate-100">
-            <input
-              required
-              value={refName}
-              onChange={(e) => setRefName(e.target.value)}
-              placeholder="ชื่อกรรมการ"
-              className="min-h-[44px] px-3 rounded-xl border border-slate-200 text-sm"
-            />
-            <input
-              type="tel"
-              value={refPhone}
-              onChange={(e) => setRefPhone(e.target.value)}
-              placeholder="เบอร์โทร"
-              className="min-h-[44px] px-3 rounded-xl border border-slate-200 text-sm"
-            />
-            <button
-              type="submit"
-              className="inline-flex items-center justify-center gap-1 min-h-[44px] rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold"
-            >
-              <Plus className="w-4 h-4" />
-              เพิ่มกรรมการ
-            </button>
-          </form>
+          <button type="button" onClick={() => setRefOpen(true)} className="inline-flex items-center justify-center gap-1 min-h-[44px] px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold">
+            <Plus className="w-4 h-4" />
+            เพิ่มกรรมการ
+          </button>
         )}
       </section>
+      )}
+
+      <ResponsiveSheet open={refOpen} onClose={() => setRefOpen(false)} title="เพิ่มกรรมการ">
+        <form onSubmit={handleAddRef} className="space-y-3">
+          <label className="block space-y-1">
+            <span className="text-xs font-semibold text-slate-700">ชื่อกรรมการ</span>
+            <input required value={refName} onChange={(e) => setRefName(e.target.value)} placeholder="ชื่อกรรมการ" className="w-full min-h-[44px] px-3 rounded-xl border border-slate-200 text-sm" />
+          </label>
+          <label className="block space-y-1">
+            <span className="text-xs font-semibold text-slate-700">เบอร์โทร</span>
+            <input type="tel" value={refPhone} onChange={(e) => setRefPhone(e.target.value)} placeholder="เบอร์โทร" className="w-full min-h-[44px] px-3 rounded-xl border border-slate-200 text-sm" />
+          </label>
+          <button type="submit" className="w-full min-h-[48px] rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold">เพิ่มกรรมการ</button>
+        </form>
+      </ResponsiveSheet>
     </div>
   );
 }
@@ -689,6 +709,7 @@ export function SettingsPage() {
   const [name, setName] = useState(profile?.display_name || '');
   const [phone, setPhone] = useState(profile?.phone || '');
   const [busy, setBusy] = useState(false);
+  const [themeNow, setThemeNow] = useState<'green' | 'classic'>(() => (document.documentElement.getAttribute('data-theme') === 'classic' ? 'classic' : 'green'));
   React.useEffect(() => {
     setName(profile?.display_name || '');
     setPhone(profile?.phone || '');
@@ -709,6 +730,12 @@ export function SettingsPage() {
   };
   if (!profile) return <LineLoginCard why="เข้าสู่ระบบเพื่อดูและแก้ไขโปรไฟล์ รูปโปรไฟล์จะดึงมาจาก LINE อัตโนมัติ" />;
   const inp = 'w-full min-h-[44px] px-3.5 rounded-xl border border-slate-200 text-sm';
+  const setTheme = (t: 'green' | 'classic') => {
+    if (t === 'classic') document.documentElement.setAttribute('data-theme', 'classic');
+    else document.documentElement.removeAttribute('data-theme');
+    try { localStorage.setItem('matchon.theme', t); } catch { /* ignore */ }
+    setThemeNow(t);
+  };
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div>
@@ -741,6 +768,17 @@ export function SettingsPage() {
             {busy ? 'กำลังบันทึก…' : 'บันทึกโปรไฟล์'}
           </button>
         </form>
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-5 space-y-3">
+          <h3 className="font-display text-base font-bold text-slate-900">ธีมสี</h3>
+          <div className="grid grid-cols-2 gap-2">
+            {([['green', 'เขียวป่า (ใหม่)', ['#051F20', '#163832', '#235347', '#8EB69B', '#DAF1DE']], ['classic', 'น้ำเงิน (เดิม)', ['#0f172a', '#1d4ed8', '#2563eb', '#93c5fd', '#dbeafe']]] as const).map(([k, l, sw]) => (
+              <button key={k} type="button" onClick={() => setTheme(k)} className={`rounded-xl border p-3 text-left space-y-2 ${themeNow === k ? 'border-blue-600 ring-2 ring-blue-600/30' : 'border-slate-200'}`}>
+                <div className="flex h-5 rounded-md overflow-hidden">{sw.map((c) => <span key={c} className="flex-1" style={{ background: c }} />)}</div>
+                <div className="text-sm font-semibold text-slate-900">{l}</div>
+              </button>
+            ))}
+          </div>
+        </div>
         <AccountBox hideRequest />
       </section>
       <OrganizerRequestCard />
