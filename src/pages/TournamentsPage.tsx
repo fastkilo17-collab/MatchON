@@ -22,6 +22,7 @@ import {
   catTotal,
   shuttleText,
   prizeText,
+  prizeLines,
 } from '../utils/bracket';
 import { ResponsiveSheet } from '../components/UiKit';
 import { resizeImage } from '../lib/supabase';
@@ -63,6 +64,7 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
     match_minutes: 30,
     rest_minutes: 15,
     poster: '' as string,
+    posters: [] as string[],
     format_text: '',
     rules_text: '',
     notice: '',
@@ -71,6 +73,7 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
   // Category modal state
   const [catManagerTid, setCatManagerTid] = useState<string | null>(null);
   const [editingCatId, setEditingCatId] = useState<string | null>(null);
+  const [catFormOpen, setCatFormOpen] = useState(false);
   const [catForm, setCatForm] = useState({
     name: '',
     kind: 'singles' as CategoryKind,
@@ -127,6 +130,7 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
       match_minutes: 30,
       rest_minutes: 15,
       poster: '',
+      posters: [],
       format_text: '',
       rules_text: '',
       notice: '',
@@ -149,6 +153,7 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
       match_minutes: t.match_minutes,
       rest_minutes: t.rest_minutes,
       poster: t.poster || '',
+      posters: t.posters && t.posters.length ? t.posters : t.poster ? [t.poster] : [],
       format_text: t.format_text || '',
       rules_text: t.rules_text || '',
       notice: t.notice || '',
@@ -156,20 +161,25 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
     setTSheetOpen(true);
   };
 
-  const pickPoster = async (f?: File | null) => {
-    if (!f) return;
-    try {
-      const blob = await resizeImage(f, 1100, 0.78);
-      const uri: string = await new Promise((res, rej) => {
-        const fr = new FileReader();
-        fr.onload = () => res(String(fr.result));
-        fr.onerror = () => rej(new Error('อ่านรูปไม่สำเร็จ'));
-        fr.readAsDataURL(blob);
-      });
-      setTForm((x) => ({ ...x, poster: uri }));
-    } catch {
-      /* ignore */
+  const pickPosters = async (files?: FileList | null) => {
+    if (!files || !files.length) return;
+    const out: string[] = [];
+    for (const f of Array.from(files)) {
+      try {
+        const blob = await resizeImage(f, 1100, 0.78);
+        out.push(
+          await new Promise<string>((res, rej) => {
+            const fr = new FileReader();
+            fr.onload = () => res(String(fr.result));
+            fr.onerror = () => rej(new Error('อ่านรูปไม่สำเร็จ'));
+            fr.readAsDataURL(blob);
+          }),
+        );
+      } catch {
+        /* ignore */
+      }
     }
+    setTForm((x) => ({ ...x, posters: [...x.posters, ...out].slice(0, 8) }));
   };
 
   const handleSaveT = (e: React.FormEvent) => {
@@ -181,7 +191,8 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
       name: tForm.name.trim(),
       venue: tForm.venue.trim(),
       description: tForm.description.trim(),
-      poster: tForm.poster || null,
+      poster: tForm.posters[0] || null,
+      posters: tForm.posters,
       format_text: tForm.format_text.trim(),
       rules_text: tForm.rules_text.trim(),
       notice: tForm.notice.trim(),
@@ -235,6 +246,7 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
   };
 
   const loadCatForEdit = (c: Category) => {
+    setCatFormOpen(true);
     setEditingCatId(c.id);
     setCatForm({
       name: c.name,
@@ -282,6 +294,7 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
     });
     setEditingCatId(null);
     setCatForm((p) => ({ ...p, name: '', level: '', age_min: '', age_max: '' }));
+    setCatFormOpen(false);
   };
 
   const managedCategories = catManagerTid
@@ -293,7 +306,7 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
       {mode !== 'list' && (
         <div>
           <h2 className="font-display text-xl font-bold text-slate-900">
-            {mode === 'mine' ? 'รายการจัดแข่งขันของฉัน' : mode === 'cats' ? 'จัดการรุ่นการแข่งขัน' : 'ข้อมูลรายการ'}
+            {mode === 'mine' ? 'รายการของฉัน' : mode === 'cats' ? 'จัดการรุ่นการแข่งขัน' : 'ข้อมูลรายการ'}
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
             {mode === 'mine' ? 'รายการที่คุณเป็นผู้จัดหรือทีมงาน กดการ์ดเพื่อเข้าหน้าหลักของรายการ' : 'เลือกรายการที่ต้องการจัดการ'}
@@ -664,18 +677,39 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
               className="w-full p-3 rounded-xl border border-slate-200 text-sm focus:border-blue-500 focus:outline-none"
             />
           </label>
-          <div className="space-y-1">
-            <span className="text-xs font-semibold text-slate-700">รูปโปสเตอร์</span>
-            {tForm.poster && <img src={tForm.poster} alt="โปสเตอร์" className="w-full max-h-64 object-contain rounded-xl bg-slate-100" />}
-            <div className="flex gap-2">
-              <label className="flex-1 min-h-[44px] flex items-center justify-center rounded-xl border border-dashed border-slate-300 text-xs font-semibold text-slate-600 cursor-pointer">
-                {tForm.poster ? 'เปลี่ยนรูป' : 'เลือกรูปโปสเตอร์'}
-                <input type="file" accept="image/*" className="hidden" onChange={(e) => void pickPoster(e.target.files?.[0])} />
-              </label>
-              {tForm.poster && (
-                <button type="button" onClick={() => setTForm({ ...tForm, poster: '' })} className="min-h-[44px] px-4 rounded-xl bg-red-50 text-red-700 text-xs font-semibold">ลบรูป</button>
-              )}
-            </div>
+          <div className="space-y-2">
+            <span className="text-xs font-semibold text-slate-700">รูปโปสเตอร์ (เลือกได้หลายรูป แสดงแบบเลื่อนสไลด์)</span>
+            {tForm.posters.length > 0 && (
+              <div className="grid grid-cols-3 gap-2">
+                {tForm.posters.map((src, i) => (
+                  <div key={i} className="relative rounded-xl overflow-hidden bg-slate-100 aspect-[3/4]">
+                    <img src={src} alt={`โปสเตอร์ ${i + 1}`} className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      aria-label="ลบรูป"
+                      onClick={() => setTForm({ ...tForm, posters: tForm.posters.filter((_, k) => k !== i) })}
+                      className="absolute top-1 right-1 w-7 h-7 rounded-full bg-red-600 text-white text-xs font-bold"
+                    >
+                      ✕
+                    </button>
+                    {i > 0 && (
+                      <button
+                        type="button"
+                        aria-label="เลื่อนไปก่อน"
+                        onClick={() => { const a2 = [...tForm.posters]; [a2[i - 1], a2[i]] = [a2[i], a2[i - 1]]; setTForm({ ...tForm, posters: a2 }); }}
+                        className="absolute bottom-1 left-1 w-7 h-7 rounded-full bg-black/60 text-white text-xs"
+                      >
+                        ◀
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+            <label className="w-full min-h-[44px] flex items-center justify-center rounded-xl border border-dashed border-slate-300 text-xs font-semibold text-slate-600 cursor-pointer">
+              + เพิ่มรูปโปสเตอร์
+              <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => { void pickPosters(e.target.files); e.target.value = ''; }} />
+            </label>
           </div>
           <label className="block space-y-1">
             <span className="text-xs font-semibold text-slate-700">รูปแบบการแข่งขัน</span>
@@ -709,34 +743,39 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
         subtitle={state.tournaments.find((t) => t.id === catManagerTid)?.name}
       >
         {/* Existing Categories */}
-        <div className="space-y-2">
-          <div className="text-xs font-semibold text-slate-500">
-            รุ่นที่เปิดแข่ง ({managedCategories.length})
+        <div className="space-y-3">
+          <div className="flex items-center justify-between gap-2">
+            <div className="text-xs font-semibold text-slate-500">รุ่นที่เปิดแข่ง ({managedCategories.length})</div>
+            <button
+              type="button"
+              onClick={() => { if (catManagerTid) openCategoryManager(catManagerTid); setCatFormOpen(true); }}
+              className="min-h-[40px] px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold"
+            >
+              + เพิ่มรุ่น
+            </button>
           </div>
           {managedCategories.length ? (
-            <div className="divide-y divide-slate-100 border border-slate-200 rounded-2xl overflow-hidden bg-white">
+            <div className="space-y-2.5">
               {managedCategories.map((c) => (
-                <div key={c.id} className="p-3.5 flex items-center justify-between gap-2">
-                  <div className="min-w-0">
-                    <div className="text-sm font-semibold text-slate-900 truncate">{c.name}</div>
-                    <div className="text-xs text-slate-500 truncate mt-0.5 tabular-nums">
-                      {KIND_TH[c.kind]} · {GENDER_TH[c.gender]} · {FORMAT_TH[c.format]} ·{' '}
-                      {c.fee ? baht(c.fee) : 'ฟรี'}{c.shuttle_fee ? ` + ${shuttleText(c)}` : ''} · รับ {c.max_teams} ทีม{prizeText(c) ? ` · ${prizeText(c)}` : ''}
+                <div key={c.id} className="p-3.5 rounded-2xl border border-slate-200 bg-white flex items-start justify-between gap-2">
+                  <div className="min-w-0 space-y-0.5">
+                    <div className="text-sm font-bold text-slate-900">{c.name} <span className="text-xs font-semibold text-blue-700">· รับ {c.max_teams} ทีม</span></div>
+                    <div className="text-xs text-slate-600">{KIND_TH[c.kind]} · {GENDER_TH[c.gender]}</div>
+                    <div className="text-xs text-slate-600">ระบบสาย: {FORMAT_TH[c.format]}</div>
+                    <div className="text-xs text-slate-600 tabular-nums">
+                      ค่าสมัคร {c.fee ? baht(c.fee) : 'ฟรี'}
+                      {c.shuttle_fee ? ` · ค่าลูก ${baht(c.shuttle_fee)}` : ''}
+                      {c.shuttle_qty ? ` · ${c.shuttle_qty} ลูก` : ''}
                     </div>
+                    {prizeLines(c).map((ln) => (
+                      <div key={ln} className="text-xs font-semibold text-amber-700 tabular-nums">🏆 {ln}</div>
+                    ))}
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => loadCatForEdit(c)}
-                      className="min-h-[40px] min-w-[40px] flex items-center justify-center rounded-xl hover:bg-slate-100 text-slate-600"
-                    >
+                    <button type="button" onClick={() => loadCatForEdit(c)} className="min-h-[40px] min-w-[40px] flex items-center justify-center rounded-xl hover:bg-slate-100 text-slate-600">
                       <Edit3 className="w-4 h-4" />
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => deleteCategory(c.id)}
-                      className="min-h-[40px] min-w-[40px] flex items-center justify-center rounded-xl hover:bg-red-50 text-red-600"
-                    >
+                    <button type="button" onClick={() => deleteCategory(c.id)} className="min-h-[40px] min-w-[40px] flex items-center justify-center rounded-xl hover:bg-red-50 text-red-600">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
@@ -745,13 +784,20 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
             </div>
           ) : (
             <div className="p-4 rounded-xl bg-slate-50 text-xs text-slate-500 text-center">
-              ยังไม่มีรุ่นการแข่งขัน เลือกจากตัวช่วยด่วนด้านล่างได้เลย
+              ยังไม่มีรุ่นการแข่งขัน กดปุ่ม "เพิ่มรุ่น" ได้เลย
             </div>
           )}
         </div>
+      </ResponsiveSheet>
 
-        {/* Presets & Add/Edit Form */}
-        <form onSubmit={handleSaveCategory} className="space-y-3.5 pt-3 border-t border-slate-100">
+      {/* Add / Edit category popup */}
+      <ResponsiveSheet
+        open={catFormOpen}
+        onClose={() => { setCatFormOpen(false); setEditingCatId(null); }}
+        title={editingCatId ? 'แก้ไขรุ่น' : 'เพิ่มรุ่น'}
+        subtitle={state.tournaments.find((t) => t.id === catManagerTid)?.name}
+      >
+        <form onSubmit={handleSaveCategory} className="space-y-3.5">
           <div className="text-xs font-semibold text-slate-700">
             {editingCatId ? 'แก้ไขรุ่นการแข่งขัน' : 'เพิ่มรุ่นใหม่ (หรือแตะตัวช่วยด่วน)'}
           </div>
@@ -871,13 +917,13 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
           </div>
 
           <div className="flex items-center gap-2 pt-1">
-            {editingCatId && (
+            {catFormOpen && (
               <button
                 type="button"
-                onClick={() => setEditingCatId(null)}
+                onClick={() => { setEditingCatId(null); setCatFormOpen(false); }}
                 className="min-h-[44px] px-4 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700"
               >
-                ยกเลิกแก้ไข
+                ยกเลิก
               </button>
             )}
             <button

@@ -692,3 +692,16 @@ export function clubGroups(regs: Registration[], G: number): string[][] {
   });
   return groups.map((g) => g.map((r) => r.id));
 }
+
+const prizeArr = (a?: number[]): string => {
+  const v = (a || []).map((x) => x || 0);
+  while (v.length && !v[v.length - 1]) v.pop();
+  if (!v.length) return '';
+  if (v.length === 4 && v[2] && v[2] === v[3]) return `${v[0]}/${v[1]}/${v[2]}*2`;
+  return v.join('/');
+};
+/** เช่น { u: "สายบน 8000/4000/2000*2", l: "สายล่าง 2000/1000/500*2" } */
+export function prizeLines(c?: { prizes?: { u?: number[]; l?: number[] } } | null): string[] {
+  const u = prizeArr(c?.prizes?.u), l = prizeArr(c?.prizes?.l);
+  return [u && `${l ? 'สายบน' : 'เงินรางวัล'} ${u}`, l && `สายล่าง ${l}`].filter(Boolean) as string[];
+}

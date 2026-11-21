@@ -22,7 +22,7 @@ import {
   shuttleText,
   prizeText,
 } from '../utils/bracket';
-import { PhotoThumb, QrCodeSvg } from '../components/UiKit';
+import { PhotoThumb, PosterSlider, QrCodeSvg } from '../components/UiKit';
 
 function PhotoPick({ label, file, onPick }: { label: string; file: File | null; onPick: (f: File | null) => void }) {
   const url = React.useMemo(() => (file ? URL.createObjectURL(file) : ''), [file]);
@@ -190,11 +190,13 @@ function RegisterForm() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-5">
-      {(targetTournament.poster || targetTournament.format_text || targetTournament.rules_text || targetTournament.notice) && (
+      {(targetTournament.poster || targetTournament.posters?.length || targetTournament.format_text || targetTournament.rules_text || targetTournament.notice) && (
         <div className="bg-white border border-slate-200/80 rounded-2xl p-5 space-y-3">
-          {targetTournament.poster && (
-            <img src={targetTournament.poster} alt="โปสเตอร์" className="w-full max-h-96 object-contain rounded-xl bg-slate-100" />
-          )}
+          {(targetTournament.posters?.length || targetTournament.poster) ? (
+            <div className="rounded-xl overflow-hidden">
+              <PosterSlider images={targetTournament.posters?.length ? targetTournament.posters : [targetTournament.poster as string]} maxH={384} />
+            </div>
+          ) : null}
           {[
             ['รูปแบบการแข่งขัน', targetTournament.format_text],
             ['รายละเอียดกติกา', targetTournament.rules_text],

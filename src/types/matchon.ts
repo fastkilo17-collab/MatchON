@@ -49,6 +49,7 @@ export interface Tournament {
   organizer_id?: string;
   live_id?: string | null;
   poster?: string | null;
+  posters?: string[];
   format_text?: string;
   rules_text?: string;
   notice?: string;

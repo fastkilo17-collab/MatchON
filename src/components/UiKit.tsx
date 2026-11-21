@@ -206,3 +206,35 @@ export function TeamAvatars({ reg, size = 36, flat = false }: { reg?: Registrati
     </span>
   );
 }
+
+/** สไลด์โปสเตอร์หลายรูป (เลื่อนซ้าย-ขวา) แตะเพื่อขยาย */
+export function PosterSlider({ images, onZoom, maxH = 420 }: { images: string[]; onZoom?: (i: number) => void; maxH?: number }) {
+  const ref = React.useRef<HTMLDivElement>(null);
+  const [idx, setIdx] = React.useState(0);
+  if (!images.length) return null;
+  return (
+    <div className="relative bg-slate-100">
+      <div
+        ref={ref}
+        onScroll={(e) => {
+          const el = e.currentTarget;
+          setIdx(Math.round(el.scrollLeft / Math.max(1, el.clientWidth)));
+        }}
+        className="flex overflow-x-auto snap-x snap-mandatory no-scrollbar"
+      >
+        {images.map((src, i) => (
+          <button key={i} type="button" onClick={() => onZoom?.(i)} className="snap-center shrink-0 w-full grid place-items-center" aria-label={`โปสเตอร์ ${i + 1}`}>
+            <img src={src} alt={`โปสเตอร์ ${i + 1}`} style={{ maxHeight: maxH }} className="w-full object-contain" />
+          </button>
+        ))}
+      </div>
+      {images.length > 1 && (
+        <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1.5 pointer-events-none">
+          {images.map((_, i) => (
+            <span key={i} className={`h-1.5 rounded-full transition-all ${i === idx ? 'w-4 bg-slate-800' : 'w-1.5 bg-slate-400/70'}`} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

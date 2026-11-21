@@ -33,6 +33,7 @@ export function BracketsPage() {
   const [seeded, setSeeded] = useState(false);
   const [hasLower, setHasLower] = useState(false);
   const [manualOpen, setManualOpen] = useState(false);
+  const [view, setView] = useState<'groups' | 'upper' | 'lower'>('groups');
   const [editGroup, setEditGroup] = useState<number | null>(null);
   const [editingMatch, setEditingMatch] = useState<Match | null>(null);
 
@@ -65,6 +66,8 @@ export function BracketsPage() {
   const swissMatches = catMatches.filter((m) => m.stage === 'swiss');
   const koMatches = catMatches.filter((m) => m.stage === 'knockout' || m.stage === 'main');
   const lowMatches = catMatches.filter((m) => m.stage === 'lower');
+  const avail = ([['groups', 'แบ่งกลุ่ม', groupMatches.length], ['upper', 'น็อคเอาท์สายบน', koMatches.length], ['lower', 'น็อคเอาท์สายล่าง', lowMatches.length]] as const).filter(([, , n]) => n > 0);
+  const effView = avail.some(([k]) => k === view) ? view : avail[0]?.[0];
   const isRoundRobinMain = meta?.format === 'round_robin';
   const plan = groupPlan(confirmedTeams.length, gMode, gVal);
   const isGroupFmt = format === 'group_stage' || format === 'group_knockout';
@@ -159,7 +162,7 @@ export function BracketsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 noprint">
         <div>
-          <h2 className="font-display text-xl font-bold text-slate-900">จัดสายการแข่งขัน</h2>
+          <h2 className="font-display text-xl font-bold text-slate-900">สายการแข่งขัน</h2>
           <p className="text-xs text-slate-500 mt-0.5 tabular-nums">
             {activeCat.name} · ทีมยืนยันแล้ว {confirmedTeams.length} ทีม
           </p>
@@ -360,6 +363,23 @@ export function BracketsPage() {
         </div>
       )}
 
+      {avail.length > 1 && (
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar noprint">
+          {avail.map(([k, label]) => (
+            <button
+              key={k}
+              type="button"
+              onClick={() => setView(k)}
+              className={`min-h-[40px] px-4 rounded-xl text-xs font-semibold whitespace-nowrap shrink-0 border transition-colors ${
+                effView === k ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Bracket Visualization */}
       {catMatches.length === 0 ? (
         <div className="bg-white border border-slate-200/80 rounded-2xl p-10 text-center text-sm text-slate-500">
@@ -368,7 +388,7 @@ export function BracketsPage() {
       ) : (
         <div className="space-y-5">
           {/* Group Stage Tables */}
-          {groupMatches.length > 0 && (
+          {groupMatches.length > 0 && (effView === 'groups' || avail.length <= 1) && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {[...new Set(groupMatches.map((m) => m.group_no ?? 0))]
                 .sort((a, b) => a - b)
@@ -406,7 +426,7 @@ export function BracketsPage() {
                           <tbody className="divide-y divide-slate-100 tabular-nums font-mono">
                             {rows.map((r, idx) => (
                               <tr key={r.id}>
-                                <td className="py-2 text-slate-500">{idx + 1}</td>
+                                <td className="py-2 font-bold text-slate-700">{String.fromCharCode(65 + gNo)}{idx + 1}</td>
                                 <td className="py-2 font-sans font-semibold text-slate-900">
                                   <span className="inline-flex items-center gap-1.5">
                                     <TeamAvatars reg={regMap[r.id]} size={22} flat />
@@ -489,8 +509,8 @@ export function BracketsPage() {
           )}
 
           {/* Horizontal Scrollable Knockout Tree */}
-          {!isRoundRobinMain && koMatches.length > 0 && renderTree(koMatches, lowMatches.length ? 'สายบน (Knockout)' : 'สายการแข่งขัน (Knockout)')}
-          {!isRoundRobinMain && lowMatches.length > 0 && renderTree(lowMatches, 'สายล่าง (Knockout)')}
+          {!isRoundRobinMain && koMatches.length > 0 && (effView === 'upper' || avail.length <= 1) && renderTree(koMatches, lowMatches.length ? 'สายบน (Knockout)' : 'สายการแข่งขัน (Knockout)')}
+          {!isRoundRobinMain && lowMatches.length > 0 && (effView === 'lower' || avail.length <= 1) && renderTree(lowMatches, 'สายล่าง (Knockout)')}
         </div>
       )}
 
@@ -502,7 +522,9 @@ export function BracketsPage() {
         teams={confirmedTeams}
         groupCount={plan.groups}
         perGroup={plan.perGroup}
+        draftKey={`matchon.draw.${activeCat.id}`}
         onConfirm={(manualGroups) => {
+          try { localStorage.removeItem(`matchon.draw.${activeCat.id}`); } catch { /* ignore */ }
           generateBracket(activeCat.id, { format, groups: manualGroups.length, advance, seeded: false, hasLower, manualGroups });
           setManualOpen(false);
         }}
@@ -527,22 +549,36 @@ export function BracketsPage() {
 
 /* ---------- จัดสายเอง: สุ่ม/เลือกทีมลงกลุ่มทีละทีม (ทีม/ก๊วนเดียวกันห้ามอยู่กลุ่มเดียวกัน) ---------- */
 function ManualDraw({
-  open, onClose, teams, groupCount, perGroup, onConfirm,
+  open, onClose, teams, groupCount, perGroup, onConfirm, draftKey,
 }: {
+  draftKey: string;
   open: boolean; onClose: () => void; teams: import('../types/matchon').Registration[];
   groupCount: number; perGroup: number; onConfirm: (groups: string[][]) => void;
 }) {
   const [groups, setGroups] = useState<string[][]>([]);
-  const [roll, setRoll] = useState<{ g: number; shown: string; done: boolean; pickId?: string } | null>(null);
+  const [roll, setRoll] = useState<{ g: number; shown: string; reg?: import('../types/matchon').Registration; done: boolean; pickId?: string } | null>(null);
   const [pickFor, setPickFor] = useState<number | null>(null);
   const [msg, setMsg] = useState('');
   const timer = React.useRef<number | null>(null);
   const byId = Object.fromEntries(teams.map((t) => [t.id, t]));
 
   useEffect(() => {
-    if (open) { setGroups(Array.from({ length: groupCount }, () => [])); setMsg(''); setRoll(null); setPickFor(null); }
+    if (open) {
+      let init: string[][] = Array.from({ length: groupCount }, () => []);
+      try {
+        const raw = JSON.parse(localStorage.getItem(draftKey) || 'null') as string[][] | null;
+        const ids = new Set(teams.map((t) => t.id));
+        if (raw && raw.length === groupCount && raw.every((g) => Array.isArray(g) && g.every((id) => ids.has(id)))) init = raw;
+      } catch { /* ignore */ }
+      setGroups(init); setMsg(''); setRoll(null); setPickFor(null);
+    }
     return () => { if (timer.current) window.clearTimeout(timer.current); };
   }, [open, groupCount]);
+
+  useEffect(() => {
+    if (!open || !groups.length) return;
+    try { localStorage.setItem(draftKey, JSON.stringify(groups)); } catch { /* ignore */ }
+  }, [groups, open, draftKey]);
 
   const used = new Set(groups.flat());
   const pool = teams.filter((t) => !used.has(t.id));
@@ -570,15 +606,15 @@ function ManualDraw({
     const step = () => {
       n++;
       if (n >= ticks) {
-        setRoll({ g, shown: teamName(pick), done: true, pickId: pick.id });
+        setRoll({ g, shown: teamName(pick), reg: pick, done: true, pickId: pick.id });
         return;
       }
       const t = el[Math.floor(Math.random() * el.length)];
-      setRoll({ g, shown: teamName(t), done: false });
+      setRoll({ g, shown: teamName(t), reg: t, done: false });
       delay = Math.min(300, n < 12 ? delay * 1.05 : delay * 1.22);
       timer.current = window.setTimeout(step, delay);
     };
-    setRoll({ g, shown: teamName(pick), done: false });
+    setRoll({ g, shown: teamName(pick), reg: pick, done: false });
     timer.current = window.setTimeout(step, delay);
   };
   const remove = (g: number, id: string) => setGroups((prev) => prev.map((gr, i) => (i === g ? gr.filter((x) => x !== id) : gr)));
@@ -599,7 +635,7 @@ function ManualDraw({
   const ready = pool.length === 0 && groups.every((g) => g.length >= 2);
 
   return (
-    <ResponsiveSheet open={open} onClose={onClose} title="จัดสายเอง" subtitle={`ทีม/ก๊วนเดียวกันห้ามอยู่กลุ่มเดียวกัน · ${groupCount} กลุ่ม กลุ่มละไม่เกิน ${cap} ทีม · เหลือ ${pool.length}/${teams.length} ทีม`}>
+    <ResponsiveSheet open={open} onClose={onClose} title="จัดสายเอง" subtitle={`ทีม/ก๊วนเดียวกันห้ามอยู่กลุ่มเดียวกัน · ${groupCount} กลุ่ม กลุ่มละไม่เกิน ${cap} ทีม · บันทึกร่างอัตโนมัติ (ผู้เล่นยังไม่เห็นสายจนกว่าจะยืนยัน)`}>
       <div className="space-y-3">
         <div className="flex flex-wrap gap-2">
           <button type="button" onClick={randomRest} disabled={!!roll || !pool.length} className="min-h-[38px] px-3 rounded-xl bg-slate-100 disabled:opacity-40 text-xs font-semibold inline-flex items-center gap-1.5">
@@ -610,9 +646,7 @@ function ManualDraw({
           </button>
         </div>
         {msg && <div className="rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-semibold px-3 py-2">{msg}</div>}
-        {pool.length > 0 && (
-          <div className="text-[11px] text-slate-500">ยังไม่ได้ลงกลุ่ม: {pool.map((t) => teamName(t)).join(' | ')}</div>
-        )}
+        <div className="font-bold text-sm text-slate-900">เหลือ {pool.length}/{teams.length} ทีม</div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {groups.map((g, gi) => (
             <div key={gi} className="rounded-2xl border border-slate-200 p-3 space-y-2">
@@ -689,6 +723,7 @@ function ManualDraw({
       {roll && createPortal(
         <div className="fixed inset-0 z-[320] bg-black/80 flex flex-col items-center justify-center gap-5 p-6">
           <div className="text-white/80 text-lg font-semibold">กำลังสุ่มทีมเข้า กลุ่ม {String.fromCharCode(65 + roll.g)}</div>
+          {roll.reg && <TeamAvatars reg={roll.reg} size={96} flat />}
           <div className={`w-full max-w-2xl rounded-3xl px-6 py-10 text-center font-display text-3xl sm:text-5xl font-extrabold leading-tight transition-colors ${roll.done ? 'bg-emerald-500 text-white' : 'bg-white text-slate-900'}`}>
             {roll.shown}
           </div>
@@ -729,8 +764,9 @@ function GroupEditSheet({
       <div className="space-y-4">
         <div className="space-y-2">
           <div className="text-xs font-semibold text-slate-700">ทีมในกลุ่ม ({ids.length})</div>
-          {ids.map((id) => (
+          {ids.map((id, ti) => (
             <div key={id} className="flex items-center gap-2 rounded-xl border border-slate-200 p-2">
+              <span className="w-8 shrink-0 text-center text-xs font-bold text-slate-500">{String.fromCharCode(65 + groupNo)}{ti + 1}</span>
               <TeamAvatars reg={byId[id]} size={26} flat />
               <span className="flex-1 min-w-0 text-sm font-semibold text-slate-900 truncate">{teamName(byId[id])}</span>
               {canEdit && (

@@ -43,12 +43,12 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'my', label: 'การสมัครของฉัน', shortLabel: 'ของฉัน', icon: Ticket, group: 'main', roles: ['player', 'organizer'] },
 
   { id: 'roster', label: 'รายชื่อนักกีฬา', shortLabel: 'รายชื่อ', icon: Users, group: 'main', roles: ['organizer', 'player', 'referee'] },
-  { id: 'mine', label: 'รายการจัดแข่งขันของฉัน', shortLabel: 'ของฉัน', icon: Trophy, group: 'manage', roles: ['organizer'] },
+  { id: 'mine', label: 'รายการของฉัน', shortLabel: 'ของฉัน', icon: Trophy, group: 'manage', roles: ['organizer'] },
   { id: 'info', label: 'ข้อมูลรายการ', shortLabel: 'ข้อมูล', icon: Edit3, group: 'manage', roles: ['organizer'] },
   { id: 'cats', label: 'จัดการรุ่นการแข่งขัน', shortLabel: 'รุ่น', icon: ListChecks, group: 'manage', roles: ['organizer'] },
   { id: 'athletes', label: 'จัดการนักกีฬา', shortLabel: 'นักกีฬา', icon: Users, group: 'manage', roles: ['organizer'] },
-  { id: 'brackets', label: 'สายแข่งขัน', shortLabel: 'สาย', icon: GitBranch, group: 'manage', roles: ['organizer', 'player', 'referee'] },
-  { id: 'schedule', label: 'ตารางการแข่งขัน', shortLabel: 'ตาราง', icon: CalendarDays, group: 'manage', roles: ['organizer', 'player', 'referee'] },
+  { id: 'brackets', label: 'สายแข่งขัน', shortLabel: 'สายแข่งขัน', icon: GitBranch, group: 'manage', roles: ['organizer', 'player', 'referee'] },
+  { id: 'schedule', label: 'ตารางการแข่งขัน', shortLabel: 'ตารางแข่งขัน', icon: CalendarDays, group: 'manage', roles: ['organizer', 'player', 'referee'] },
 
   { id: 'courts', label: 'จัดการสนาม', shortLabel: 'สนาม', icon: MapPin, group: 'arena', roles: ['organizer', 'referee'] },
   { id: 'live', label: 'Live Score', shortLabel: 'คะแนนสด', icon: Activity, group: 'arena', roles: ['organizer', 'player', 'referee'] },
@@ -87,7 +87,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       ? ['dashboard', 'courts', 'live', 'schedule']
       : role === 'referee'
         ? ['live', 'courts', 'schedule', 'results']
-        : ['tournaments', 'home', 'my', 'live'];
+        : ['home', 'brackets', 'schedule', 'live'];
 
   const bottomTabs = primaryBottomIds
     .map((id) => NAV_ITEMS.find((item) => item.id === id))
