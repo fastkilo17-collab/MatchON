@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { ChevronDown, GitBranch, Hand, Lock, Printer, Shuffle, Sparkles, Trash2, Unlock, X } from 'lucide-react';
 import { useMatchON } from '../context/MatchONContext';
 import type { BracketFormat, Match, Registration } from '../types/matchon';
-import { computeStandings, standingPtsFor, FORMAT_TH, scoreText, teamName, groupPlan, clubKey, regSeqMap, teamRealWithNick } from '../utils/bracket';
+import { computeStandings, standingPtsFor, FORMAT_TH, scoreText, teamName, groupPlan, clubKey } from '../utils/bracket';
 import type { StandingRow, StandingPts } from '../utils/bracket';
 import { MatchScoreSheet } from '../components/MatchScoreSheet';
 import { ResponsiveSheet, TeamAvatars } from '../components/UiKit';
@@ -87,7 +87,6 @@ export function BracketsPage() {
   const effView = sections.some((x) => x.k === view && x.n > 0) ? view : firstOn;
   const isRoundRobinMain = meta?.format === 'round_robin';
   const plan = groupPlan(confirmedTeams.length, gMode, gVal);
-  const seqMap = regSeqMap(tRegistrations);
   const isGroupFmt = format === 'group_stage' || format === 'group_knockout';
 
   const renderMatchCard = (m: Match) => {
@@ -124,8 +123,11 @@ export function BracketsPage() {
 
         <div className="space-y-1 text-sm">
           <div className="flex items-center justify-between gap-2">
-            <span className={`truncate ${aWon ? 'font-bold text-emerald-700' : 'font-medium text-slate-900'}`}>
-              {teamName(m.reg_a ? regMap[m.reg_a] : null)}
+            <span className="flex items-center gap-1.5 min-w-0">
+              {m.reg_a && <TeamAvatars reg={regMap[m.reg_a]} size={26} flat />}
+              <span className={`truncate ${aWon ? 'font-bold text-emerald-700' : 'font-medium text-slate-900'}`}>
+                {teamName(m.reg_a ? regMap[m.reg_a] : null)}
+              </span>
             </span>
             <span className="font-mono text-xs tabular-nums text-slate-600 shrink-0">
               {m.sets.map((s) => s[0]).join(' ')}
@@ -134,8 +136,11 @@ export function BracketsPage() {
           </div>
           <div className="h-px bg-slate-100" />
           <div className="flex items-center justify-between gap-2">
-            <span className={`truncate ${bWon ? 'font-bold text-emerald-700' : 'font-medium text-slate-900'}`}>
-              {teamName(m.reg_b ? regMap[m.reg_b] : null)}
+            <span className="flex items-center gap-1.5 min-w-0">
+              {m.reg_b && <TeamAvatars reg={regMap[m.reg_b]} size={26} flat />}
+              <span className={`truncate ${bWon ? 'font-bold text-emerald-700' : 'font-medium text-slate-900'}`}>
+                {teamName(m.reg_b ? regMap[m.reg_b] : null)}
+              </span>
             </span>
             <span className="font-mono text-xs tabular-nums text-slate-600 shrink-0">
               {m.sets.map((s) => s[1]).join(' ')}
@@ -419,9 +424,8 @@ export function BracketsPage() {
                           <TeamStandCard
                             key={r.id}
                             row={r}
-                            rankLabel={`${letter}${idx + 1}`}
+                            rank={idx + 1}
                             reg={regMap[r.id]}
-                            seq={seqMap[r.id]}
                             pts={sp}
                             matches={gm.filter((m) => m.reg_a === r.id || m.reg_b === r.id)}
                             regMap={regMap}
@@ -606,78 +610,85 @@ function KnockoutTree({ list, title, renderCard }: { list: Match[]; title: strin
 
 /* ---------- การ์ดทีมในกลุ่ม (ย่อ/ขยาย) ---------- */
 function TeamStandCard({
-  row, rankLabel, reg, seq, pts, matches, regMap, open, onToggle,
+  row, rank, reg, pts, matches, regMap, open, onToggle,
 }: {
-  row: StandingRow; rankLabel: string; reg?: Registration; seq?: number; pts: StandingPts;
+  row: StandingRow; rank: number; reg?: Registration; pts: StandingPts;
   matches: Match[]; regMap: Record<string, Registration>; open: boolean; onToggle: () => void;
 }) {
-  const fin = matches.filter((m) => m.status === 'finished' && m.reg_a && m.reg_b);
-  const real = reg ? teamRealWithNick(reg) : '';
+  const one = (n?: string, k?: string) => (n ? (k && k !== n ? `${n} (${k})` : n) : '');
+  const people = reg ? [one(reg.p1_name, reg.p1_nick), one(reg.p2_name, reg.p2_nick)].filter(Boolean) : [];
   const stat = (label: string, v: React.ReactNode, tone = 'text-slate-900') => (
-    <div className="rounded-lg bg-slate-50 py-1 text-center">
-      <div className={`text-sm font-bold tabular-nums ${tone}`}>{v}</div>
-      <div className="text-[10px] text-slate-500 leading-tight">{label}</div>
+    <div className="rounded-lg bg-white border border-slate-200 py-1.5 text-center">
+      <div className={`text-base font-bold tabular-nums ${tone}`}>{v}</div>
+      <div className="text-xs text-slate-500 leading-tight">{label}</div>
     </div>
   );
+  const sec = (title: string) => <div className="text-xs font-bold text-slate-500 mb-1.5">{title}</div>;
   return (
-    <div className={`rounded-xl border ${open ? 'border-blue-300 bg-blue-50/20' : 'border-slate-200'} overflow-hidden`}>
-      <button type="button" onClick={onToggle} aria-expanded={open} className="w-full flex items-center gap-2 px-2 py-1.5 text-left">
-        <span className="w-8 shrink-0 text-center text-xs font-bold text-blue-700 bg-blue-50 rounded-md py-1 tabular-nums">{rankLabel}</span>
-        <TeamAvatars reg={reg} size={28} flat />
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-[13px] font-bold text-slate-900 leading-tight">
-            {reg?.club || teamName(reg)}
-            {seq ? <span className="ml-1 text-[10px] font-medium text-slate-400">ทีม {seq}</span> : null}
+    <div className={`rounded-2xl border ${open ? 'border-blue-300 bg-blue-50/30' : 'border-slate-200 bg-white'} overflow-hidden`}>
+      <button type="button" onClick={onToggle} aria-expanded={open} className="w-full px-3 py-2.5 text-left space-y-2">
+        <span className="flex items-center gap-2.5">
+          <span className="w-8 h-8 shrink-0 grid place-items-center text-sm font-bold text-blue-700 bg-blue-50 rounded-lg tabular-nums">{rank}</span>
+          <span className="min-w-0 flex-1 truncate text-base font-bold text-slate-900">{reg?.club || teamName(reg)}</span>
+          <span className="shrink-0 text-right leading-tight">
+            <span className="block text-xl font-bold tabular-nums text-blue-700">{row.pts}</span>
+            <span className="block text-xs text-slate-400">คะแนน</span>
           </span>
-          <span className="block truncate text-[11px] text-slate-500 leading-tight">{real}</span>
+          <ChevronDown className={`w-5 h-5 text-slate-400 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
         </span>
-        <span className="shrink-0 text-center tabular-nums font-mono leading-tight">
-          <span className="block text-[11px] text-slate-600">{row.won}-{row.drawn}-{row.lost}</span>
-          <span className="block text-[9px] font-sans text-slate-400">ชนะ-เสมอ-แพ้</span>
+        <span className="flex items-center gap-2.5">
+          <TeamAvatars reg={reg} size={40} flat />
+          <span className="min-w-0 flex-1 text-sm text-slate-700 leading-snug">
+            {people.map((n, i) => <span key={i} className="block truncate">{n}</span>)}
+          </span>
         </span>
-        <span className="shrink-0 w-9 text-center leading-tight">
-          <span className="block text-base font-bold tabular-nums text-blue-700">{row.pts}</span>
-          <span className="block text-[9px] text-slate-400">คะแนน</span>
-        </span>
-        <ChevronDown className={`w-4 h-4 text-slate-400 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
       {open && (
-        <div className="px-2 pb-2 space-y-2 border-t border-slate-100 pt-2">
-          <div className="grid grid-cols-4 sm:grid-cols-8 gap-1">
-            {stat('แข่ง', row.played)}
-            {stat('ชนะ', row.won, 'text-emerald-700')}
-            {stat('เสมอ', row.drawn)}
-            {stat('แพ้', row.lost, 'text-red-600')}
-            {stat('เกม +/-', row.gf - row.ga)}
-            {stat('แต้มได้', row.pf)}
-            {stat('แต้มเสีย', row.pa)}
-            {stat('แต้ม +/-', row.pf - row.pa)}
+        <div className="px-3 pb-3 pt-3 space-y-3 border-t border-slate-200">
+          <div>
+            {sec('ผลการแข่งขัน')}
+            <div className="grid grid-cols-4 gap-1.5">
+              {stat('แข่ง', row.played)}
+              {stat('ชนะ', row.won, 'text-emerald-700')}
+              {stat('เสมอ', row.drawn)}
+              {stat('แพ้', row.lost, 'text-red-600')}
+            </div>
           </div>
-          <div className="text-[11px] text-slate-600 tabular-nums">
-            ชนะ {row.won}×{pts.win} + เสมอ {row.drawn}×{pts.draw} + แพ้ {row.lost}×{pts.loss} = <b className="text-blue-700">{row.pts} คะแนน</b>
+          <div>
+            {sec('เกมและแต้ม')}
+            <div className="grid grid-cols-4 gap-1.5">
+              {stat('เกม +/-', row.gf - row.ga)}
+              {stat('แต้มได้', row.pf)}
+              {stat('แต้มเสีย', row.pa)}
+              {stat('แต้ม +/-', row.pf - row.pa)}
+            </div>
           </div>
-          <div className="space-y-1">
-            {matches.map((m) => {
-              const isA = m.reg_a === row.id;
-              const opp = regMap[(isA ? m.reg_b : m.reg_a) || ''];
-              const done = m.status === 'finished' && m.reg_a && m.reg_b;
-              const res = !done ? null : !m.winner ? 'draw' : m.winner === row.id ? 'win' : 'loss';
-              const got = res === 'win' ? pts.win : res === 'draw' ? pts.draw : res === 'loss' ? pts.loss : null;
-              const sc = m.sets.map((x) => (isA ? `${x[0]}-${x[1]}` : `${x[1]}-${x[0]}`)).join('  ');
-              return (
-                <div key={m.id} className="flex items-center gap-2 text-[11px]">
-                  <span className="truncate flex-1 text-slate-700">พบ {opp ? (opp.club || teamName(opp)) : 'รอผลการแข่ง'}</span>
-                  <span className="font-mono tabular-nums text-slate-500 shrink-0">{done ? sc || '-' : m.status === 'live' ? 'กำลังแข่ง' : 'รอแข่ง'}</span>
-                  {res ? (
-                    <span className={`shrink-0 w-14 text-center rounded-md py-0.5 font-bold ${res === 'win' ? 'bg-emerald-100 text-emerald-700' : res === 'loss' ? 'bg-red-50 text-red-600' : 'bg-slate-100 text-slate-600'}`}>
-                      {res === 'win' ? 'ชนะ' : res === 'loss' ? 'แพ้' : 'เสมอ'} +{got}
+          <div>
+            {sec('แมตช์ในกลุ่ม')}
+            <div className="rounded-xl bg-white border border-slate-200 divide-y divide-slate-100">
+              {matches.map((m) => {
+                const isA = m.reg_a === row.id;
+                const opp = regMap[(isA ? m.reg_b : m.reg_a) || ''];
+                const done = m.status === 'finished' && m.reg_a && m.reg_b;
+                const res = !done ? null : !m.winner ? 'draw' : m.winner === row.id ? 'win' : 'loss';
+                const got = res === 'win' ? pts.win : res === 'draw' ? pts.draw : res === 'loss' ? pts.loss : null;
+                const sc = m.sets.map((x) => (isA ? `${x[0]}-${x[1]}` : `${x[1]}-${x[0]}`)).join('  ');
+                return (
+                  <div key={m.id} className="flex items-center gap-2 px-2.5 py-2 text-sm">
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-slate-800">พบ {opp ? (opp.club || teamName(opp)) : 'รอผลการแข่ง'}</span>
+                      <span className="block text-xs font-mono tabular-nums text-slate-500">{done ? sc || '-' : m.status === 'live' ? 'กำลังแข่ง' : 'รอแข่ง'}</span>
                     </span>
-                  ) : <span className="w-14 shrink-0" />}
-                </div>
-              );
-            })}
+                    {res && (
+                      <span className={`shrink-0 min-w-[68px] text-center rounded-lg py-1 text-xs font-bold ${res === 'win' ? 'bg-emerald-100 text-emerald-700' : res === 'loss' ? 'bg-red-50 text-red-600' : 'bg-slate-100 text-slate-600'}`}>
+                        {res === 'win' ? 'ชนะ' : res === 'loss' ? 'แพ้' : 'เสมอ'} +{got}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
-          {fin.length === 0 && <div className="text-[11px] text-slate-400">ยังไม่มีผลการแข่งขัน</div>}
         </div>
       )}
     </div>

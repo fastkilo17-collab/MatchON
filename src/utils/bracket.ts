@@ -497,6 +497,7 @@ export function planAutoSchedule(
   courts: number[],
   timeOnly = false,
   catStarts: Record<string, string> = {},
+  catOrder: string[] = [],
 ): Array<{ id: string; court: number | null; scheduled_at: string }> {
   const dur = (t.match_minutes || 30) * MIN;
   const rest = (t.rest_minutes || 0) * MIN;
@@ -526,9 +527,10 @@ export function planAutoSchedule(
     }
   });
 
+  const ord = (cid: string) => { const i = catOrder.indexOf(cid); return i < 0 ? 999 : i; };
   const todo = matches
     .filter((m) => m.status === 'scheduled' && (timeOnly ? !m.scheduled_at : !m.court || !m.scheduled_at) && (m.reg_a || m.reg_b || feeders[m.id]))
-    .sort((a, b) => catStart(a.category_id) - catStart(b.category_id) || a.round - b.round || (a.match_no || 0) - (b.match_no || 0) || a.slot - b.slot);
+    .sort((a, b) => ord(a.category_id) - ord(b.category_id) || catStart(a.category_id) - catStart(b.category_id) || a.round - b.round || (a.match_no || 0) - (b.match_no || 0) || a.slot - b.slot);
 
   const plan: Array<{ id: string; court: number | null; scheduled_at: string }> = [];
   for (const m of todo) {

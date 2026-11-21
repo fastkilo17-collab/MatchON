@@ -100,7 +100,8 @@ interface MatchONContextValue {
   recordMatchSets: (matchId: string, sets: [number, number][], liveCur?: [number, number] | null, silent?: boolean, force?: boolean) => void;
   adjustLivePoint: (matchId: string, side: 'a' | 'b', delta: 1 | -1) => void;
   updateMatchMeta: (matchId: string, patch: Partial<Match>) => void;
-  runAutoSchedule: (startIso: string, courtNos: number[], timeOnly?: boolean, setTime?: boolean, catStarts?: Record<string, string>) => number;
+  runAutoSchedule: (startIso: string, courtNos: number[], timeOnly?: boolean, setTime?: boolean, catStarts?: Record<string, string>, opts?: { order?: string[]; matchMin?: number; restMin?: number }) => number;
+  clearSchedule: () => number;
   callMatchToCourt: (matchId: string, courtNo: number) => void;
   toggleCourtMaintenance: (courtId: string) => void;
   addCourt: () => void;
@@ -952,10 +953,11 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
   );
 
   const runAutoSchedule = useCallback(
-    (startIso: string, courtNos: number[], timeOnly = false, setTime = true, catStarts: Record<string, string> = {}): number => {
+    (startIso: string, courtNos: number[], timeOnly = false, setTime = true, catStarts: Record<string, string> = {}, opts: { order?: string[]; matchMin?: number; restMin?: number } = {}): number => {
       const setCourt = !timeOnly;
       if (!activeTournament) return 0;
-      const plan = planAutoSchedule(tMatches, activeTournament, startIso, courtNos, timeOnly, catStarts);
+      const tt = { ...activeTournament, match_minutes: opts.matchMin ?? activeTournament.match_minutes, rest_minutes: opts.restMin ?? activeTournament.rest_minutes };
+      const plan = planAutoSchedule(tMatches, tt, startIso, courtNos, timeOnly, catStarts, opts.order || []);
       if (!plan.length) {
         toast('ไม่มีแมตช์ที่รอจัดตาราง (หรือจัดครบแล้ว)', 'info');
         return 0;
@@ -989,6 +991,25 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
     },
     [activeTournament, tMatches, toast],
   );
+
+  const clearSchedule = useCallback((): number => {
+    if (!activeTournament) return 0;
+    const ids = new Set(
+      tMatches.filter((m) => m.status === 'scheduled' && (m.scheduled_at || m.court || m.match_no)).map((m) => m.id),
+    );
+    if (!ids.size) {
+      toast('ไม่มีแมตช์ที่ต้องยกเลิกตาราง', 'info');
+      return 0;
+    }
+    setState((prev) => ({
+      ...prev,
+      matches: prev.matches.map((m) =>
+        ids.has(m.id) ? { ...m, scheduled_at: null, court: null, match_no: null, updated_at: new Date().toISOString() } : m,
+      ),
+    }));
+    toast(`ยกเลิกตารางแข่ง ${ids.size} แมตช์แล้ว`);
+    return ids.size;
+  }, [activeTournament, tMatches, toast]);
 
   const callMatchToCourt = useCallback(
     (matchId: string, courtNo: number) => {
@@ -1205,6 +1226,7 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
     adjustLivePoint,
     updateMatchMeta,
     runAutoSchedule,
+    clearSchedule,
     callMatchToCourt,
     toggleCourtMaintenance,
     addCourt,
