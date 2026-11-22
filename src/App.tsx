@@ -15,6 +15,7 @@ import { MyRegistrationsPage, RegisterPage } from './pages/RegisterPage';
 import { SchedulePage } from './pages/SchedulePage';
 import { AdminRequestsPage, ReportsPage, ResultsPage, RulesStaffPage, SettingsPage, StaffPage } from './pages/SecondaryPages';
 import { RosterPage } from './pages/RosterPage';
+import { SiteHomePage } from './pages/SiteHomePage';
 import { TournamentHomePage } from './pages/TournamentHomePage';
 import { TournamentsPage } from './pages/TournamentsPage';
 
@@ -59,6 +60,8 @@ function RouteSwitch() {
       return <TournamentsPage mode="info" />;
     case 'home':
       return <TournamentHomePage />;
+    case 'site':
+      return <SiteHomePage />;
     case 'roster':
       return <RosterPage />;
     case 'admin':

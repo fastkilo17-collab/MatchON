@@ -47,6 +47,9 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
 
   const isOrganizer = state.role === 'organizer';
   const [heroImgErr, setHeroImgErr] = useState(false);
+  const [q, setQ] = useState('');
+  const [stFilter, setStFilter] = useState<'all' | TournamentStatus>('all');
+  const [kindFilter, setKindFilter] = useState<'all' | CategoryKind>('all');
 
   // Tournament modal state
   const [tSheetOpen, setTSheetOpen] = useState(false);
@@ -95,7 +98,14 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
   });
 
   const myList = state.tournaments.filter((t) => isAdmin || (t as any).organizer_id === profile?.id || isManagerOf(t.id));
-  const shownTournaments = mode === 'list' ? state.tournaments : myList;
+  const baseList = mode === 'list' ? state.tournaments : myList;
+  const shownTournaments = baseList.filter((t) => {
+    if (stFilter !== 'all' && t.status !== stFilter) return false;
+    if (kindFilter !== 'all' && !state.categories.some((c) => c.tournament_id === t.id && c.kind === kindFilter)) return false;
+    const kw = q.trim().toLowerCase();
+    if (kw && !`${t.name} ${t.venue || ''} ${t.description || ''}`.toLowerCase().includes(kw)) return false;
+    return true;
+  });
   const openCard = (t: Tournament) => {
     setActiveTid(t.id);
     if (mode === 'cats') openCategoryManager(t.id);
@@ -395,6 +405,27 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
           )}
         </div>
 
+        <div className="space-y-2.5">
+          <div className="relative">
+            <input
+              type="search"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="ค้นหาชื่อรายการ / สนาม"
+              className="w-full min-h-[44px] rounded-xl border border-slate-200 bg-white pl-4 pr-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-400"
+            />
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {([['all', 'ทั้งหมด'], ['open', 'เปิดรับสมัคร'], ['live', 'กำลังแข่งขัน'], ['closed', 'ปิดรับสมัคร']] as Array<['all' | TournamentStatus, string]>).map(([k, l]) => (
+              <button key={k} type="button" onClick={() => setStFilter(k)} className={`min-h-[36px] px-3 rounded-full text-xs font-semibold border transition-colors ${stFilter === k ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-200 text-slate-700 hover:border-blue-300'}`}>{l}</button>
+            ))}
+            <span className="w-px bg-slate-200 mx-1" aria-hidden="true" />
+            {([['all', 'ทุกประเภท'], ['singles', 'เดี่ยว'], ['doubles', 'คู่']] as Array<['all' | CategoryKind, string]>).map(([k, l]) => (
+              <button key={k} type="button" onClick={() => setKindFilter(k)} className={`min-h-[36px] px-3 rounded-full text-xs font-semibold border transition-colors ${kindFilter === k ? 'bg-slate-900 border-slate-900 text-white' : 'bg-white border-slate-200 text-slate-700 hover:border-slate-400'}`}>{l}</button>
+            ))}
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {shownTournaments.map((t) => {
             const cats = state.categories.filter((c) => c.tournament_id === t.id);
@@ -412,11 +443,18 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') openCard(t);
                 }}
-                className={`bg-white rounded-2xl border p-5 flex flex-col justify-between gap-4 transition-colors cursor-pointer hover:border-blue-300 ${
+                className={`bg-white rounded-2xl border overflow-hidden flex flex-col justify-between transition-colors cursor-pointer hover:border-blue-300 ${
                   isSelected ? 'border-blue-300 shadow-sm' : 'border-slate-200/80'
                 }`}
               >
-                <div className="space-y-3">
+                <div className="h-40 w-full bg-gradient-to-br from-blue-600 to-blue-800 relative">
+                  {(t.posters?.[0] || t.poster) ? (
+                    <img src={(t.posters?.[0] || t.poster) as string} alt={t.name} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
+                  ) : (
+                    <div className="absolute inset-0 grid place-items-center text-white/80 font-display font-extrabold text-2xl tracking-tight px-4 text-center">{t.name}</div>
+                  )}
+                </div>
+                <div className="p-5 space-y-3">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 text-xs font-semibold">
@@ -466,7 +504,7 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
                 </div>
 
                 {/* Action Row */}
-                <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                <div className="mx-5 mb-5 pt-3 border-t border-slate-100 flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
                   {t.status === 'open' && (
                     <button
                       type="button"

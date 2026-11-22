@@ -5,7 +5,7 @@ import {
 import { useMatchON } from '../context/MatchONContext';
 import { PosterSlider, PhotoLightbox } from '../components/UiKit';
 import type { NavRoute } from '../types/matchon';
-import { baht, shuttleText, fmtRange, FORMAT_TH, KIND_TH, STATUS_TH } from '../utils/bracket';
+import { isByeMatch, baht, shuttleText, fmtRange, FORMAT_TH, KIND_TH, STATUS_TH } from '../utils/bracket';
 
 function Kpi({ label, value, sub, tone = 'slate' }: { label: string; value: React.ReactNode; sub?: string; tone?: 'slate' | 'blue' | 'emerald' | 'amber' | 'red' }) {
   const c = { slate: 'text-slate-900', blue: 'text-blue-600', emerald: 'text-emerald-600', amber: 'text-amber-600', red: 'text-red-600' }[tone];
@@ -26,8 +26,8 @@ export function TournamentHomePage() {
   }
   const live = tRegistrations.filter((r) => r.status !== 'cancelled' && r.status !== 'rejected');
   const by = (s: string) => tRegistrations.filter((r) => r.status === s).length;
-  const done = tMatches.filter((m) => m.status === 'finished' && m.reg_a && m.reg_b).length;
-  const total = tMatches.filter((m) => m.reg_a && m.reg_b).length;
+  const done = tMatches.filter((m) => m.status === 'finished' && !isByeMatch(m)).length;
+  const total = tMatches.filter((m) => !isByeMatch(m)).length;
   const liveNow = tMatches.filter((m) => m.status === 'live').length;
   const isMgr = state.role === 'organizer';
 

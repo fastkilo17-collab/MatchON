@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { ChevronDown, GitBranch, Hand, Lock, Printer, Shuffle, Sparkles, Trash2, Unlock, X } from 'lucide-react';
 import { useMatchON } from '../context/MatchONContext';
 import type { BracketFormat, Match, Registration } from '../types/matchon';
-import { computeStandings, standingPtsFor, fmtTime, FORMAT_TH, scoreText, teamName, groupPlan, clubKey } from '../utils/bracket';
+import { isByeMatch, computeStandings, standingPtsFor, fmtTime, FORMAT_TH, teamName, groupPlan, clubKey } from '../utils/bracket';
 import type { StandingRow, StandingPts } from '../utils/bracket';
 import { MatchScoreSheet } from '../components/MatchScoreSheet';
 import { MatchNo, ResponsiveSheet, TeamAvatars } from '../components/UiKit';
@@ -132,7 +132,7 @@ export function BracketsPage() {
             </span>
             <span className="font-mono text-xs tabular-nums text-slate-600 shrink-0 flex items-center gap-1">
               {m.sets.map((s, i) => (
-                <span key={i} className={`inline-flex min-w-[24px] h-6 items-center justify-center rounded-full px-1 ${s[0] > s[1] ? 'ring-2 ring-emerald-500 font-bold text-emerald-700' : ''}`}>{s[0]}</span>
+                <span key={i} className={`inline-flex min-w-[24px] h-6 items-center justify-center rounded-full px-1 ${s[0] > s[1] ? 'bg-emerald-100 font-bold text-blue-700' : ''}`}>{s[0]}</span>
               ))}
               {m.status === 'live' ? <span className="px-1">{m.cur_a}</span> : null}
             </span>
@@ -147,17 +147,15 @@ export function BracketsPage() {
             </span>
             <span className="font-mono text-xs tabular-nums text-slate-600 shrink-0 flex items-center gap-1">
               {m.sets.map((s, i) => (
-                <span key={i} className={`inline-flex min-w-[24px] h-6 items-center justify-center rounded-full px-1 ${s[1] > s[0] ? 'ring-2 ring-emerald-500 font-bold text-emerald-700' : ''}`}>{s[1]}</span>
+                <span key={i} className={`inline-flex min-w-[24px] h-6 items-center justify-center rounded-full px-1 ${s[1] > s[0] ? 'bg-emerald-100 font-bold text-blue-700' : ''}`}>{s[1]}</span>
               ))}
               {m.status === 'live' ? <span className="px-1">{m.cur_b}</span> : null}
             </span>
           </div>
         </div>
 
-        {m.status === 'finished' && (m.sets.length > 0 || !m.reg_a || !m.reg_b) && (
-          <div className="text-[11px] font-mono text-slate-500 tabular-nums">
-            {scoreText(m) || 'ชนะบาย (Bye)'}
-          </div>
+        {m.status === 'finished' && (!m.reg_a || !m.reg_b) && (
+          <div className="text-[11px] text-slate-500">ชนะบาย (Bye)</div>
         )}
       </button>
     );
@@ -322,7 +320,7 @@ export function BracketsPage() {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="text-sm text-slate-700">
                 รูปแบบ: <span className="font-bold text-slate-900">{FORMAT_TH[meta?.format || activeCat.format]}</span> ·{' '}
-                {catMatches.length} แมตช์ ·{' '}
+                {catMatches.filter((m) => !isByeMatch(m)).length} แมตช์ ·{' '}
                 <span className={locked ? 'text-amber-700 font-semibold' : 'text-emerald-700 font-semibold'}>
                   {locked ? 'ล็อกสายแล้ว' : 'ยังไม่ล็อกสาย'}
                 </span>
@@ -636,7 +634,7 @@ function TeamStandCard({
         <span className="flex items-center gap-2.5">
           <span className="w-7 h-7 shrink-0 grid place-items-center text-xs font-bold text-blue-700 bg-blue-50 rounded-lg tabular-nums">{rank}</span>
           <span className="min-w-0 flex-1 truncate text-sm font-bold text-slate-900">{reg?.club || teamName(reg)}</span>
-          {row.played > 1 && <span className="shrink-0 text-xs font-bold text-amber-700 bg-amber-50 rounded-md px-1.5 py-0.5">อันดับ {rank}</span>}
+          {row.played >= 1 && <span className={`shrink-0 text-[10px] font-bold rounded-md px-1.5 py-0.5 ${rank <= 2 ? 'text-blue-700 bg-blue-50' : 'text-amber-700 bg-amber-50'}`}>อันดับ {rank}</span>}
           <span className="shrink-0 text-right leading-tight">
             <span className="block text-base font-bold tabular-nums text-blue-700">{row.pts}</span>
             <span className="block text-[10px] text-slate-400">คะแนน</span>

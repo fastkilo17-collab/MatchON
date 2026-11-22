@@ -104,7 +104,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* Desktop Bright Light Sidebar */}
       <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:shrink-0 side-dark bg-white border-r border-slate-200 sticky top-0 h-dvh noprint">
         <div className="h-16 px-5 flex items-center gap-3 border-b border-slate-100 shrink-0">
-          <button type="button" onClick={() => handleNav('home')} className="flex items-center gap-2.5 min-w-0" aria-label="MatchON">
+          <button type="button" onClick={() => handleNav('site')} className="flex items-center gap-2.5 min-w-0" aria-label="MatchON">
             <img src={`${import.meta.env.BASE_URL}img/app-icon-192.png`} alt="" className="w-10 h-10 rounded-xl object-cover shrink-0" />
             <img src={`${import.meta.env.BASE_URL}img/matchon-wordmark.png`} alt="MatchON Badminton Platform" className="h-9 w-auto object-contain" />
           </button>
@@ -158,7 +158,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-2.5 min-w-0">
             <button
               type="button"
-              onClick={() => handleNav(role === 'organizer' ? 'dashboard' : role === 'referee' ? 'live' : 'tournaments')}
+              onClick={() => handleNav('site')}
               className="lg:hidden flex items-center gap-2 shrink-0 min-h-[40px]"
             >
               <img src={`${import.meta.env.BASE_URL}img/app-icon-192.png`} alt="" className="w-9 h-9 rounded-xl object-cover" />

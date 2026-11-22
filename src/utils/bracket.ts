@@ -707,3 +707,6 @@ export function prizeLines(c?: { prizes?: { u?: number[]; l?: number[] } } | nul
   const u = prizeArr(c?.prizes?.u), l = prizeArr(c?.prizes?.l);
   return [u && `${l ? 'สายบน' : 'เงินรางวัล'} ${u}`, l && `สายล่าง ${l}`].filter(Boolean) as string[];
 }
+
+/** แมตช์ที่ได้บาย (จบแล้วแต่มีฝั่งว่าง) — ไม่นับเป็นแมตช์จริง */
+export const isByeMatch = (m: { status: string; reg_a: string | null; reg_b: string | null }) => m.status === 'finished' && (!m.reg_a || !m.reg_b);

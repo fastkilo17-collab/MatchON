@@ -270,6 +270,10 @@ export function SchedulePage() {
                 <h3 className="text-sm font-bold text-slate-700 px-1">
                   {d.key.startsWith('fin:') ? 'จบแล้ว · ' : ''}{d.key.endsWith('none') ? 'ยังไม่กำหนดเวลา' : fmtDate(d.items[0].scheduled_at!)}
                   <span className="ml-2 text-xs font-medium text-slate-400"> {d.items.length} แมตช์</span>
+                  {!d.key.startsWith('fin:') && (() => {
+                    const left = d.items.filter((x) => x.status !== 'finished').length;
+                    return left > 0 ? <span className="ml-2 text-xs font-bold text-blue-700 bg-blue-50 rounded-md px-1.5 py-0.5">เหลือ {left} แมตช์</span> : <span className="ml-2 text-xs font-bold text-emerald-700 bg-emerald-50 rounded-md px-1.5 py-0.5">จบครบแล้ว</span>;
+                  })()}
                 </h3>
                 <div className="bg-white border border-slate-200/80 rounded-2xl divide-y divide-slate-100 overflow-hidden">
                   {d.items.map((m) => (
@@ -286,6 +290,9 @@ export function SchedulePage() {
                             <span className="inline-flex items-center gap-1 rounded-md bg-red-600 text-white px-1.5 py-0.5 text-[11px] font-extrabold shrink-0">
                               <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />LIVE
                             </span>
+                          )}
+                          {m.status === 'finished' && (
+                            <span className="inline-flex items-center rounded-md bg-emerald-100 text-emerald-800 px-1.5 py-0.5 text-[11px] font-bold shrink-0">จบแล้ว</span>
                           )}
                           <span aria-hidden="true">·</span>
                           <span className="truncate">{catMap[m.category_id]?.name || ''}</span>
@@ -308,7 +315,17 @@ export function SchedulePage() {
                             m.status === 'live' ? 'text-red-600' : m.status === 'finished' ? 'text-emerald-700' : 'text-slate-500'
                           }`}
                         >
-                          {m.status === 'finished' || m.status === 'live' ? scoreText(m) || MATCH_TH[m.status] : MATCH_TH[m.status]}
+                          {m.status === 'finished' && m.sets.length > 0 ? (
+                            <span className="inline-flex items-center gap-1">
+                              {m.sets.map((st, i) => (
+                                <span key={i} className="inline-flex items-center gap-0.5">
+                                  <span className={`px-1 rounded-full ${st[0] > st[1] ? 'bg-emerald-100 text-blue-700' : 'text-slate-500'}`}>{st[0]}</span>
+                                  <span className="text-slate-300">-</span>
+                                  <span className={`px-1 rounded-full ${st[1] > st[0] ? 'bg-emerald-100 text-blue-700' : 'text-slate-500'}`}>{st[1]}</span>
+                                </span>
+                              ))}
+                            </span>
+                          ) : m.status === 'live' ? scoreText(m) || MATCH_TH[m.status] : MATCH_TH[m.status]}
                         </span>
                       </div>
                     </button>

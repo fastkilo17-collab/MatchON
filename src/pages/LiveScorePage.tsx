@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ExternalLink, Minus, Plus, QrCode, Radio, SlidersHorizontal } from 'lucide-react';
 import { useMatchON } from '../context/MatchONContext';
 import type { Match } from '../types/matchon';
@@ -97,6 +97,32 @@ export function LiveScorePage() {
       toast(e?.message || 'ยกเลิก QR ไม่สำเร็จ', 'err');
     }
   };
+  // ยกเลิก QR กรรมการอัตโนมัติเมื่อแมตช์จบ (เฉพาะแมตช์ที่เห็นว่าเปลี่ยนเป็นจบระหว่างเปิดหน้านี้)
+  const prevSt = useRef<Record<string, { st: string; court: number | null }> | null>(null);
+  const autoRev = useRef({ refereeUrl, assignReferee, tReferees });
+  autoRev.current = { refereeUrl, assignReferee, tReferees };
+  useEffect(() => {
+    const prev = prevSt.current;
+    const next: Record<string, { st: string; court: number | null }> = {};
+    for (const m of tMatches) next[m.id] = { st: m.status, court: m.court ?? (prev?.[m.id]?.court ?? null) };
+    prevSt.current = next;
+    if (!prev || !canOperate) return;
+    for (const m of tMatches) {
+      const p0 = prev[m.id];
+      if (!p0 || p0.st === 'finished' || m.status !== 'finished') continue;
+      const no = p0.court;
+      if (!no || !autoRev.current.tReferees.some((r) => r.court_no === no)) continue;
+      void (async () => {
+        try {
+          await autoRev.current.refereeUrl(no, undefined, true);
+          autoRev.current.assignReferee(null, no);
+          toast(`จบแมตช์ — ยกเลิก QR กรรมการสนาม ${no} อัตโนมัติ`);
+        } catch {
+          /* ไม่กระทบการแข่ง */
+        }
+      })();
+    }
+  }, [tMatches, canOperate]);
   const chooseReferee = async (refId: string | null, label: string) => {
     if (qrCourtNo === null) return;
     assignReferee(refId, qrCourtNo);
@@ -242,15 +268,6 @@ export function LiveScorePage() {
                     </span>
                   )}
 
-                  {canOperate && !liveM && tReferees.some((r) => r.court_no === court.no) && (
-                    <button
-                      type="button"
-                      onClick={() => void revokeQr(court.no)}
-                      className="min-h-[38px] px-2.5 rounded-xl bg-red-50 text-red-700 hover:bg-red-100 text-xs font-semibold whitespace-nowrap"
-                    >
-                      ยกเลิก QR
-                    </button>
-                  )}
                   {canOperate && (
                     <button
                       type="button"
