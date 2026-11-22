@@ -35,7 +35,7 @@ export function LiveScorePage() {
     setCompact(v);
     try { localStorage.setItem('matchon.liveCompact', v ? '1' : '0'); } catch { /* ignore */ }
   };
-  const [refMode, setRefMode] = useState(state.role === 'referee' || state.role === 'organizer');
+  const [refMode, setRefMode] = useState(false);
 
   const canOperate = !!activeTournament && isManagerOf(activeTournament.id);
   const { fb, bridgeOn, error: bridgeError, refereeUrl, liveId } = useLiveBridge({
@@ -119,11 +119,14 @@ export function LiveScorePage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
-        <div className="flex items-center gap-1 p-1 bg-slate-200/70 rounded-xl">
-          {([[true, 'แบบย่อ'], [false, 'แบบขยาย']] as const).map(([v, label]) => (
-            <button key={label} type="button" onClick={() => setSize(v)} className={`min-h-[38px] px-3 rounded-lg text-xs font-semibold ${compact === v ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600'}`}>{label}</button>
-          ))}
-        </div>
+        <button
+          type="button"
+          onClick={() => setSize(!compact)}
+          className="min-h-[38px] px-4 rounded-xl bg-slate-200/70 hover:bg-slate-200 text-xs font-semibold text-slate-800"
+          aria-label="สลับรูปแบบการ์ด"
+        >
+          {compact ? 'แบบย่อ' : 'แบบขยาย'} ⇄
+        </button>
         {(liveId || activeTournament.live_id) && (
           <a
             href={`${import.meta.env.BASE_URL}board.html?live=${liveId || activeTournament.live_id}`}
@@ -244,46 +247,47 @@ export function LiveScorePage() {
 
               {m ? (
                 <>
-                  {compact ? (
-                    <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 py-1">
-                      <div className="min-w-0 flex flex-col items-end gap-1">
-                        <TeamAvatars reg={m.reg_a ? regMap[m.reg_a] : null} size={30} flat />
-                        <div className="text-right text-xs font-bold text-slate-900 line-clamp-2">{teamName(m.reg_a ? regMap[m.reg_a] : null)}</div>
+                  {(() => {
+                    const ra = m.reg_a ? regMap[m.reg_a] : null;
+                    const rb = m.reg_b ? regMap[m.reg_b] : null;
+                    const maxSets = rule?.play_two ? 2 : rule?.best_of || 3;
+                    const setNo = Math.min(maxSets, (fromRef && f.activeSet >= 0 ? f.activeSet : shownSets.length) + 1);
+                    const started = !!(liveM || shownCur[0] || shownCur[1] || shownSets.length);
+                    const av = compact ? 36 : 56;
+                    const col = (r: typeof ra, side: 'a' | 'b') => (
+                      <div className="min-w-0 flex flex-col items-center gap-1 text-center">
+                        <TeamAvatars reg={r} size={av} flat={compact} />
+                        <div className={`font-bold text-slate-900 leading-tight line-clamp-2 ${compact ? 'text-xs' : 'text-base'}`}>{r?.club || teamName(r)}</div>
+                        {!compact && (
+                          <div className="text-xs text-slate-500 leading-snug">
+                            {[[r?.p1_name, r?.p1_nick], [r?.p2_name, r?.p2_nick]].filter(([n]) => n).map(([n, k], i) => (
+                              <div key={i} className="truncate">{n}{k && k !== n ? ` (${k})` : ''}</div>
+                            ))}
+                          </div>
+                        )}
+                        <div className={`font-display font-extrabold tabular-nums leading-none ${compact ? 'text-4xl' : 'text-6xl'} ${side === 'a' ? 'text-blue-600' : 'text-slate-900'}`}>{side === 'a' ? shownCur[0] : shownCur[1]}</div>
                       </div>
-                      <div className="font-display text-2xl font-extrabold tabular-nums whitespace-nowrap"><span className="text-blue-600">{shownCur[0]}</span><span className="text-slate-300 mx-1">-</span><span className="text-slate-900">{shownCur[1]}</span></div>
-                      <div className="min-w-0 flex flex-col items-start gap-1">
-                        <TeamAvatars reg={m.reg_b ? regMap[m.reg_b] : null} size={30} flat />
-                        <div className="text-left text-xs font-bold text-slate-900 line-clamp-2">{teamName(m.reg_b ? regMap[m.reg_b] : null)}</div>
+                    );
+                    return (
+                      <div className="space-y-1.5 py-1">
+                        <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-2">
+                          {col(ra, 'a')}
+                          <div className="pt-1 flex flex-col items-center gap-1">
+                            <span className={`rounded-full px-3 py-1 text-xs font-bold whitespace-nowrap ${started ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500'}`}>
+                              {started ? `เซต ${setNo}` : 'รอเริ่ม'}
+                            </span>
+                            <span className="text-[11px] font-bold text-slate-300">VS</span>
+                          </div>
+                          {col(rb, 'b')}
+                        </div>
+                        {shownSets.length > 0 && (
+                          <div className="text-center text-xs font-semibold text-slate-600 tabular-nums border-t border-slate-100 pt-1.5">
+                            {shownSets.map((x, i) => `เซต${i + 1} ${x[0]}:${x[1]}`).join(', ')}
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  ) : (
-                  <>
-                  <div className="grid grid-cols-11 items-center gap-2 py-2">
-                    <div className="col-span-5 text-center space-y-2">
-                      <div className="flex justify-center"><TeamAvatars reg={m.reg_a ? regMap[m.reg_a] : null} size={44} /></div>
-                      <div className="text-sm sm:text-base font-bold text-slate-900 line-clamp-2 min-h-[2.5rem] flex items-center justify-center">
-                        {teamName(m.reg_a ? regMap[m.reg_a] : null)}
-                      </div>
-                      <div className="font-display text-5xl sm:text-6xl font-extrabold tabular-nums text-blue-600">
-                        {shownCur[0]}
-                      </div>
-                    </div>
-
-                    <div className="col-span-1 text-center text-xs font-bold text-slate-300">VS</div>
-
-                    <div className="col-span-5 text-center space-y-2">
-                      <div className="flex justify-center"><TeamAvatars reg={m.reg_b ? regMap[m.reg_b] : null} size={44} /></div>
-                      <div className="text-sm sm:text-base font-bold text-slate-900 line-clamp-2 min-h-[2.5rem] flex items-center justify-center">
-                        {teamName(m.reg_b ? regMap[m.reg_b] : null)}
-                      </div>
-                      <div className="font-display text-5xl sm:text-6xl font-extrabold tabular-nums text-slate-900">
-                        {shownCur[1]}
-                      </div>
-                    </div>
-                  </div>
-
-                  </>
-                  )}
+                    );
+                  })()}
 
                   {/* Tactile Referee Controls (+1 / -1) */}
                   {canOperate && refMode && !compact && (

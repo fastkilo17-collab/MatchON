@@ -31,4 +31,4 @@ Deploy ผ่าน GitHub Actions (`.github/workflows/pages.yml`) — ตั้
 - LINE login ใช้ LIFF (`VITE_LIFF_ID`) + edge function `line-login`
 
 ## ธีมสี
-ค่าเริ่มต้น = เขียวป่า (src/index.css ท้ายไฟล์). ธีมน้ำเงินเดิมเก็บไว้ใน `html[data-theme="classic"]` — สลับได้ที่หน้า โปรไฟล์ & บัญชี หรือใส่ data-theme="classic" ที่ <html>.
+ค่าเริ่มต้น = เขียวป่า (src/index.css ท้ายไฟล์). ธีมอื่น: purple, rose, classic (น้ำเงินเดิม) ผ่าน html[data-theme] — สลับได้ที่หน้า โปรไฟล์ & บัญชี.

@@ -244,7 +244,7 @@ export function MatchNo({ n, className = '' }: { n?: number | null; className?: 
   if (!n) return null;
   return (
     <span className={`inline-flex items-center rounded-md bg-blue-600 text-white px-1.5 py-0.5 text-xs font-extrabold tabular-nums leading-none shrink-0 ${className}`}>
-      #{n}
+      แมตช์ #{n}
     </span>
   );
 }

@@ -7,29 +7,34 @@
 <link rel="icon" type="image/png" href="img/matchon-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700;800&family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet">
+<script>
+try{var T=localStorage.getItem('matchon.theme'),P={purple:['#0B0720','#150d33','#25134D','#3b2380','#F2E9FF','#9D71E8','#c6adf5','#7d6aa8'],rose:['#1c030f','#2a0517','#4a0a28','#6b1236','#FFE4D8','#FF69B4','#f6a9c9','#b8708a'],classic:['#0b1220','#111b30','#16294d','#22345a','#e8eefc','#7d8fb3','#a9bbdd','#51618a']}[T];
+if(P){var r=document.documentElement.style;['--b0','--b1','--b2','--bd','--tx','--mu','--mu2','--mu3'].forEach(function(k,i){r.setProperty(k,P[i])})}}catch(e){}
+</script>
 <style>
+:root{--b0:#051F20;--b1:#0B2B26;--b2:#163832;--bd:#235347;--tx:#DAF1DE;--mu:#8EB69B;--mu2:#b5d3bf;--mu3:#5f8a78}
 *{box-sizing:border-box;margin:0}
-html,body{height:100%;background:#051F20;color:#DAF1DE;font-family:'Noto Sans Thai',sans-serif;overflow:hidden}
+html,body{height:100%;background:var(--b0);color:var(--tx);font-family:'Noto Sans Thai',sans-serif;overflow:hidden}
 body{display:flex;flex-direction:column}
-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 16px;border-bottom:1px solid #163832;flex:0 0 auto}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 16px;border-bottom:1px solid var(--b2);flex:0 0 auto}
 .logo{font:800 20px 'Prompt'}.logo b{color:#f5b301}
-#tname{font:700 18px 'Noto Sans Thai';color:#DAF1DE;text-align:center;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#conn{font-size:12px;color:#8EB69B;white-space:nowrap}
-#fs{background:#163832;color:#DAF1DE;border:1px solid #235347;border-radius:10px;min-height:34px;padding:0 12px;font:600 13px 'Noto Sans Thai';cursor:pointer}
+#tname{font:700 18px 'Noto Sans Thai';color:var(--tx);text-align:center;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#conn{font-size:12px;color:var(--mu);white-space:nowrap}
+#fs{background:var(--b2);color:var(--tx);border:1px solid var(--bd);border-radius:10px;min-height:34px;padding:0 12px;font:600 13px 'Noto Sans Thai';cursor:pointer}
 main{flex:1 1 auto;min-height:0;display:grid;gap:10px;padding:10px 12px;font-size:16px;overflow:auto}
-.card{background:#0B2B26;border:1px solid #235347;border-radius:1.1em;padding:max(1em,14px) max(1.4em,18px) max(1.2em,16px);display:flex;flex-direction:column;gap:.4em;min-width:0;min-height:0;overflow:hidden}
+.card{background:var(--b1);border:1px solid var(--bd);border-radius:1.1em;padding:max(1em,14px) max(1.4em,18px) max(1.2em,16px);display:flex;flex-direction:column;gap:.4em;min-width:0;min-height:0;overflow:hidden}
 .card.live{border-color:#ef4444;box-shadow:0 0 0 1px #ef444455}
 .top{display:flex;align-items:center;justify-content:space-between;gap:.5em}
-.court{font:800 1.4em 'Prompt'}.court small{font:700 .55em 'Noto Sans Thai';color:#8EB69B;background:#163832;border-radius:.5em;padding:.15em .5em;margin-left:.4em;vertical-align:middle}
-.st{font:700 .8em 'Noto Sans Thai';color:#8EB69B}.st.l{color:#ff6b6b}
-.cat{font-size:.88em;color:#b5d3bf;line-height:1.25}.rule{font-size:.75em;color:#8EB69B}
-.row{display:grid;grid-template-columns:1fr auto auto auto auto;align-items:center;gap:.6em;padding:.3em 0;border-top:1px solid #163832;flex:0 0 auto}
+.court{font:800 1.4em 'Prompt'}.court small{font:700 .55em 'Noto Sans Thai';color:var(--mu);background:var(--b2);border-radius:.5em;padding:.15em .5em;margin-left:.4em;vertical-align:middle}
+.st{font:700 .8em 'Noto Sans Thai';color:var(--mu)}.st.l{color:#ff6b6b}
+.cat{font-size:.88em;color:var(--mu2);line-height:1.25}.rule{font-size:.75em;color:var(--mu)}
+.row{display:grid;grid-template-columns:1fr auto auto auto auto;align-items:center;gap:.6em;padding:.3em 0;border-top:1px solid var(--b2);flex:0 0 auto}
 .who{display:flex;align-items:center;gap:.6em;min-width:0}
-.ph{display:flex;gap:.25em;flex:0 0 auto}.ph img,.ph i{width:2.2em;height:2.2em;border-radius:50%;object-fit:cover;background:#163832;border:2px solid #235347;display:grid;place-items:center;font:700 1em 'Noto Sans Thai';color:#9fb0d0;font-style:normal}
-.tn{font:700 1.2em/1.15 'Noto Sans Thai';min-width:0;overflow:hidden;text-overflow:ellipsis}.tn small{display:block;font:500 .6em 'Noto Sans Thai';color:#8EB69B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sc{font:800 1.3em 'Prompt';min-width:1.6em;text-align:center;color:#8EB69B}
+.ph{display:flex;gap:.25em;flex:0 0 auto}.ph img,.ph i{width:2.2em;height:2.2em;border-radius:50%;object-fit:cover;background:var(--b2);border:2px solid var(--bd);display:grid;place-items:center;font:700 1em 'Noto Sans Thai';color:#9fb0d0;font-style:normal}
+.tn{font:700 1.2em/1.15 'Noto Sans Thai';min-width:0;overflow:hidden;text-overflow:ellipsis}.tn small{display:block;font:500 .6em 'Noto Sans Thai';color:var(--mu);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sc{font:800 1.3em 'Prompt';min-width:1.6em;text-align:center;color:var(--mu)}
 .cur{font:800 2.3em 'Prompt';min-width:1.5em;text-align:center;color:#ffd24a}
-.empty{color:#5f8a78;text-align:center;padding:1.2em 0;font-size:.9em}
+.empty{color:var(--mu3);text-align:center;padding:1.2em 0;font-size:.9em}
 </style>
 </head>
 <body>

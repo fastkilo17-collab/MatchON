@@ -145,3 +145,88 @@ html[data-theme="classic"] .side-dark {
   --color-blue-700: oklch(48.8% 0.243 264.376);
   background: #fff;
 }
+
+/* ธีมม่วง และ ธีมกุหลาบ */
+html[data-theme="purple"] {
+  --color-blue-50: #f7f2ff;
+  --color-blue-100: #f2e9ff;
+  --color-blue-200: #e3d3ff;
+  --color-blue-300: #d1b8ff;
+  --color-blue-400: #9d71e8;
+  --color-blue-500: #8350d8;
+  --color-blue-600: #6a2fc8;
+  --color-blue-700: #4a1fa0;
+  --color-blue-800: #2e1763;
+  --color-blue-900: #25134d;
+  --color-blue-950: #0b0720;
+  --color-slate-50: #f8f5fd;
+  --color-slate-100: #f0ebfa;
+  --color-slate-200: #e1d9f2;
+  --color-slate-300: #c6b9e0;
+  --color-slate-400: #9488b5;
+  --color-slate-500: #6f6492;
+  --color-slate-600: #554b78;
+  --color-slate-700: #3b3260;
+  --color-slate-800: #25134d;
+  --color-slate-900: #170b36;
+  --color-slate-950: #0b0720;
+}
+html[data-theme="purple"] .side-dark {
+  --color-white: #130a2e;
+  --color-slate-50: #25134d;
+  --color-slate-100: #25134d;
+  --color-slate-200: #35206b;
+  --color-slate-400: #b9a2ee;
+  --color-slate-500: #b9a2ee;
+  --color-slate-600: #d1b8ff;
+  --color-slate-700: #f2e9ff;
+  --color-slate-800: #f2e9ff;
+  --color-slate-900: #ffffff;
+  --color-blue-50: #3b2380;
+  --color-blue-100: #3b2380;
+  --color-blue-600: #d1b8ff;
+  --color-blue-700: #f2e9ff;
+  background: #130a2e;
+}
+
+html[data-theme="rose"] {
+  --color-blue-50: #fff4f1;
+  --color-blue-100: #ffe4d8;
+  --color-blue-200: #ffc9d9;
+  --color-blue-300: #f58fb8;
+  --color-blue-400: #e0608f;
+  --color-blue-500: #c24366;
+  --color-blue-600: #c21e5a;
+  --color-blue-700: #881144;
+  --color-blue-800: #6d0d38;
+  --color-blue-900: #800021;
+  --color-blue-950: #3a0012;
+  --color-slate-50: #fff8f6;
+  --color-slate-100: #fdeeea;
+  --color-slate-200: #f6dbd6;
+  --color-slate-300: #e6bfbd;
+  --color-slate-400: #b88a91;
+  --color-slate-500: #8c5d68;
+  --color-slate-600: #6e4553;
+  --color-slate-700: #52303f;
+  --color-slate-800: #3a0c25;
+  --color-slate-900: #2a0517;
+  --color-slate-950: #1c030f;
+}
+html[data-theme="rose"] .side-dark {
+  --color-white: #2a0517;
+  --color-slate-50: #4a0a28;
+  --color-slate-100: #4a0a28;
+  --color-slate-200: #6b1236;
+  --color-slate-400: #e59ab5;
+  --color-slate-500: #e59ab5;
+  --color-slate-600: #f6c9d6;
+  --color-slate-700: #ffe4d8;
+  --color-slate-800: #ffe4d8;
+  --color-slate-900: #ffffff;
+  --color-blue-50: #881144;
+  --color-blue-100: #881144;
+  --color-blue-600: #ff69b4;
+  --color-blue-700: #ffe4d8;
+  background: #2a0517;
+}

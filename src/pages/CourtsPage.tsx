@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { useMatchON } from '../context/MatchONContext';
 import type { Match } from '../types/matchon';
-import { fmtDate, fmtTime, scoreText, teamName } from '../utils/bracket';
+import { fmtTime, scoreText, teamName } from '../utils/bracket';
 import { MatchScoreSheet } from '../components/MatchScoreSheet';
 import { MatchNo, ResponsiveSheet, TeamAvatars } from '../components/UiKit';
 
@@ -25,6 +25,7 @@ export function CourtsPage() {
     catMap,
     navigate,
     callMatchToCourt,
+    toast,
     updateMatchMeta,
     toggleCourtMaintenance,
     addCourt,
@@ -39,19 +40,18 @@ export function CourtsPage() {
 
   const isManager = state.role === 'organizer' || state.role === 'referee';
   const liveMatches = tMatches.filter((m) => m.status === 'live');
-  const busyPlayers = new Set(
-    liveMatches.flatMap((m) => [m.reg_a, m.reg_b].filter(Boolean) as string[]),
-  );
+  // ทีมที่กำลังแข่งอยู่ในสนาม -> สนามที่ลง
+  const busyAt = new Map<string, number>();
+  liveMatches.forEach((m) => {
+    [m.reg_a, m.reg_b].forEach((r) => { if (r) busyAt.set(r, m.court || 0); });
+  });
+  const busyOf = (m: Match) => {
+    const hit = [m.reg_a, m.reg_b].find((r) => r && busyAt.has(r));
+    return hit ? busyAt.get(hit)! : null;
+  };
 
   const readyQueue = tMatches
-    .filter(
-      (m) =>
-        m.status === 'scheduled' &&
-        m.reg_a &&
-        m.reg_b &&
-        !busyPlayers.has(m.reg_a) &&
-        !busyPlayers.has(m.reg_b),
-    )
+    .filter((m) => m.status === 'scheduled' && m.reg_a && m.reg_b)
     .sort((a, b) => {
       const ta = a.scheduled_at ? +new Date(a.scheduled_at) : Number.MAX_SAFE_INTEGER;
       const tb = b.scheduled_at ? +new Date(b.scheduled_at) : Number.MAX_SAFE_INTEGER;
@@ -255,36 +255,49 @@ export function CourtsPage() {
         open={callCourtNo !== null}
         onClose={() => setCallCourtNo(null)}
         title={`เรียกคู่ลงสนาม ${callCourtNo ?? ''}`}
-        subtitle="แสดงเฉพาะคู่ที่นักกีฬาพร้อมและไม่ติดแข่งอยู่สนามอื่น"
+        subtitle="เรียงตามเวลา · คู่ที่ทีมกำลังแข่งอยู่จะเป็นสีเทาและเรียกไม่ได้"
       >
         {readyQueue.length ? (
           <div className="space-y-2">
-            {readyQueue.map((m, idx) => (
-              <button
-                key={m.id}
-                type="button"
-                onClick={() => {
-                  if (callCourtNo != null) callMatchToCourt(m.id, callCourtNo);
-                  setCallCourtNo(null);
-                }}
-                className="w-full p-3.5 min-h-[60px] rounded-xl border border-slate-200 hover:border-blue-400 hover:bg-blue-50/40 text-left flex items-center justify-between gap-3 transition-colors"
-              >
-                <div className="min-w-0">
-                  <div className="flex items-center gap-1.5 text-xs text-slate-500">
-                    <MatchNo n={m.match_no} />
-                    <span className="truncate">{catMap[m.category_id]?.name || ''} · {m.round_label}</span>
+            {readyQueue.map((m, idx) => {
+              const busy = busyOf(m);
+              const called = !busy && m.court ? m.court : null;
+              return (
+                <button
+                  key={m.id}
+                  type="button"
+                  aria-disabled={busy != null}
+                  onClick={() => {
+                    if (busy != null) { toast(`ทีมในแมตช์นี้กำลังแข่งอยู่ที่สนาม ${busy || '-'} เรียกลงสนามไม่ได้`, 'err'); return; }
+                    if (callCourtNo != null) callMatchToCourt(m.id, callCourtNo);
+                    setCallCourtNo(null);
+                  }}
+                  className={`w-full p-3.5 min-h-[60px] rounded-xl border border-l-4 text-left flex items-center justify-between gap-3 transition-colors ${
+                    busy != null
+                      ? 'border-slate-200 border-l-slate-400 bg-slate-100 text-slate-400'
+                      : called
+                        ? 'border-amber-200 border-l-amber-500 bg-amber-50 hover:bg-amber-100/70'
+                        : 'border-slate-200 border-l-blue-500 hover:border-blue-400 hover:bg-blue-50/40'
+                  }`}
+                >
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                      <MatchNo n={m.match_no} />
+                      <span className="truncate">{catMap[m.category_id]?.name || ''} · {m.round_label}</span>
+                    </div>
+                    <div className={`text-sm font-bold truncate mt-0.5 ${busy != null ? 'text-slate-500' : 'text-slate-900'}`}>
+                      {teamName(m.reg_a ? regMap[m.reg_a] : null)} vs {teamName(m.reg_b ? regMap[m.reg_b] : null)}
+                    </div>
+                    {busy != null && <div className="text-xs font-semibold text-slate-500 mt-0.5">กำลังแข่งอยู่ สนาม {busy || '-'}</div>}
+                    {called && <div className="text-xs font-bold text-amber-700 mt-0.5">ลงอยู่ สนาม {called} • รอแข่ง</div>}
                   </div>
-                  <div className="text-sm font-bold text-slate-900 truncate mt-0.5">
-                    {teamName(m.reg_a ? regMap[m.reg_a] : null)} vs{' '}
-                    {teamName(m.reg_b ? regMap[m.reg_b] : null)}
-                  </div>
-                </div>
-                <span className="shrink-0 text-right leading-tight">
-                  <span className="block text-sm font-bold tabular-nums text-slate-800">{m.scheduled_at ? `${fmtDate(m.scheduled_at)} ${fmtTime(m.scheduled_at)}` : 'ยังไม่จัดเวลา'}</span>
-                  <span className="block text-xs font-semibold text-blue-600">{idx === 0 ? 'คิวถัดไป' : 'เลือก'}</span>
-                </span>
-              </button>
-            ))}
+                  <span className="shrink-0 text-right leading-tight">
+                    <span className="block text-sm font-bold tabular-nums">{m.scheduled_at ? fmtTime(m.scheduled_at) : '--:--'}</span>
+                    {busy == null && <span className="block text-xs font-semibold text-blue-600">{idx === 0 ? 'คิวถัดไป' : called ? 'ย้ายสนาม' : 'เลือก'}</span>}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         ) : (
           <div className="py-8 text-center text-sm text-slate-500">

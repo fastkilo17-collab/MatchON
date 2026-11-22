@@ -49,6 +49,7 @@ export function useLiveBridge(a: Args) {
   const fbReady = useRef(false);
   const [fbLoaded, setFbLoaded] = useState(false);
   const lastPushed = useRef<Record<string, string>>({});
+  const sbSeen = useRef<Record<string, string>>({});
   const latest = useRef({ matches, regMap, catMap, courts, recordSets, rules, categories });
   latest.current = { matches, regMap, catMap, courts, recordSets, rules, categories };
   const tid = tournament?.id || '';
@@ -196,6 +197,33 @@ export function useLiveBridge(a: Args) {
     }
   }, [fb, bridgeOn, canWrite]);
 
+  // score typed in the app (+1/-1, manual sheet) -> Firebase, so the big board and referee page follow
+  useEffect(() => {
+    if (!bridgeOn || !fbLoaded || !cfg.current || !FB.current) return;
+    for (const ct of courts) {
+      const m = latest.current.matches.find((x) => x.court === ct.no && x.status === 'live');
+      const f = fb[ct.no];
+      if (!m || !f || f.status !== 'LIVE' || f.matchCode !== CODE(m)) continue;
+      const sets = (m.sets || []).filter((x) => x[0] || x[1]) as [number, number][];
+      const cur: [number, number] = [m.cur_a || 0, m.cur_b || 0];
+      const sig = JSON.stringify([sets, cur]);
+      const prevSeen = sbSeen.current[m.id];
+      sbSeen.current[m.id] = sig;
+      if (prevSeen === sig) continue; // the app's score did not change (e.g. only the referee page moved)
+      if (prevSeen === undefined && (f.startedAt || f.scores.some((x) => x[0] || x[1]))) continue; // first look: never overwrite a running referee score
+      if (lastPushed.current[m.id] === sig) continue; // already in sync (came from the referee page)
+      lastPushed.current[m.id] = sig;
+      const scores: [number, number][] = [[0, 0], [0, 0], [0, 0]];
+      sets.slice(0, 3).forEach((x, i) => { scores[i] = [x[0], x[1]]; });
+      const act = Math.min(2, sets.length);
+      scores[act] = cur;
+      FB.current.updateCourt(cfg.current.live_id, ct.no, (c: any) => {
+        c.scores = scores; c.activeSet = act;
+        if (!c.startedAt) { c.startedAt = Date.now(); c.paused = false; }
+      }).catch(() => { delete lastPushed.current[m.id]; });
+    }
+  }, [matches, fb, bridgeOn, fbLoaded, courts]);
+
   // put the court's current match on the referee page when it changes
   useEffect(() => {
     if (!bridgeOn || !fbLoaded || !cfg.current || !FB.current) return;
@@ -217,7 +245,9 @@ export function useLiveBridge(a: Args) {
           }
           continue;
         }
-        if (!m && existing && existing.status === 'LIVE' && (existing.startedAt || existing.scores.some((s) => s[0] || s[1]))) continue; // never wipe a referee's running match (called-only courts are cleared)
+        const exM = existing?.matchCode ? latest.current.matches.find((x) => x.id.startsWith(existing.matchCode!)) : undefined;
+        const exDone = !!exM && exM.status === 'finished'; // match ended in the app -> free the court (and the referee page)
+        if (!m && existing && existing.status === 'LIVE' && !exDone && (existing.startedAt || existing.scores.some((s) => s[0] || s[1]))) continue; // never wipe a referee's running match (called-only courts are cleared)
         lastSig.current[ct.no] = sig;
         try {
           await FB.current.writeCourts(cfg.current!.live_id, [payload(ct.no, m)]);

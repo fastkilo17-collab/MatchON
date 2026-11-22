@@ -704,12 +704,20 @@ export function ReportsPage() {
   );
 }
 
+type Theme = 'green' | 'purple' | 'rose' | 'classic';
+const THEMES: ReadonlyArray<readonly [Theme, string, string[]]> = [
+  ['green', 'เขียวป่า', ['#051F20', '#163832', '#235347', '#8EB69B', '#DAF1DE']],
+  ['purple', 'ม่วง', ['#0B0720', '#25134D', '#6A2FC8', '#9D71E8', '#F2E9FF']],
+  ['rose', 'กุหลาบ', ['#800021', '#881144', '#C21E5A', '#FF69B4', '#FFE4D8']],
+  ['classic', 'น้ำเงิน (เดิม)', ['#0f172a', '#1d4ed8', '#2563eb', '#93c5fd', '#dbeafe']],
+];
+
 export function SettingsPage() {
   const { state, profile, toast, reload } = useMatchON();
   const [name, setName] = useState(profile?.display_name || '');
   const [phone, setPhone] = useState(profile?.phone || '');
   const [busy, setBusy] = useState(false);
-  const [themeNow, setThemeNow] = useState<'green' | 'classic'>(() => (document.documentElement.getAttribute('data-theme') === 'classic' ? 'classic' : 'green'));
+  const [themeNow, setThemeNow] = useState<Theme>(() => (document.documentElement.getAttribute('data-theme') as Theme) || 'green');
   React.useEffect(() => {
     setName(profile?.display_name || '');
     setPhone(profile?.phone || '');
@@ -730,8 +738,8 @@ export function SettingsPage() {
   };
   if (!profile) return <LineLoginCard why="เข้าสู่ระบบเพื่อดูและแก้ไขโปรไฟล์ รูปโปรไฟล์จะดึงมาจาก LINE อัตโนมัติ" />;
   const inp = 'w-full min-h-[44px] px-3.5 rounded-xl border border-slate-200 text-sm';
-  const setTheme = (t: 'green' | 'classic') => {
-    if (t === 'classic') document.documentElement.setAttribute('data-theme', 'classic');
+  const setTheme = (t: Theme) => {
+    if (t !== 'green') document.documentElement.setAttribute('data-theme', t);
     else document.documentElement.removeAttribute('data-theme');
     try { localStorage.setItem('matchon.theme', t); } catch { /* ignore */ }
     setThemeNow(t);
@@ -770,8 +778,8 @@ export function SettingsPage() {
         </form>
         <div className="bg-white border border-slate-200/80 rounded-2xl p-5 space-y-3">
           <h3 className="font-display text-base font-bold text-slate-900">ธีมสี</h3>
-          <div className="grid grid-cols-2 gap-2">
-            {([['green', 'เขียวป่า (ใหม่)', ['#051F20', '#163832', '#235347', '#8EB69B', '#DAF1DE']], ['classic', 'น้ำเงิน (เดิม)', ['#0f172a', '#1d4ed8', '#2563eb', '#93c5fd', '#dbeafe']]] as const).map(([k, l, sw]) => (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {THEMES.map(([k, l, sw]) => (
               <button key={k} type="button" onClick={() => setTheme(k)} className={`rounded-xl border p-3 text-left space-y-2 ${themeNow === k ? 'border-blue-600 ring-2 ring-blue-600/30' : 'border-slate-200'}`}>
                 <div className="flex h-5 rounded-md overflow-hidden">{sw.map((c) => <span key={c} className="flex-1" style={{ background: c }} />)}</div>
                 <div className="text-sm font-semibold text-slate-900">{l}</div>

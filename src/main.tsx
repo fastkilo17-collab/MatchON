@@ -4,7 +4,7 @@ import './index.css';
 
 try {
   const t = localStorage.getItem('matchon.theme');
-  if (t === 'classic') document.documentElement.setAttribute('data-theme', 'classic');
+  if (t && t !== 'green') document.documentElement.setAttribute('data-theme', t);
 } catch { /* ignore */ }
 
 createRoot(document.getElementById('root')!).render(<App />);

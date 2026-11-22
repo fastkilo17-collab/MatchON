@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { ChevronDown, GitBranch, Hand, Lock, Printer, Shuffle, Sparkles, Trash2, Unlock, X } from 'lucide-react';
 import { useMatchON } from '../context/MatchONContext';
 import type { BracketFormat, Match, Registration } from '../types/matchon';
-import { computeStandings, standingPtsFor, fmtDate, fmtTime, FORMAT_TH, scoreText, teamName, groupPlan, clubKey } from '../utils/bracket';
+import { computeStandings, standingPtsFor, fmtTime, FORMAT_TH, scoreText, teamName, groupPlan, clubKey } from '../utils/bracket';
 import type { StandingRow, StandingPts } from '../utils/bracket';
 import { MatchScoreSheet } from '../components/MatchScoreSheet';
 import { MatchNo, ResponsiveSheet, TeamAvatars } from '../components/UiKit';
@@ -106,7 +106,7 @@ export function BracketsPage() {
         <div className="flex items-center justify-between text-[11px] text-slate-500">
           <span className="flex items-center gap-1.5 font-semibold tabular-nums">
             {m.match_no ? <MatchNo n={m.match_no} className="text-sm px-2 py-1" /> : 'แมตช์'}
-            {m.scheduled_at ? <span className="text-slate-700">{fmtDate(m.scheduled_at)} {fmtTime(m.scheduled_at)}</span> : null}
+            {m.scheduled_at ? <span className="text-slate-700">{fmtTime(m.scheduled_at)}</span> : null}
             {m.court ? <span>· สนาม {m.court}</span> : null}
           </span>
           <span
@@ -936,11 +936,11 @@ function GroupEditSheet({
         </div>}
 
         <div className="space-y-2">
-          <button type="button" onClick={() => setShowMatches(!showMatches)} className="w-full flex items-center justify-between min-h-[40px] px-3 rounded-xl bg-slate-100 text-xs font-bold text-slate-700">
+          {showTeams && (          <button type="button" onClick={() => setShowMatches(!showMatches)} className="w-full flex items-center justify-between min-h-[40px] px-3 rounded-xl bg-slate-100 text-xs font-bold text-slate-700">
             <span>การจับคู่แมตช์ ({matches.length})</span>
             <span>{showMatches ? 'ย่อ ▲' : 'ขยาย ▼'}</span>
-          </button>
-          {showMatches && (
+          </button>)}
+          {(showMatches || !showTeams) && (
             <div className="space-y-2">
               {matches.map((m) => (
                 <div key={m.id} onClick={onClose}>{renderMatch(m)}</div>
