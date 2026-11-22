@@ -33,7 +33,7 @@ export const GENDER_TH: Record<CategoryGender, string> = {
 };
 
 export const FORMAT_TH: Record<BracketFormat, string> = {
-  knockout: 'แพ้คัดออก',
+  knockout: 'น็อคเอาท์',
   round_robin: 'พบกันหมด',
   group_stage: 'แบ่งกลุ่ม',
   group_knockout: 'แบ่งกลุ่ม+น็อคเอาท์',

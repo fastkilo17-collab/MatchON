@@ -505,7 +505,7 @@ function tabCats(S) {
         <input name="level" value="${c.level || ''}" aria-label="ระดับ" placeholder="ระดับ" maxlength="20">
         <input name="max" type="number" min="2" value="${c.max_teams}" aria-label="จำนวนทีมสูงสุด">
         <input name="fee" type="number" min="0" value="${c.fee}" aria-label="ค่าสมัคร">
-        <select name="format" aria-label="รูปแบบ"><option value="knockout" ${c.format === 'knockout' ? raw('selected') : ''}>แพ้คัดออก</option><option value="round_robin" ${c.format === 'round_robin' ? raw('selected') : ''}>พบกันหมด</option></select>
+        <select name="format" aria-label="รูปแบบ"><option value="knockout" ${c.format === 'knockout' ? raw('selected') : ''}>น็อคเอาท์</option><option value="round_robin" ${c.format === 'round_robin' ? raw('selected') : ''}>พบกันหมด</option></select>
         <span class="actions"><button class="btn sm" type="button" data-act="save-cat" data-id="${c.id}">บันทึก</button><button class="btn sm danger" type="button" data-act="del-cat" data-id="${c.id}">ลบ</button></span>
       </div>`)}
       <form id="f-newcat" class="catrow add">
@@ -514,7 +514,7 @@ function tabCats(S) {
         <input name="level" placeholder="ระดับ" maxlength="20">
         <input name="max" type="number" min="2" value="32">
         <input name="fee" type="number" min="0" value="600">
-        <select name="format"><option value="knockout">แพ้คัดออก</option><option value="round_robin">พบกันหมด</option></select>
+        <select name="format"><option value="knockout">น็อคเอาท์</option><option value="round_robin">พบกันหมด</option></select>
         <span class="actions"><button class="btn sm primary" type="submit">เพิ่ม</button></span>
       </form>
       <p class="muted small">คอลัมน์: ชื่อ · เดี่ยว/คู่ · ระดับ · จำนวนทีมสูงสุด · ค่าสมัคร (฿) · รูปแบบ</p>

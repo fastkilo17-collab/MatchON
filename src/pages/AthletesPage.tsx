@@ -1,3 +1,4 @@
+import { RosterPage } from './RosterPage';
 import React, { useEffect, useState } from 'react';
 import {
   CheckCircle2,
@@ -27,7 +28,7 @@ import {
 import { slipSignedUrl } from '../lib/db';
 import { PhotoThumb, PhotoLightbox, ResponsiveSheet } from '../components/UiKit';
 
-export function AthletesPage() {
+function ManageAthletes() {
   const {
     activeTournament,
     tCategories,
@@ -525,4 +526,10 @@ export function AthletesPage() {
       </ResponsiveSheet>
     </div>
   );
+}
+
+/** หน้าเดียว: ผู้จัดเห็นหน้าจัดการ, คนอื่นเห็นรายชื่ออ่านอย่างเดียว */
+export function AthletesPage() {
+  const { activeTournament, isManagerOf } = useMatchON();
+  return activeTournament && isManagerOf(activeTournament.id) ? <ManageAthletes /> : <RosterPage />;
 }

@@ -48,6 +48,8 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
   const isOrganizer = state.role === 'organizer';
   const [heroImgErr, setHeroImgErr] = useState(false);
   const [q, setQ] = useState('');
+  const [ruleCat, setRuleCat] = useState<Category | null>(null);
+  const [ruleForm, setRuleForm] = useState({ best_of: 3, points: 21, cap: 30, deuce: true });
   const [stFilter, setStFilter] = useState<'all' | TournamentStatus>('all');
   const [kindFilter, setKindFilter] = useState<'all' | CategoryKind>('all');
 
@@ -573,6 +575,7 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
               <button
                 type="button"
                 onClick={() => {
+                  if (!window.confirm(`ลบรายการ "${editingT.name}" ? ข้อมูลทั้งหมดของรายการนี้จะถูกลบ กู้คืนไม่ได้`)) return;
                   deleteTournament(editingT.id);
                   setTSheetOpen(false);
                 }}
@@ -725,7 +728,7 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
                     <button
                       type="button"
                       aria-label="ลบรูป"
-                      onClick={() => setTForm({ ...tForm, posters: tForm.posters.filter((_, k) => k !== i) })}
+                      onClick={() => { if (window.confirm('ลบรูปนี้?')) setTForm({ ...tForm, posters: tForm.posters.filter((_, k) => k !== i) }); }}
                       className="absolute top-1 right-1 w-7 h-7 rounded-full bg-red-600 text-white text-xs font-bold"
                     >
                       ✕
@@ -800,6 +803,14 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
                     <div className="text-sm font-bold text-slate-900">{c.name} <span className="text-xs font-semibold text-blue-700">· รับ {c.max_teams} ทีม</span></div>
                     <div className="text-xs text-slate-600">{KIND_TH[c.kind]} · {GENDER_TH[c.gender]}</div>
                     <div className="text-xs text-slate-600">ระบบสาย: {FORMAT_TH[c.format]}</div>
+                    <div className="text-xs text-slate-600 tabular-nums">กติกา: {c.best_of === 1 ? '1 เซต' : `ชนะ ${Math.ceil(c.best_of / 2)} ใน ${c.best_of} เซต`} · {c.points} แต้ม{c.deuce ? ` · ดิวซ์ (สูงสุด ${c.cap})` : ' · ไม่มีดิวซ์'}</div>
+                    <button
+                      type="button"
+                      onClick={() => { setRuleCat(c); setRuleForm({ best_of: c.best_of, points: c.points, cap: c.cap, deuce: c.deuce }); }}
+                      className="mt-1.5 min-h-[36px] px-3 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold"
+                    >
+                      ตั้งค่ากติกาประจำรุ่น
+                    </button>
                     <div className="text-xs text-slate-600 tabular-nums">
                       ค่าสมัคร {c.fee ? baht(c.fee) : 'ฟรี'}
                       {c.shuttle_fee ? ` · ค่าลูก ${baht(c.shuttle_fee)}` : ''}
@@ -813,7 +824,7 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
                     <button type="button" onClick={() => loadCatForEdit(c)} className="min-h-[40px] min-w-[40px] flex items-center justify-center rounded-xl hover:bg-slate-100 text-slate-600">
                       <Edit3 className="w-4 h-4" />
                     </button>
-                    <button type="button" onClick={() => deleteCategory(c.id)} className="min-h-[40px] min-w-[40px] flex items-center justify-center rounded-xl hover:bg-red-50 text-red-600">
+                    <button type="button" onClick={() => { if (window.confirm(`ลบรุ่น "${c.name}" ? ใบสมัครและแมตช์ของรุ่นนี้จะถูกลบด้วย`)) deleteCategory(c.id); }} className="min-h-[40px] min-w-[40px] flex items-center justify-center rounded-xl hover:bg-red-50 text-red-600">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
@@ -903,7 +914,7 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
                 onChange={(e) => setCatForm({ ...catForm, format: e.target.value as BracketFormat })}
                 className="w-full min-h-[44px] px-2.5 rounded-xl border border-slate-200 text-sm bg-white"
               >
-                <option value="knockout">แพ้คัดออก</option>
+                <option value="knockout">น็อคเอาท์</option>
                 <option value="round_robin">พบกันหมด</option>
                 <option value="group_stage">แบ่งกลุ่ม</option>
                 <option value="group_knockout">แบ่งกลุ่ม+น็อคเอาท์</option>
@@ -972,6 +983,62 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
             </button>
           </div>
         </form>
+      </ResponsiveSheet>
+
+      {/* Per-category rules */}
+      <ResponsiveSheet
+        open={!!ruleCat}
+        onClose={() => setRuleCat(null)}
+        title={`กติกา ${ruleCat?.name || ''}`}
+        subtitle="ใช้กับทุกแมตช์ของรุ่นนี้"
+        footer={
+          <button
+            type="button"
+            onClick={() => {
+              if (!ruleCat) return;
+              saveCategory({ ...ruleCat, best_of: ruleForm.best_of, points: Number(ruleForm.points) || 21, cap: Number(ruleForm.cap) || 30, deuce: ruleForm.deuce });
+              setRuleCat(null);
+            }}
+            className="w-full min-h-[46px] rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold"
+          >
+            บันทึกกติกา
+          </button>
+        }
+      >
+        <div className="space-y-4">
+          {state.rules.filter((r) => r.tournament_id === catManagerTid).length > 0 && (
+            <div className="space-y-1.5">
+              <div className="text-xs font-semibold text-slate-500">เลือกจากชุดกติกาที่มี</div>
+              <div className="flex flex-wrap gap-1.5">
+                {state.rules.filter((r) => r.tournament_id === catManagerTid).map((r) => (
+                  <button key={r.id} type="button" onClick={() => setRuleForm({ best_of: r.best_of, points: r.points, cap: r.cap, deuce: r.deuce })} className="min-h-[36px] px-3 rounded-xl border border-slate-200 bg-white hover:border-blue-300 text-xs font-semibold text-slate-700">{r.name}</button>
+                ))}
+              </div>
+            </div>
+          )}
+          <div className="space-y-1.5">
+            <div className="text-xs font-semibold text-slate-500">จำนวนเซต</div>
+            <div className="flex gap-1.5">
+              {[1, 3, 5].map((n) => (
+                <button key={n} type="button" onClick={() => setRuleForm({ ...ruleForm, best_of: n })} className={`flex-1 min-h-[42px] rounded-xl text-xs font-semibold border ${ruleForm.best_of === n ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-200 text-slate-700'}`}>{n === 1 ? '1 เซต' : `ชนะ ${Math.ceil(n / 2)} ใน ${n}`}</button>
+              ))}
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <label className="space-y-1.5 block">
+              <span className="text-xs font-semibold text-slate-500">แต้มต่อเซต</span>
+              <input type="number" inputMode="numeric" value={ruleForm.points} onChange={(e) => setRuleForm({ ...ruleForm, points: Number(e.target.value) })} className="w-full min-h-[44px] px-3 rounded-xl border border-slate-200 text-sm bg-white" />
+            </label>
+            <label className="space-y-1.5 block">
+              <span className="text-xs font-semibold text-slate-500">แต้มสูงสุด (Cap)</span>
+              <input type="number" inputMode="numeric" value={ruleForm.cap} onChange={(e) => setRuleForm({ ...ruleForm, cap: Number(e.target.value) })} className="w-full min-h-[44px] px-3 rounded-xl border border-slate-200 text-sm bg-white" />
+            </label>
+          </div>
+          <label className="flex items-center gap-2.5 min-h-[44px] text-sm font-semibold text-slate-800">
+            <input type="checkbox" checked={ruleForm.deuce} onChange={(e) => setRuleForm({ ...ruleForm, deuce: e.target.checked })} className="w-5 h-5" />
+            มีดิวซ์ (ต้องนำ 2 แต้ม)
+          </label>
+        </div>
       </ResponsiveSheet>
     </div>
   );

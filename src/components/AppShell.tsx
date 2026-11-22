@@ -42,11 +42,10 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'tournaments', label: 'รายการแข่งขัน', shortLabel: 'รายการ', icon: Trophy, group: 'main', roles: ['organizer', 'player', 'referee'] },
   { id: 'my', label: 'การสมัครของฉัน', shortLabel: 'ของฉัน', icon: Ticket, group: 'main', roles: ['player', 'organizer'] },
 
-  { id: 'roster', label: 'รายชื่อนักกีฬา', shortLabel: 'รายชื่อ', icon: Users, group: 'main', roles: ['organizer', 'player', 'referee'] },
   { id: 'mine', label: 'รายการของฉัน', shortLabel: 'ของฉัน', icon: Trophy, group: 'manage', roles: ['organizer'] },
   { id: 'info', label: 'ข้อมูลรายการ', shortLabel: 'ข้อมูล', icon: Edit3, group: 'manage', roles: ['organizer'] },
   { id: 'cats', label: 'จัดการรุ่นการแข่งขัน', shortLabel: 'รุ่น', icon: ListChecks, group: 'manage', roles: ['organizer'] },
-  { id: 'athletes', label: 'จัดการนักกีฬา', shortLabel: 'นักกีฬา', icon: Users, group: 'manage', roles: ['organizer'] },
+  { id: 'athletes', label: 'นักกีฬา', shortLabel: 'นักกีฬา', icon: Users, group: 'main', roles: ['organizer', 'player', 'referee'] },
   { id: 'brackets', label: 'สายแข่งขัน', shortLabel: 'สายแข่งขัน', icon: GitBranch, group: 'manage', roles: ['organizer', 'player', 'referee'] },
   { id: 'schedule', label: 'ตารางการแข่งขัน', shortLabel: 'ตารางแข่งขัน', icon: CalendarDays, group: 'manage', roles: ['organizer', 'player', 'referee'] },
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  Activity, CalendarDays, ClipboardCheck, Edit3, GitBranch, ListChecks, MapPin, Trophy, Users, Award,
+  Activity, CalendarDays, ClipboardCheck, Edit3, GitBranch, ListChecks, MapPin, Trophy, Users,
 } from 'lucide-react';
 import { useMatchON } from '../context/MatchONContext';
 import { PosterSlider, PhotoLightbox } from '../components/UiKit';
@@ -33,7 +33,7 @@ export function TournamentHomePage() {
 
   const menu: Array<{ id: NavRoute; label: string; icon: React.ComponentType<{ className?: string }>; show?: boolean }> = [
     { id: 'register', label: 'สมัครแข่งขัน', icon: ClipboardCheck, show: t.status === 'open' },
-    { id: 'roster', label: 'รายชื่อนักกีฬา', icon: Users },
+    { id: 'athletes', label: 'นักกีฬา', icon: Users },
     { id: 'brackets', label: 'สายแข่งขัน', icon: GitBranch },
     { id: 'schedule', label: 'ตารางแข่ง', icon: CalendarDays },
     { id: 'live', label: 'Live Score', icon: Activity },
@@ -41,7 +41,6 @@ export function TournamentHomePage() {
     { id: 'info', label: 'ข้อมูลรายการ', icon: Edit3, show: isMgr },
     { id: 'cats', label: 'จัดการรุ่นการแข่งขัน', icon: ListChecks, show: isMgr },
     { id: 'mine', label: 'รายการของฉัน', icon: Trophy, show: isMgr },
-    { id: 'athletes', label: 'จัดการนักกีฬา', icon: Award, show: isMgr },
     { id: 'courts', label: 'จัดการสนาม', icon: MapPin, show: isMgr },
   ];
 

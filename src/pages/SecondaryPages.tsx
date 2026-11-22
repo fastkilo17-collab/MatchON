@@ -498,7 +498,7 @@ export function RulesStaffPage() {
                           ปล่อยว่าง
                         </button>
                       ) : null}
-                      <button type="button" onClick={() => deleteReferee(rf.id)} aria-label="ลบกรรมการ" className="min-h-[36px] min-w-[36px] inline-flex items-center justify-center rounded-lg hover:bg-red-50 text-red-600">
+                      <button type="button" onClick={() => { if (window.confirm(`ลบกรรมการ "${rf.name}" ?`)) deleteReferee(rf.id); }} aria-label="ลบกรรมการ" className="min-h-[36px] min-w-[36px] inline-flex items-center justify-center rounded-lg hover:bg-red-50 text-red-600">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </td>
@@ -852,7 +852,7 @@ export function StaffPage() {
                 <div className="text-xs text-slate-500 truncate">{r.email || 'บัญชี LINE'}</div>
               </div>
               {owner && (
-                <button type="button" onClick={() => void remove(r.id)} className="min-h-[40px] min-w-[40px] flex items-center justify-center rounded-xl hover:bg-red-50 text-red-600">
+                <button type="button" onClick={() => { if (window.confirm(`ลบ ${r.display_name || r.email || 'ผู้ใช้'} ออกจาก Staff?`)) void remove(r.id); }} className="min-h-[40px] min-w-[40px] flex items-center justify-center rounded-xl hover:bg-red-50 text-red-600">
                   <Trash2 className="w-4 h-4" />
                 </button>
               )}

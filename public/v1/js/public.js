@@ -159,7 +159,7 @@ function infoTab(S, counts) {
               return html`<tr>
                 <td>${c.name}</td><td>${c.fee ? baht(c.fee) : 'ฟรี'}</td>
                 <td>${n} / ${c.max_teams}${n >= c.max_teams ? html` <span class="pill st-closed">เต็ม รับสำรอง</span>` : ''}</td>
-                <td>${c.format === 'round_robin' ? 'พบกันหมด' : 'แพ้คัดออก'}</td></tr>`;
+                <td>${c.format === 'round_robin' ? 'พบกันหมด' : 'น็อคเอาท์'}</td></tr>`;
             })}</tbody></table></div>`
         : html`<p class="muted">ผู้จัดยังไม่ได้กำหนดประเภท</p>`}
     </div>

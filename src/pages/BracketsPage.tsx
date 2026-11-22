@@ -71,7 +71,7 @@ export function BracketsPage() {
   const koMatches = catMatches.filter((m) => m.stage === 'knockout' || m.stage === 'main');
   const lowMatches = catMatches.filter((m) => m.stage === 'lower');
   const lowerOn = Boolean(meta?.has_lower) || lowMatches.length > 0;
-  const sections = ([
+  const allSections = ([
     { k: 'groups', label: 'แบ่งกลุ่ม', n: groupMatches.length, why: 'รุ่นนี้ไม่มีรอบแบ่งกลุ่ม' },
     ...(lowerOn
       ? [
@@ -83,6 +83,7 @@ export function BracketsPage() {
     ...x,
     why: catMatches.length === 0 ? 'ยังไม่ได้จัดสายการแข่งขันของรุ่นนี้' : x.why,
   }));
+  const sections = meta?.format === 'knockout' && groupMatches.length === 0 ? allSections.filter((x) => x.k !== 'groups') : allSections;
   const firstOn = sections.find((x) => x.n > 0)?.k;
   const effView = sections.some((x) => x.k === view && x.n > 0) ? view : firstOn;
   const isRoundRobinMain = meta?.format === 'round_robin';

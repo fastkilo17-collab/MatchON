@@ -440,7 +440,7 @@ export const INITIAL_MATCHON_STATE: MatchONState = {
     },
   ],
   rules: [
-    { id: 'rule-std', tournament_id: 't-matchon-open', name: 'แพ้คัดออก มาตรฐาน', best_of: 3, points: 21, deuce: true, cap: 30 },
+    { id: 'rule-std', tournament_id: 't-matchon-open', name: 'น็อคเอาท์ มาตรฐาน', best_of: 3, points: 21, deuce: true, cap: 30 },
     { id: 'rule-grp', tournament_id: 't-matchon-open', name: 'รอบแบ่งกลุ่ม 1 เซต 30 แต้ม', best_of: 1, points: 30, deuce: false, cap: 30 },
   ],
   referees: [
