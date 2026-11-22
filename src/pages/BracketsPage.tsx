@@ -356,7 +356,7 @@ export function BracketsPage() {
                 {!locked && (
                   <button
                     type="button"
-                    onClick={() => clearBracket(activeCat.id)}
+                    onClick={() => { if (window.confirm(`ล้างสายรุ่น ${activeCat.name}? แมตช์และผลทั้งหมดของรุ่นนี้จะถูกลบ`)) clearBracket(activeCat.id); }}
                     className="inline-flex items-center gap-1.5 min-h-[40px] px-3.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 text-xs font-semibold"
                   >
                     <Trash2 className="w-3.5 h-3.5" />

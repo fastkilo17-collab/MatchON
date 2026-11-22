@@ -267,12 +267,11 @@ export function SchedulePage() {
             }
             return days.map((d) => (
               <section key={d.key} className="space-y-1.5">
-                <h3 className="text-sm font-bold text-slate-700 px-1">
-                  {d.key.startsWith('fin:') ? 'จบแล้ว · ' : ''}{d.key.endsWith('none') ? 'ยังไม่กำหนดเวลา' : fmtDate(d.items[0].scheduled_at!)}
-                  <span className="ml-2 text-xs font-medium text-slate-400"> {d.items.length} แมตช์</span>
-                  {!d.key.startsWith('fin:') && (() => {
+                <h3 className="text-sm font-bold text-slate-700 px-1 flex items-center justify-between gap-2">
+                  <span>{d.key.startsWith('fin:') ? 'จบแล้ว · ' : ''}{d.key.endsWith('none') ? 'ยังไม่กำหนดเวลา' : fmtDate(d.items[0].scheduled_at!)}</span>
+                                    {!d.key.startsWith('fin:') && (() => {
                     const left = d.items.filter((x) => x.status !== 'finished').length;
-                    return left > 0 ? <span className="ml-2 text-xs font-bold text-blue-700 bg-blue-50 rounded-md px-1.5 py-0.5">เหลือ {left} แมตช์</span> : <span className="ml-2 text-xs font-bold text-emerald-700 bg-emerald-50 rounded-md px-1.5 py-0.5">จบครบแล้ว</span>;
+                    return left > 0 ? <span className="text-xs font-bold text-blue-700 bg-blue-50 rounded-md px-1.5 py-0.5">เหลือ {left} แมตช์</span> : <span className="text-xs font-bold text-emerald-700 bg-emerald-50 rounded-md px-1.5 py-0.5">จบครบแล้ว</span>;
                   })()}
                 </h3>
                 <div className="bg-white border border-slate-200/80 rounded-2xl divide-y divide-slate-100 overflow-hidden">
@@ -291,9 +290,6 @@ export function SchedulePage() {
                               <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />LIVE
                             </span>
                           )}
-                          {m.status === 'finished' && (
-                            <span className="inline-flex items-center rounded-md bg-emerald-100 text-emerald-800 px-1.5 py-0.5 text-[11px] font-bold shrink-0">จบแล้ว</span>
-                          )}
                           <span aria-hidden="true">·</span>
                           <span className="truncate">{catMap[m.category_id]?.name || ''}</span>
                           <span aria-hidden="true">·</span>
@@ -310,6 +306,10 @@ export function SchedulePage() {
                       </div>
                       <div className="flex items-center justify-between gap-3 text-xs">
                         <span className="text-slate-600 tabular-nums">{m.court ? `สนาม ${m.court}` : 'รอสนาม'}</span>
+                        <span className="inline-flex items-center gap-2">
+                        {m.status === 'finished' && (
+                          <span className="inline-flex items-center rounded-md bg-emerald-100 text-emerald-800 px-1.5 py-0.5 text-[11px] font-bold shrink-0">จบแล้ว</span>
+                        )}
                         <span
                           className={`font-mono font-bold tabular-nums ${
                             m.status === 'live' ? 'text-red-600' : m.status === 'finished' ? 'text-emerald-700' : 'text-slate-500'
@@ -326,6 +326,7 @@ export function SchedulePage() {
                               ))}
                             </span>
                           ) : m.status === 'live' ? scoreText(m) || MATCH_TH[m.status] : MATCH_TH[m.status]}
+                        </span>
                         </span>
                       </div>
                     </button>
