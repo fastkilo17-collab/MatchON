@@ -90,7 +90,8 @@ $('fs').onclick = () => {
 if (!liveId) { $('g').innerHTML = '<div class="empty">ลิงก์ไม่ถูกต้อง (ไม่มีรหัสรายการ)</div>'; }
 else {
   Live.watchConnection((on) => { $('conn').textContent = on ? '● ออนไลน์' : 'ออฟไลน์'; });
-  Live.watchCourts(liveId, (list) => {
+  Live.watchCourts(liveId, (all) => {
+    const list = (all || []).filter((c) => !c.hidden);
     if (!list || !list.length) { $('g').innerHTML = '<div class="empty">ยังไม่มีข้อมูลสนาม</div>'; return; }
     $('tname').textContent = (list.find((c) => c.tournament) || {}).tournament || 'Live Score';
     $('g').innerHTML = list.map(card).join('');

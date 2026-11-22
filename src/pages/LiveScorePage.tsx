@@ -83,6 +83,20 @@ export function LiveScorePage() {
       setRotating(false);
     }
   };
+  // ยกเลิก QR กรรมการ: เปลี่ยนคีย์ให้ลิงก์เดิมใช้ไม่ได้ + เอากรรมการออกจากสนาม
+  const revokeQr = async (no: number) => {
+    if (!window.confirm(`ยกเลิก QR กรรมการสนาม ${no}? ลิงก์/QR เดิมจะใช้ไม่ได้ทันที และเอากรรมการออกจากสนามนี้`)) return;
+    try {
+      await refereeUrl(no, undefined, true);
+      assignReferee(null, no);
+      setQrCourtNo(null);
+      setPicking(false);
+      setRefUrl('');
+      toast(`ยกเลิก QR กรรมการสนาม ${no} แล้ว`);
+    } catch (e: any) {
+      toast(e?.message || 'ยกเลิก QR ไม่สำเร็จ', 'err');
+    }
+  };
   const chooseReferee = async (refId: string | null, label: string) => {
     if (qrCourtNo === null) return;
     assignReferee(refId, qrCourtNo);
@@ -174,7 +188,7 @@ export function LiveScorePage() {
 
       {/* Live Courts Grid */}
       <div className={`grid grid-cols-1 gap-2.5 ${compact ? "sm:grid-cols-2 xl:grid-cols-3" : "md:grid-cols-2"}`}>
-        {tCourts.map((court) => {
+        {tCourts.filter((c) => c.status !== 'maintenance').map((court) => {
           const liveM = tMatches.find((m) => m.court === court.no && m.status === 'live');
           const nextM = !liveM
             ? tMatches.find((m) => m.court === court.no && m.status === 'scheduled' && m.reg_a && m.reg_b)
@@ -228,6 +242,15 @@ export function LiveScorePage() {
                     </span>
                   )}
 
+                  {canOperate && !liveM && tReferees.some((r) => r.court_no === court.no) && (
+                    <button
+                      type="button"
+                      onClick={() => void revokeQr(court.no)}
+                      className="min-h-[38px] px-2.5 rounded-xl bg-red-50 text-red-700 hover:bg-red-100 text-xs font-semibold whitespace-nowrap"
+                    >
+                      ยกเลิก QR
+                    </button>
+                  )}
                   {canOperate && (
                     <button
                       type="button"
@@ -430,6 +453,9 @@ export function LiveScorePage() {
                 </button>
                 <button type="button" disabled={rotating} onClick={() => void rotateQr()} className="min-h-[40px] px-4 rounded-xl bg-red-100 text-red-700 text-xs font-semibold">
                   เปลี่ยน QR code
+                </button>
+                <button type="button" onClick={() => qrCourtNo !== null && void revokeQr(qrCourtNo)} className="min-h-[40px] px-4 rounded-xl bg-red-600 text-white text-xs font-semibold">
+                  ยกเลิก QR กรรมการ
                 </button>
               </div>
             </>

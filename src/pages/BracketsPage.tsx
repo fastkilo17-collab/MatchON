@@ -130,9 +130,11 @@ export function BracketsPage() {
                 {teamName(m.reg_a ? regMap[m.reg_a] : null)}
               </span>
             </span>
-            <span className="font-mono text-xs tabular-nums text-slate-600 shrink-0">
-              {m.sets.map((s) => s[0]).join(' ')}
-              {m.status === 'live' ? ` ${m.cur_a}` : ''}
+            <span className="font-mono text-xs tabular-nums text-slate-600 shrink-0 flex items-center gap-1">
+              {m.sets.map((s, i) => (
+                <span key={i} className={`inline-flex min-w-[24px] h-6 items-center justify-center rounded-full px-1 ${s[0] > s[1] ? 'ring-2 ring-emerald-500 font-bold text-emerald-700' : ''}`}>{s[0]}</span>
+              ))}
+              {m.status === 'live' ? <span className="px-1">{m.cur_a}</span> : null}
             </span>
           </div>
           <div className="h-px bg-slate-100" />
@@ -143,9 +145,11 @@ export function BracketsPage() {
                 {teamName(m.reg_b ? regMap[m.reg_b] : null)}
               </span>
             </span>
-            <span className="font-mono text-xs tabular-nums text-slate-600 shrink-0">
-              {m.sets.map((s) => s[1]).join(' ')}
-              {m.status === 'live' ? ` ${m.cur_b}` : ''}
+            <span className="font-mono text-xs tabular-nums text-slate-600 shrink-0 flex items-center gap-1">
+              {m.sets.map((s, i) => (
+                <span key={i} className={`inline-flex min-w-[24px] h-6 items-center justify-center rounded-full px-1 ${s[1] > s[0] ? 'ring-2 ring-emerald-500 font-bold text-emerald-700' : ''}`}>{s[1]}</span>
+              ))}
+              {m.status === 'live' ? <span className="px-1">{m.cur_b}</span> : null}
             </span>
           </div>
         </div>
@@ -632,6 +636,7 @@ function TeamStandCard({
         <span className="flex items-center gap-2.5">
           <span className="w-7 h-7 shrink-0 grid place-items-center text-xs font-bold text-blue-700 bg-blue-50 rounded-lg tabular-nums">{rank}</span>
           <span className="min-w-0 flex-1 truncate text-sm font-bold text-slate-900">{reg?.club || teamName(reg)}</span>
+          {row.played > 1 && <span className="shrink-0 text-xs font-bold text-amber-700 bg-amber-50 rounded-md px-1.5 py-0.5">อันดับ {rank}</span>}
           <span className="shrink-0 text-right leading-tight">
             <span className="block text-base font-bold tabular-nums text-blue-700">{row.pts}</span>
             <span className="block text-[10px] text-slate-400">คะแนน</span>

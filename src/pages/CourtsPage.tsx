@@ -25,6 +25,7 @@ export function CourtsPage() {
     catMap,
     navigate,
     callMatchToCourt,
+    returnMatchToQueue,
     toast,
     updateMatchMeta,
     toggleCourtMaintenance,
@@ -216,7 +217,7 @@ export function CourtsPage() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => updateMatchMeta(m.id, { status: 'scheduled' })}
+                        onClick={() => returnMatchToQueue(m.id)}
                         className="inline-flex items-center gap-1.5 min-h-[42px] px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold"
                       >
                         <RotateCcw className="w-3.5 h-3.5" />

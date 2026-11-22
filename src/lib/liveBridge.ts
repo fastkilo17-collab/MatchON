@@ -61,7 +61,7 @@ export function useLiveBridge(a: Args) {
       const { regMap: R, catMap: C } = latest.current;
       const name = tournament?.name || '';
       if (!m) {
-        return { courtNo: no, status: 'READY', round: 'คอร์ทว่าง (พร้อมเรียกคู่ถัดไป)', teamA: 'รอเรียกคู่แข่งขัน', clubA: '-', teamB: 'รอเรียกคู่แข่งขัน', clubB: '-', scores: [[0, 0], [0, 0], [0, 0]], tournament: name };
+        return { courtNo: no, hidden: latest.current.courts.find((c) => c.no === no)?.status === 'maintenance', status: 'READY', round: 'คอร์ทว่าง (พร้อมเรียกคู่ถัดไป)', teamA: 'รอเรียกคู่แข่งขัน', clubA: '-', teamB: 'รอเรียกคู่แข่งขัน', clubB: '-', scores: [[0, 0], [0, 0], [0, 0]], tournament: name };
       }
       const side = (r?: Registration | null) => {
         const ks = (['p1', 'p2'] as const).filter((k) => r && (r as any)[`${k}_name`]);
@@ -85,7 +85,7 @@ export function useLiveBridge(a: Args) {
       const A = side(ra);
       const B = side(rb);
       return {
-        courtNo: no, status: 'LIVE', matchCode: CODE(m),
+        courtNo: no, hidden: false, status: 'LIVE', matchCode: CODE(m),
         round: `${m.match_no ? 'แมตช์ #' + m.match_no : ''} ${C[m.category_id]?.name || ''} ${m.round_label || ''}`.trim(),
         matchNo: m.match_no || null, roundLabel: m.round_label || '', catName: C[m.category_id]?.name || '',
         rule: (() => { const r = ruleForMatch(m, latest.current.categories, latest.current.rules); return { best_of: r.best_of, points: r.points, cap: r.cap, deuce: r.deuce, playTwo: r.play_two }; })(),
@@ -185,7 +185,7 @@ export function useLiveBridge(a: Args) {
     for (const c of Object.values(fb)) {
       if (c.status !== 'LIVE' || !c.matchCode) continue;
       const m = latest.current.matches.find((x) => x.id.startsWith(c.matchCode!));
-      if (!m || m.status === 'finished') continue;
+      if (!m || m.status === 'finished' || !m.court) continue;
       if (!(c.startedAt || c.scores.some((s) => s[0] || s[1]))) continue;
       const act = c.activeSet >= 0 ? c.activeSet : 0;
       const sets = c.scores.slice(0, act).filter((s) => s[0] || s[1]) as [number, number][];
@@ -230,9 +230,15 @@ export function useLiveBridge(a: Args) {
     (async () => {
       for (const ct of courts) {
         const m = currentMatch(ct.no);
-        const sig = m ? CODE(m) : 'none';
+        const maint = ct.status === 'maintenance';
+        const sig = (m ? CODE(m) : 'none') + (maint ? '|maint' : '');
         if (lastSig.current[ct.no] === sig) continue;
         const existing = fb[ct.no];
+        if (maint && existing && !existing.hidden) {
+          FB.current.updateCourt(cfg.current!.live_id, ct.no, (c: any) => { c.hidden = true; }).catch(() => { delete lastSig.current[ct.no]; });
+          lastSig.current[ct.no] = sig;
+          if (!m) continue;
+        }
         if (existing && existing.status === 'LIVE' && existing.matchCode === (m ? CODE(m) : undefined)) {
           lastSig.current[ct.no] = sig;
           // same match: refresh labels only (match number, round, category, rule) - never touch the score
@@ -246,7 +252,7 @@ export function useLiveBridge(a: Args) {
           continue;
         }
         const exM = existing?.matchCode ? latest.current.matches.find((x) => x.id.startsWith(existing.matchCode!)) : undefined;
-        const exDone = !!exM && exM.status === 'finished'; // match ended in the app -> free the court (and the referee page)
+        const exDone = !!exM; // the app knows this match but no longer has it on this court (finished / sent back to the queue) -> free the court (and the referee page)
         if (!m && existing && existing.status === 'LIVE' && !exDone && (existing.startedAt || existing.scores.some((s) => s[0] || s[1]))) continue; // never wipe a referee's running match (called-only courts are cleared)
         lastSig.current[ct.no] = sig;
         try {

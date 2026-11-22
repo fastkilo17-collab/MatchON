@@ -99,6 +99,7 @@ interface MatchONContextValue {
   setGroupTeams: (categoryId: string, groupNo: number, teamIds: string[]) => boolean;
   recordMatchSets: (matchId: string, sets: [number, number][], liveCur?: [number, number] | null, silent?: boolean, force?: boolean) => void;
   adjustLivePoint: (matchId: string, side: 'a' | 'b', delta: 1 | -1) => void;
+  returnMatchToQueue: (matchId: string) => void;
   updateMatchMeta: (matchId: string, patch: Partial<Match>) => void;
   runAutoSchedule: (startIso: string, courtNos: number[], timeOnly?: boolean, setTime?: boolean, catStarts?: Record<string, string>, opts?: { order?: string[]; matchMin?: number; restMin?: number }) => number;
   clearSchedule: () => number;
@@ -953,6 +954,21 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
     [toast],
   );
 
+  const returnMatchToQueue = useCallback(
+    (matchId: string) => {
+      setState((prev) => ({
+        ...prev,
+        matches: prev.matches.map((m) =>
+          m.id === matchId
+            ? { ...m, status: 'scheduled' as const, court: null, sets: [], cur_a: 0, cur_b: 0, winner: null, updated_at: new Date().toISOString() }
+            : m,
+        ),
+      }));
+      toast('ส่งกลับคิวแล้ว (ล้างคะแนนและสนามของแมตช์นี้)');
+    },
+    [toast],
+  );
+
   const runAutoSchedule = useCallback(
     (startIso: string, courtNos: number[], timeOnly = false, setTime = true, catStarts: Record<string, string> = {}, opts: { order?: string[]; matchMin?: number; restMin?: number } = {}): number => {
       const setCourt = !timeOnly;
@@ -1234,6 +1250,7 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
     recordMatchSets,
     adjustLivePoint,
     updateMatchMeta,
+    returnMatchToQueue,
     runAutoSchedule,
     clearSchedule,
     callMatchToCourt,

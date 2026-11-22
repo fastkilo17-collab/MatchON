@@ -12,7 +12,7 @@ export function MatchScoreSheet({
   match: Match | null;
   onClose: () => void;
 }) {
-  const { regMap, catMap, tRules, tCourts, recordMatchSets, updateMatchMeta } = useMatchON();
+  const { regMap, catMap, tRules, tCourts, recordMatchSets, updateMatchMeta, returnMatchToQueue } = useMatchON();
   const [setInputs, setSetInputs] = useState<[string, string][]>([
     ['', ''],
     ['', ''],
@@ -148,7 +148,7 @@ export function MatchScoreSheet({
             <button
               type="button"
               onClick={() => {
-                updateMatchMeta(match.id, { status: 'scheduled' });
+                returnMatchToQueue(match.id);
                 onClose();
               }}
               className="inline-flex items-center gap-1.5 min-h-[40px] px-3.5 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 text-xs font-semibold transition-colors"
