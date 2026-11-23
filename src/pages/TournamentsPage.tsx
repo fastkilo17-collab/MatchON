@@ -24,7 +24,7 @@ import {
   prizeText,
   prizeLines,
 } from '../utils/bracket';
-import { ResponsiveSheet } from '../components/UiKit';
+import { ResponsiveSheet, ShareButton } from '../components/UiKit';
 import { resizeImage } from '../lib/supabase';
 
 export type TournamentsMode = 'list' | 'mine' | 'cats' | 'info';
@@ -43,6 +43,7 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
     deleteTournament,
     saveCategory,
     deleteCategory,
+    toast,
   } = useMatchON();
 
   const isOrganizer = state.role === 'organizer';
@@ -507,6 +508,7 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
 
                 {/* Action Row */}
                 <div className="mx-5 mb-5 pt-3 border-t border-slate-100 flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                  <ShareButton tid={t.id} name={t.name} compact onDone={(m) => toast(m)} />
                   {t.status === 'open' && (
                     <button
                       type="button"

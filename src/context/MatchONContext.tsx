@@ -106,6 +106,7 @@ interface MatchONContextValue {
   callMatchToCourt: (matchId: string, courtNo: number) => void;
   toggleCourtMaintenance: (courtId: string) => void;
   addCourt: () => void;
+  deleteCourt: (courtId: string) => void;
   addRulePreset: (rule: Omit<RulePreset, 'id'>) => void;
   deleteRulePreset: (id: string) => void;
   updateRulePreset: (id: string, patch: Partial<RulePreset>) => void;
@@ -134,7 +135,7 @@ const dataOf = (s: MatchONState): Data => ({
 const ACTIVE_KEY = 'matchon.activeTid';
 const ROUTE_KEY = 'matchon.route';
 // หน้าที่จำตอนรีเฟรชได้ (ไม่รวมหน้าที่ต้องมีข้อมูลประกอบ)
-const ROUTES_OK: NavRoute[] = ['site', 'tournaments', 'home', 'my', 'athletes', 'roster', 'brackets', 'schedule', 'courts', 'live', 'rules', 'staff', 'results', 'reports', 'settings', 'mine', 'cats', 'info', 'dashboard', 'register', 'admin'];
+const ROUTES_OK: NavRoute[] = ['site', 'me', 'tournaments', 'home', 'my', 'athletes', 'roster', 'brackets', 'schedule', 'courts', 'live', 'rules', 'staff', 'results', 'reports', 'settings', 'mine', 'cats', 'info', 'dashboard', 'register', 'admin'];
 const DEFAULT_REF_PHONE = '0801234567';
 // one referee per court, created automatically; the organizer edits names / phones later
 function withAutoReferees(referees: Referee[], tid: string, courtCount: number): Referee[] {
@@ -152,6 +153,15 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<MatchONState>(INITIAL_STATE);
   const [route, setRoute] = useState<NavRoute>(() => {
     try {
+      // ลิงก์แชร์: ?t=<id รายการ>&p=<หน้า>
+      const qs = new URLSearchParams(window.location.search);
+      const sharedT = qs.get('t');
+      if (sharedT) {
+        localStorage.setItem(ACTIVE_KEY, sharedT);
+        const sp = qs.get('p') as NavRoute | null;
+        window.history.replaceState(null, '', window.location.pathname);
+        return sp && ROUTES_OK.includes(sp) ? sp : 'home';
+      }
       const saved = localStorage.getItem(ROUTE_KEY) as NavRoute | null;
       return saved && ROUTES_OK.includes(saved) ? saved : 'tournaments';
     } catch {
@@ -1091,6 +1101,28 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
     [toast],
   );
 
+  const deleteCourt = useCallback(
+    (courtId: string) => {
+      const court = state.courts.find((c) => c.id === courtId);
+      if (!court) return;
+      if (state.matches.some((m) => m.tournament_id === court.tournament_id && m.court === court.no && m.status === 'live')) {
+        toast('สนามนี้กำลังแข่งอยู่ ลบไม่ได้', 'err');
+        return;
+      }
+      setState((prev) => ({
+        ...prev,
+        courts: prev.courts.filter((c) => c.id !== courtId),
+        // แมตช์ที่ยังไม่แข่งที่ลงสนามนี้ → กลับเป็นไม่กำหนดสนาม, กรรมการประจำสนามนี้ → ว่าง
+        matches: prev.matches.map((m) =>
+          m.tournament_id === court.tournament_id && m.court === court.no && m.status !== 'finished' ? { ...m, court: null } : m,
+        ),
+        referees: prev.referees.map((r) => (r.tournament_id === court.tournament_id && r.court_no === court.no ? { ...r, court_no: null } : r)),
+      }));
+      toast(`ลบ ${court.name} แล้ว`);
+    },
+    [state.courts, state.matches, toast],
+  );
+
   const addCourt = useCallback(() => {
     if (!activeTournament) return;
     setState((prev) => {
@@ -1267,6 +1299,7 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
     callMatchToCourt,
     toggleCourtMaintenance,
     addCourt,
+    deleteCourt,
     addRulePreset,
     deleteRulePreset,
     updateRulePreset,

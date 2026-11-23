@@ -7,6 +7,7 @@ import {
   Plus,
   RotateCcw,
   Wrench,
+  Trash2,
 } from 'lucide-react';
 import { useMatchON } from '../context/MatchONContext';
 import type { Match } from '../types/matchon';
@@ -29,6 +30,7 @@ export function CourtsPage() {
     toast,
     updateMatchMeta,
     toggleCourtMaintenance,
+    deleteCourt,
     addCourt,
   } = useMatchON();
 
@@ -148,6 +150,16 @@ export function CourtsPage() {
                       >
                         {court.status === 'maintenance' ? <PauseCircle className="w-3.5 h-3.5" /> : <Wrench className="w-3.5 h-3.5 text-slate-400" />}
                         {court.status === 'maintenance' ? 'เปิดใช้' : 'งดใช้'}
+                      </button>
+                    )}
+                    {isManager && (
+                      <button
+                        type="button"
+                        aria-label={`ลบ ${court.name}`}
+                        onClick={() => { if (window.confirm(`ลบ ${court.name} ? แมตช์ที่ยังไม่แข่งในสนามนี้จะกลับเป็นไม่กำหนดสนาม`)) deleteCourt(court.id); }}
+                        className="inline-flex items-center justify-center min-h-[30px] min-w-[30px] rounded-lg border border-red-200 text-red-600 hover:bg-red-50 shrink-0"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     )}
                   </div>

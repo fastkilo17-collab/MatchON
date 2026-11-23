@@ -19,6 +19,7 @@ import {
   Trophy,
   UserCheck,
   Users,
+  UserRound,
   X,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
@@ -42,6 +43,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'dashboard', label: 'ภาพรวมระบบ', shortLabel: 'ภาพรวม', icon: LayoutDashboard, group: 'main', roles: ['organizer'] },
   { id: 'home', label: 'หน้าหลักรายการ', shortLabel: 'หน้าหลัก', icon: LayoutDashboard, group: 'main', roles: ['organizer', 'player', 'referee'] },
   { id: 'tournaments', label: 'รายการแข่งขัน', shortLabel: 'รายการ', icon: Trophy, group: 'main', roles: ['organizer', 'player', 'referee'] },
+  { id: 'me', label: 'ข้อมูลของฉัน', shortLabel: 'ข้อมูลฉัน', icon: UserRound, group: 'main', roles: ['player', 'organizer', 'referee'] },
   { id: 'my', label: 'การสมัครของฉัน', shortLabel: 'ของฉัน', icon: Ticket, group: 'main', roles: ['player', 'organizer'] },
 
   { id: 'mine', label: 'รายการของฉัน', shortLabel: 'ของฉัน', icon: Trophy, group: 'manage', roles: ['organizer'] },

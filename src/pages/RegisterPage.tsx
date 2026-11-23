@@ -196,7 +196,7 @@ function RegisterForm() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-3">
+    <div className="max-w-2xl mx-auto space-y-3 min-w-0 overflow-x-hidden">
       {(targetTournament.poster || targetTournament.posters?.length || targetTournament.format_text || targetTournament.rules_text || targetTournament.notice) && (
         <details className="group bg-white border border-slate-200/80 rounded-2xl overflow-hidden">
           <summary className="px-4 min-h-[48px] flex items-center justify-between gap-2 cursor-pointer text-sm font-bold text-slate-800 list-none">
@@ -290,33 +290,23 @@ function RegisterForm() {
               return (
                 <label
                   key={c.id}
-                  className={`flex items-center justify-between gap-3 px-3.5 py-3 rounded-xl border cursor-pointer transition-colors ${
-                    checked
-                      ? 'bg-blue-50/70 border-blue-500'
-                      : 'bg-white border-slate-200 hover:border-slate-300'
+                  className={`block min-w-0 p-3.5 rounded-2xl border-2 cursor-pointer transition-colors ${
+                    checked ? 'bg-blue-50/70 border-blue-500' : 'bg-white border-slate-200 hover:border-slate-300'
                   }`}
                 >
-                  <div className="flex items-start gap-3 min-w-0">
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      onChange={() => toggleCat(c.id)}
-                      className="mt-1 w-5 h-5 rounded accent-blue-600 shrink-0"
-                    />
-                    <div className="min-w-0">
-                      <div className="text-sm font-bold text-slate-900">{c.name}</div>
-                      <div className="text-xs text-slate-500 mt-0.5 tabular-nums">
-                        {KIND_TH[c.kind]} · {GENDER_TH[c.gender]}
-                        {c.level ? ` · มือ ${c.level}` : ''} ·{' '}
-                        {left === 0 ? 'เต็ม (ลงสำรอง)' : `ว่าง ${left} ที่`}
-                      </div>
-                    </div>
+                  <div className="flex items-center gap-3 min-w-0">
+                    <input type="checkbox" checked={checked} onChange={() => toggleCat(c.id)} className="w-5 h-5 rounded accent-blue-600 shrink-0" />
+                    <div className="min-w-0 flex-1 text-[15px] font-extrabold text-slate-900 truncate">{c.name}</div>
+                    <div className="shrink-0 text-base font-extrabold tabular-nums text-blue-700">{catTotal(c) ? baht(catTotal(c)) : 'ฟรี'}</div>
                   </div>
-                  <div className="font-mono text-sm font-bold tabular-nums text-blue-700 shrink-0">
-                    {catTotal(c) ? baht(catTotal(c)) : 'ฟรี'}
-                    {c.shuttle_fee ? <div className="text-[10px] font-normal text-slate-500 text-right">ค่าสมัคร {baht(c.fee)} + {shuttleText(c)}</div> : null}
-                    {prizeText(c) ? <div className="text-[10px] font-normal text-amber-700 text-right">🏆 {prizeText(c)}</div> : null}
+                  <div className="mt-2 pl-8 flex flex-wrap gap-1.5 min-w-0">
+                    <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700">{KIND_TH[c.kind]}</span>
+                    <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700">{GENDER_TH[c.gender]}</span>
+                    {c.level ? <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700">มือ {c.level}</span> : null}
+                    <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md ${left === 0 ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700'}`}>{left === 0 ? 'เต็ม (ลงสำรอง)' : `ว่าง ${left} ที่`}</span>
                   </div>
+                  {c.shuttle_fee ? <div className="mt-1.5 pl-8 text-[11px] text-slate-500 break-words">ค่าสมัคร {baht(c.fee)} + {shuttleText(c)}</div> : null}
+                  {prizeText(c) ? <div className="mt-1.5 ml-8 text-[11px] text-amber-800 bg-amber-50 rounded-lg px-2.5 py-1.5 break-words leading-relaxed">🏆 {prizeText(c)}</div> : null}
                 </label>
               );
             })}

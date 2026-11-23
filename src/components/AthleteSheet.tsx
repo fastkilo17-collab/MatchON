@@ -31,7 +31,7 @@ export function PlayerLines({ r, className = '' }: { r: Registration; className?
   return (
     <div className={className}>
       {lines.filter(Boolean).map((l, i) => (
-        <div key={i} className={i === 0 ? 'text-sm font-bold text-slate-900 truncate' : 'text-xs text-slate-600 truncate'}>{l}</div>
+        <div key={i} className={i === 0 ? 'text-sm font-bold text-slate-900 truncate' : 'text-sm text-slate-700 truncate'}>{l}</div>
       ))}
     </div>
   );
@@ -246,10 +246,17 @@ export function AthleteSheet({ reg, onClose, seq, startEdit }: { reg: Registrati
               {live.seed != null && <span className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700">มือวาง {live.seed}</span>}
             </div>
 
+            <Section icon={Trophy} title="ทีม / ก๊วน">
+              {edit && d ? (
+                <input className={inp} value={d.club} onChange={(e) => set({ club: e.target.value })} placeholder="ชื่อทีม / ก๊วน" />
+              ) : (
+                <div className="text-base font-extrabold text-slate-900">{live.club || 'ไม่ระบุทีม'}</div>
+              )}
+            </Section>
             {playerCard(1)}
             {doubles && playerCard(2)}
 
-            <Section icon={Trophy} title="ข้อมูลการสมัคร">
+            <Section icon={ReceiptText} title="ข้อมูลการสมัคร">
               {edit && isMgr ? (
                 <div className="space-y-3">
                   <Field label="รุ่นที่สมัคร">
@@ -258,7 +265,6 @@ export function AthleteSheet({ reg, onClose, seq, startEdit }: { reg: Registrati
                     </select>
                   </Field>
                   {d.category_id !== live.category_id && <div className="text-[11px] text-amber-700">ย้ายรุ่น: ถ้าจัดสายไปแล้วควรล้าง/จัดสายใหม่ และค่าสมัครเปลี่ยนตามรุ่นใหม่</div>}
-                  <Field label="ทีม / ก๊วน"><input className={inp} value={d.club} onChange={(e) => set({ club: e.target.value })} /></Field>
                   <div className="grid grid-cols-2 gap-3">
                     <Field label="สถานะใบสมัคร">
                       <select className={inp} value={d.status} onChange={(e) => set({ status: e.target.value as RegStatus })}>
@@ -269,11 +275,10 @@ export function AthleteSheet({ reg, onClose, seq, startEdit }: { reg: Registrati
                   </div>
                 </div>
               ) : edit && isOwner ? (
-                <Field label="ทีม / ก๊วน"><input className={inp} value={d.club} onChange={(e) => set({ club: e.target.value })} /></Field>
+                <div className="text-xs text-slate-500">รุ่นและสถานะแก้โดยผู้จัดเท่านั้น</div>
               ) : (
                 <div className="space-y-2">
                   <Row label="รุ่น">{cat?.name || '-'}</Row>
-                  <Row label="ทีม / ก๊วน">{live.club || '-'}</Row>
                   <Row label="สมัครเมื่อ">{fmtDate(live.created_at)}</Row>
                   {tournament && <Row label="รายการ">{tournament.name}</Row>}
                 </div>
@@ -332,30 +337,35 @@ export function AthleteSheet({ reg, onClose, seq, startEdit }: { reg: Registrati
   );
 }
 
-/** การ์ดนักกีฬาในรายการ (ใช้ร่วมกันทุกบทบาท) */
+/** การ์ดนักกีฬาในรายการ (ใช้ร่วมกันทุกบทบาท)
+ *  บรรทัด 1: ทีม | รุ่น · บรรทัด 2: ชื่อนักกีฬา (ชื่อจริง/ชื่อเล่น) · บรรทัด 3: หมายเหตุ
+ *  ใต้รูป: ลิงก์คลิป · ขวาล่าง: สถานะ/ชำระ/วันที่สมัคร */
 export function AthleteCard({ r, cat, seq, onOpen, extra }: { r: Registration; cat?: Category | null; seq?: number; onOpen: () => void; extra?: React.ReactNode }) {
   const pay = payInfo(r, cat);
   const clip = r.video_url && /^https?:\/\//i.test(r.video_url) ? r.video_url : '';
   return (
-    <div role="button" tabIndex={0} onClick={onOpen} onKeyDown={(e) => { if (e.key === 'Enter') onOpen(); }} className="px-4 py-3 flex items-start gap-3 hover:bg-slate-50/70 transition-colors cursor-pointer">
-      {seq != null && <span className="w-6 shrink-0 pt-1 text-center font-mono text-xs font-bold text-slate-400 tabular-nums">{seq}</span>}
-      <TeamAvatars reg={r} size={42} />
-      <div className="min-w-0 flex-1 space-y-1">
-        <PlayerLines r={r} />
-        {(r.club || cat) && (
-          <div className="text-[11px] text-slate-500 truncate">{[r.club, cat?.name].filter(Boolean).join(' • ')}{r.seed != null ? ` • มือวาง ${r.seed}` : ''}</div>
+    <div role="button" tabIndex={0} onClick={onOpen} onKeyDown={(e) => { if (e.key === 'Enter') onOpen(); }} className="px-4 py-3 flex items-start gap-3 hover:bg-slate-50/70 transition-colors cursor-pointer min-w-0">
+      {seq != null && <span className="w-5 shrink-0 pt-1 text-center font-mono text-xs font-bold text-slate-400 tabular-nums">{seq}</span>}
+      <div className="shrink-0 flex flex-col items-center gap-1.5">
+        <TeamAvatars reg={r} size={42} />
+        {clip && (
+          <a href={clip} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md bg-red-50 text-red-600">
+            <Film className="w-3 h-3" /> คลิป
+          </a>
         )}
-        <div className="flex flex-wrap items-center gap-1.5">
+      </div>
+      <div className="min-w-0 flex-1 space-y-1">
+        <div className="text-[13px] font-extrabold text-slate-900 truncate">
+          {r.club || 'ไม่ระบุทีม'}{cat ? <span className="font-semibold text-slate-500"> | {cat.name}</span> : null}{r.seed != null ? <span className="font-semibold text-blue-700"> · มือวาง {r.seed}</span> : null}
+        </div>
+        <PlayerLines r={r} />
+        {r.note && <div className="text-[11px] text-slate-600 bg-amber-50/70 rounded-md px-2 py-1 break-words">📝 {r.note}</div>}
+        <div className="flex flex-wrap items-center justify-end gap-1.5 pt-0.5">
+          {extra}
           <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md ${REG_TONE[r.status]}`}>{REG_STATUS_TH[r.status]}</span>
           <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md ${pay.tone}`}>{pay.label}</span>
-          {clip && (
-            <a href={clip} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md bg-red-50 text-red-600">
-              <Film className="w-3 h-3" /> คลิป
-            </a>
-          )}
-          {extra}
+          <span className="text-[11px] text-slate-400 tabular-nums">สมัคร {fmtDate(r.created_at)}</span>
         </div>
-        {r.note && <div className="text-[11px] text-slate-600 bg-amber-50/70 rounded-md px-2 py-1 break-words">📝 {r.note}</div>}
       </div>
     </div>
   );

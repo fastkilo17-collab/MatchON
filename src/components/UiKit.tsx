@@ -1,5 +1,6 @@
+import { createPortal } from 'react-dom';
 import React, { useEffect, useMemo } from 'react';
-import { X } from 'lucide-react';
+import { Share2, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import QRCode from 'qrcode';
 import { photoUrl } from '../lib/supabase';
@@ -32,7 +33,7 @@ export function ResponsiveSheet({
     return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
 
-  return (
+  const node = (
     <AnimatePresence>
       {open && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
@@ -74,7 +75,7 @@ export function ResponsiveSheet({
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">{children}</div>
+            <div className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden px-5 py-4 space-y-4 break-words">{children}</div>
 
             {footer && (
               <div className="px-5 py-3.5 border-t border-slate-100 bg-slate-50/70 pb-safe shrink-0">
@@ -86,6 +87,8 @@ export function ResponsiveSheet({
       )}
     </AnimatePresence>
   );
+  // แสดงนอกโครงหน้า (portal) กันหลุดจอ/ค้างเมื่อถูกเรียกจากภายใน header ที่มี blur/transform
+  return typeof document !== 'undefined' ? createPortal(node, document.body) : node;
 }
 
 export function QrCodeSvg({ value, size = 160 }: { value: string; size?: number }) {
@@ -246,5 +249,39 @@ export function MatchNo({ n, className = '' }: { n?: number | null; className?: 
     <span className={`inline-flex items-center rounded-md bg-blue-600 text-white px-1.5 py-0.5 text-xs font-extrabold tabular-nums leading-none shrink-0 ${className}`}>
       แมตช์ #{n}
     </span>
+  );
+}
+
+/** ปุ่มแชร์รายการแข่ง: เปิดหน้าต่างแชร์ของเครื่อง (LINE/Facebook ฯลฯ) ถ้าไม่รองรับให้คัดลอกลิงก์ */
+export function ShareButton({ tid, name, page, label = 'แชร์', compact = false, onDone }: { tid: string; name: string; page?: string; label?: string; compact?: boolean; onDone?: (msg: string) => void }) {
+  const go = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const url = `${window.location.origin}${window.location.pathname}?t=${encodeURIComponent(tid)}${page ? `&p=${page}` : ''}`;
+    const text = `ร่วมแข่งขัน/ติดตามผล "${name}" บน MatchON`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: name, text, url });
+        return;
+      }
+    } catch (err: any) {
+      if (err?.name === 'AbortError') return;
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      onDone?.('คัดลอกลิงก์แล้ว');
+    } catch {
+      window.prompt('คัดลอกลิงก์นี้', url);
+    }
+  };
+  return (
+    <button
+      type="button"
+      onClick={go}
+      aria-label={`แชร์ ${name}`}
+      className={`inline-flex items-center justify-center gap-1.5 rounded-xl bg-white border border-slate-200 hover:border-blue-300 hover:text-blue-700 text-slate-700 text-xs font-semibold ${compact ? 'min-h-[36px] px-3' : 'min-h-[42px] px-4'}`}
+    >
+      <Share2 className="w-4 h-4" />
+      {label}
+    </button>
   );
 }

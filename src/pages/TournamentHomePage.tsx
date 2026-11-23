@@ -3,7 +3,7 @@ import {
   Activity, CalendarDays, ClipboardCheck, Edit3, GitBranch, ListChecks, MapPin, Trophy, Users,
 } from 'lucide-react';
 import { useMatchON } from '../context/MatchONContext';
-import { PosterSlider, PhotoLightbox } from '../components/UiKit';
+import { PosterSlider, PhotoLightbox, ShareButton } from '../components/UiKit';
 import type { NavRoute } from '../types/matchon';
 import { isByeMatch, baht, shuttleText, fmtRange, FORMAT_TH, KIND_TH, STATUS_TH } from '../utils/bracket';
 
@@ -19,7 +19,7 @@ function Kpi({ label, value, sub, tone = 'slate' }: { label: string; value: Reac
 }
 
 export function TournamentHomePage() {
-  const { activeTournament: t, tCategories, tRegistrations, tMatches, tCourts, navigate, state } = useMatchON();
+  const { activeTournament: t, tCategories, tRegistrations, tMatches, tCourts, navigate, state, toast } = useMatchON();
   const [zoom, setZoom] = React.useState(0);
   if (!t) {
     return <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center text-sm text-slate-500">ยังไม่มีรายการแข่งขัน</div>;
@@ -63,6 +63,7 @@ export function TournamentHomePage() {
             {t.reg_deadline && <div className="flex items-center gap-2"><ClipboardCheck className="w-4 h-4 text-slate-400" />ปิดรับสมัคร {fmtRange(t.reg_deadline.slice(0, 10), t.reg_deadline.slice(0, 10))}{t.reg_deadline.length > 10 ? ` ${t.reg_deadline.slice(11, 16)} น.` : ''}</div>}
           </div>
           {t.description && <p className="text-sm text-slate-600 whitespace-pre-line">{t.description}</p>}
+          <div className="pt-1"><ShareButton tid={t.id} name={t.name} label="แชร์รายการแข่ง" onDone={(m) => toast(m)} /></div>
         </div>
       </section>
 

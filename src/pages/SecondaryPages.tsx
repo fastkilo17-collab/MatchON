@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { AccountBox, LineLoginCard } from '../components/AuthDialog';
 import { rpcUpdateProfile, type StaffRow } from '../lib/db';
+import { downloadBackup } from '../utils/backup';
 import { sb } from '../lib/supabase';
 import { useMatchON } from '../context/MatchONContext';
 import { MatchNo, ResponsiveSheet } from '../components/UiKit';
@@ -713,7 +714,7 @@ const THEMES: ReadonlyArray<readonly [Theme, string, string[]]> = [
 ];
 
 export function SettingsPage() {
-  const { state, profile, toast, reload } = useMatchON();
+  const { state, profile, toast, reload, isManagerOf, activeTournament } = useMatchON();
   const [name, setName] = useState(profile?.display_name || '');
   const [phone, setPhone] = useState(profile?.phone || '');
   const [busy, setBusy] = useState(false);
@@ -789,6 +790,40 @@ export function SettingsPage() {
         </div>
         <AccountBox hideRequest />
       </section>
+      {state.role === 'organizer' && (
+        <section className="bg-white border border-slate-200/80 rounded-2xl p-5 space-y-3">
+          <div>
+            <h3 className="font-display text-base font-bold text-slate-900">สำรองข้อมูลลงเครื่อง</h3>
+            <p className="text-xs text-slate-500 mt-0.5">ดาวน์โหลดไฟล์ .json เก็บรายการแข่ง รุ่น ใบสมัคร สาย ตาราง ผลคะแนน สนาม และกรรมการ (รูปและสลิปไม่รวม)</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              disabled={!activeTournament}
+              onClick={() => {
+                if (!activeTournament) return;
+                const n = downloadBackup(state, [activeTournament.id], activeTournament.name);
+                toast(`สำรองข้อมูลแล้ว (${n} รายการ)`);
+              }}
+              className="min-h-[44px] px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold disabled:opacity-50"
+            >
+              สำรองรายการนี้{activeTournament ? ` · ${activeTournament.name}` : ''}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const ids = state.tournaments.filter((t) => isManagerOf(t.id)).map((t) => t.id);
+                if (!ids.length) return toast('ไม่มีรายการที่คุณดูแล', 'err');
+                const n = downloadBackup(state, ids, 'ทุกรายการ');
+                toast(`สำรองข้อมูลแล้ว (${n} รายการ)`);
+              }}
+              className="min-h-[44px] px-4 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-800 text-sm font-semibold"
+            >
+              สำรองทุกรายการที่ดูแล
+            </button>
+          </div>
+        </section>
+      )}
       <OrganizerRequestCard />
     </div>
   );

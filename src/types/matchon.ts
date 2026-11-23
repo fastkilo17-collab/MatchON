@@ -27,6 +27,7 @@ export type NavRoute =
   | 'settings'
   | 'home'
   | 'site'
+  | 'me'
   | 'mine'
   | 'cats'
   | 'info'
