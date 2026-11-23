@@ -30,6 +30,26 @@ import {
   shuttleText,
 } from '../utils/bracket';
 
+/** ช่องกรอกในตาราง: ความกว้างคอลัมน์เท่าข้อความที่ยาวที่สุดในคอลัมน์ (ใช้ตัวช่วยวัดความกว้างที่มองไม่เห็น) */
+function FitInput({ value, onCommit, className = '', type = 'text', placeholder }: { value: string; onCommit: (v: string) => unknown; className?: string; type?: string; placeholder?: string }) {
+  const [v, setV] = useState(value);
+  React.useEffect(() => setV(value), [value]);
+  return (
+    <span className="inline-grid">
+      <span aria-hidden="true" className={`invisible whitespace-pre col-start-1 row-start-1 px-2 text-sm ${className}`}>{(v || placeholder || ' ') + ' '}</span>
+      <input
+        type={type}
+        size={1}
+        value={v}
+        placeholder={placeholder}
+        onChange={(e) => setV(e.target.value)}
+        onBlur={() => onCommit(v)}
+        className={`col-start-1 row-start-1 w-full min-w-0 min-h-[34px] px-2 rounded-md border border-transparent hover:border-slate-200 focus:border-blue-400 focus:bg-white bg-transparent text-sm ${className}`}
+      />
+    </span>
+  );
+}
+
 export function ResultsPage() {
   const { activeTournament, tCategories, tMatches, tBrackets, regMap, catMap } = useMatchON();
   const [catFilter, setCatFilter] = useState('');
@@ -446,60 +466,60 @@ export function RulesStaffPage() {
         <p className="text-xs text-slate-500">
           เพิ่มสนามแล้วระบบสร้างกรรมการให้ตามจำนวนสนามอัตโนมัติ แก้ชื่อ/เบอร์โทรได้ภายหลัง · กรรมการถูกเลือกประจำสนามเมื่อกด QR กรรมการในหน้า Live Score
         </p>
-        <div className="overflow-x-auto rounded-xl border border-slate-200">
-          <table className="w-full text-sm border-collapse min-w-[560px]">
+        <div className="overflow-x-auto rounded-xl border border-slate-200 w-fit max-w-full">
+          <table className="w-max min-w-0 text-sm border-collapse">
             <thead>
-              <tr className="bg-slate-50 text-xs text-slate-500 text-left">
-                <th className="px-3 py-2 font-semibold w-12">#</th>
-                <th className="px-3 py-2 font-semibold">ชื่อกรรมการ</th>
-                <th className="px-3 py-2 font-semibold w-40">เบอร์โทร</th>
-                <th className="px-3 py-2 font-semibold w-32">สนาม</th>
-                {isOrganizer && <th className="px-3 py-2 font-semibold w-28 text-right">จัดการ</th>}
+              <tr className="bg-slate-50 text-xs text-slate-500 text-left whitespace-nowrap">
+                <th className="px-3 py-2 font-semibold border-b border-slate-200">#</th>
+                <th className="px-3 py-2 font-semibold border-b border-l border-slate-200">ชื่อกรรมการ</th>
+                <th className="px-3 py-2 font-semibold border-b border-l border-slate-200">เบอร์โทร</th>
+                <th className="px-3 py-2 font-semibold border-b border-l border-slate-200">สนาม</th>
+                {isOrganizer && <th className="px-3 py-2 font-semibold border-b border-l border-slate-200 text-right">จัดการ</th>}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody>
               {tReferees.map((rf, i) => (
-                <tr key={rf.id} className="align-middle">
-                  <td className="px-3 py-2 text-xs font-bold text-slate-500 tabular-nums">{i + 1}</td>
-                  <td className="px-3 py-2">
+                <tr key={rf.id} className="align-middle border-b border-slate-100 last:border-b-0 whitespace-nowrap">
+                  <td className="px-3 py-1.5 text-xs font-bold text-slate-500 tabular-nums">{i + 1}</td>
+                  <td className="px-2 py-1.5 border-l border-slate-100">
                     {isOrganizer ? (
-                      <input
-                        defaultValue={rf.name}
-                        onBlur={(e) => e.target.value.trim() && e.target.value !== rf.name && updateReferee(rf.id, { name: e.target.value.trim() })}
-                        className="w-full min-h-[40px] px-3 rounded-lg border border-slate-200 text-sm font-semibold"
+                      <FitInput
+                        value={rf.name}
+                        onCommit={(v) => v.trim() && v !== rf.name && updateReferee(rf.id, { name: v.trim() })}
+                        className="font-semibold"
                       />
                     ) : (
-                      <span className="font-bold text-slate-900">{rf.name}</span>
+                      <span className="px-1 font-bold text-slate-900">{rf.name}</span>
                     )}
                   </td>
-                  <td className="px-3 py-2">
+                  <td className="px-2 py-1.5 border-l border-slate-100">
                     {isOrganizer ? (
-                      <input
+                      <FitInput
                         type="tel"
-                        defaultValue={rf.phone || ''}
-                        onBlur={(e) => e.target.value !== (rf.phone || '') && updateReferee(rf.id, { phone: e.target.value.trim() })}
-                        className="w-full min-h-[40px] px-3 rounded-lg border border-slate-200 text-sm tabular-nums"
+                        value={rf.phone || ''}
                         placeholder="เบอร์โทร"
+                        onCommit={(v) => v !== (rf.phone || '') && updateReferee(rf.id, { phone: v.trim() })}
+                        className="tabular-nums"
                       />
                     ) : (
-                      <span className="tabular-nums text-slate-600">{rf.phone || '-'}</span>
+                      <span className="px-1 tabular-nums text-slate-600">{rf.phone || '-'}</span>
                     )}
                   </td>
-                  <td className="px-3 py-2 whitespace-nowrap">
+                  <td className="px-3 py-1.5 border-l border-slate-100">
                     {rf.court_no ? (
-                      <span className="text-xs font-semibold text-blue-700 bg-blue-50 rounded-lg px-2.5 py-1.5">สนาม {rf.court_no}</span>
+                      <span className="text-xs font-semibold text-blue-700 bg-blue-50 rounded-lg px-2.5 py-1">สนาม {rf.court_no}</span>
                     ) : (
-                      <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 rounded-lg px-2.5 py-1.5">ว่าง</span>
+                      <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 rounded-lg px-2.5 py-1">ว่าง</span>
                     )}
                   </td>
                   {isOrganizer && (
-                    <td className="px-3 py-2 text-right whitespace-nowrap">
+                    <td className="px-2 py-1.5 border-l border-slate-100 text-right">
                       {rf.court_no ? (
-                        <button type="button" onClick={() => updateReferee(rf.id, { court_no: null })} className="min-h-[36px] px-3 rounded-lg bg-slate-100 hover:bg-slate-200 text-xs font-semibold text-slate-600 mr-1">
+                        <button type="button" onClick={() => updateReferee(rf.id, { court_no: null })} className="min-h-[34px] px-3 rounded-lg bg-slate-100 hover:bg-slate-200 text-xs font-semibold text-slate-600 mr-1">
                           ปล่อยว่าง
                         </button>
                       ) : null}
-                      <button type="button" onClick={() => { if (window.confirm(`ลบกรรมการ "${rf.name}" ?`)) deleteReferee(rf.id); }} aria-label="ลบกรรมการ" className="min-h-[36px] min-w-[36px] inline-flex items-center justify-center rounded-lg hover:bg-red-50 text-red-600">
+                      <button type="button" onClick={() => { if (window.confirm(`ลบกรรมการ "${rf.name}" ?`)) deleteReferee(rf.id); }} aria-label="ลบกรรมการ" className="min-h-[34px] min-w-[34px] inline-flex items-center justify-center rounded-lg hover:bg-red-50 text-red-600">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </td>

@@ -20,6 +20,10 @@ import {
   clubGroups,
   computeStandings,
   standingPtsFor,
+  eligibleForBracket,
+  bracketSize,
+  avoidSameGroupFirstRound,
+  type StandingRow,
   matchResult,
   matchWinner,
   planAutoSchedule,
@@ -94,7 +98,7 @@ interface MatchONContextValue {
   ) => void;
   toggleBracketLock: (categoryId: string) => void;
   clearBracket: (categoryId: string) => void;
-  generateGroupKnockoutStage: (categoryId: string) => void;
+  generateGroupKnockoutStage: (categoryId: string, opts?: { fill?: boolean }) => void;
   generateNextSwissRound: (categoryId: string) => void;
   setGroupTeams: (categoryId: string, groupNo: number, teamIds: string[]) => boolean;
   recordMatchSets: (matchId: string, sets: [number, number][], liveCur?: [number, number] | null, silent?: boolean, force?: boolean) => void;
@@ -595,10 +599,10 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
       const cat = state.categories.find((c) => c.id === categoryId);
       if (!cat) return;
       const teams = state.registrations.filter(
-        (r) => r.category_id === categoryId && r.status === 'confirmed',
+        (r) => r.category_id === categoryId && eligibleForBracket(r, cat),
       );
       if (teams.length < 2) {
-        toast('ต้องมีทีมที่ยืนยันแล้วอย่างน้อย 2 ทีม', 'err');
+        toast('ต้องมีทีมที่ผ่านและชำระแล้วอย่างน้อย 2 ทีม', 'err');
         return;
       }
 
@@ -729,7 +733,7 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
   );
 
   const generateGroupKnockoutStage = useCallback(
-    (categoryId: string) => {
+    (categoryId: string, gopts?: { fill?: boolean }) => {
       const cat = state.categories.find((c) => c.id === categoryId);
       const b = state.brackets.find((x) => x.category_id === categoryId);
       if (!cat) return;
@@ -739,36 +743,69 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       const groupNos = [...new Set(grp.map((m) => m.group_no ?? 0))].sort((a, c) => a - c);
+      const stPts = standingPtsFor(categoryId, state.categories, state.rules);
+      const groupOf: Record<string, number> = {};
       const tops = groupNos.map((g) => {
         const gm = grp.filter((m) => (m.group_no ?? 0) === g);
         const ids = [...new Set(gm.flatMap((m) => [m.reg_a, m.reg_b]).filter(Boolean) as string[])];
-        return computeStandings(ids, gm, standingPtsFor(categoryId, state.categories, state.rules)).map((r) => r.id);
+        ids.forEach((id) => { groupOf[id] = g; });
+        return computeStandings(ids, gm, stPts);
       });
       const adv = b?.advance || 2;
       const hasLower = !!b?.has_lower;
-      const order: string[] = [];
-      for (let k = 0; k < adv; k++) {
-        tops.forEach((g) => {
-          if (g[k]) order.push(g[k]);
-        });
+      const fill = !!gopts?.fill;
+      // ผลงานเฉลี่ยต่อแมตช์ (เทียบข้ามกลุ่มที่จำนวนทีมไม่เท่ากัน)
+      const perf = (r: StandingRow) => {
+        const p = Math.max(1, r.played);
+        return [r.pts / p, (r.pf - r.pa) / p, (r.gf - r.ga) / p];
+      };
+      const byPerf = (x: StandingRow, y: StandingRow) => {
+        const a = perf(x), c = perf(y);
+        for (let i = 0; i < 3; i++) if (c[i] !== a[i]) return c[i] - a[i];
+        return 0;
+      };
+      const level = (k: number) => {
+        const rows = tops.map((g) => g[k]).filter(Boolean) as StandingRow[];
+        return (fill ? [...rows].sort(byPerf) : rows).map((r) => r.id);
+      };
+      let order: string[] = [];
+      for (let k = 0; k < adv; k++) order.push(...level(k));
+      let usedLevels = adv;
+      const maxLen = Math.max(0, ...tops.map((g) => g.length));
+      let filled = 0;
+      if (fill && order.length >= 2) {
+        const size = bracketSize(order.length);
+        // เติมทีมอันดับถัดไปที่ดีที่สุด (เช่น ที่ 3 ดีที่สุด แล้วที่ 4 ดีที่สุด) จนครบสายไม่มีบาย
+        while (order.length < size && usedLevels < maxLen) {
+          const cand = level(usedLevels);
+          const need = size - order.length;
+          const take = cand.slice(0, need);
+          order.push(...take);
+          filled += take.length;
+          if (take.length < cand.length) {
+            // เติมไม่หมดทั้งระดับ: ทีมที่เหลือของระดับนี้ไปสายล่าง
+            break;
+          }
+          usedLevels++;
+        }
+        order = avoidSameGroupFirstRound(order, groupOf);
       }
       const lowerOrder: string[] = [];
       if (hasLower) {
-        const maxLen = Math.max(0, ...tops.map((g) => g.length));
+        const inUpper = new Set(order);
         for (let k = adv; k < maxLen; k++) {
-          tops.forEach((g) => {
-            if (g[k]) lowerOrder.push(g[k]);
-          });
+          lowerOrder.push(...level(k).filter((id) => !inUpper.has(id)));
         }
       }
+      const lowerFinal = fill && lowerOrder.length >= 4 ? avoidSameGroupFirstRound(lowerOrder, groupOf) : lowerOrder;
       if (order.length < 2) {
         toast('มีผู้เข้ารอบน้อยเกินไป', 'err');
         return;
       }
       const tag = (rows: Match[], label: string) => (hasLower ? rows.map((m) => ({ ...m, round_label: `${label} · ${m.round_label}` })) : rows);
       const ko = tag(buildKnockout(order, { tournamentId: cat.tournament_id, categoryId, startMatchNo: 1, stage: 'knockout' }), 'สายบน');
-      const low = hasLower && lowerOrder.length >= 2
-        ? tag(buildKnockout(lowerOrder, { tournamentId: cat.tournament_id, categoryId, startMatchNo: 1, stage: 'lower' }), 'สายล่าง')
+      const low = hasLower && lowerFinal.length >= 2
+        ? tag(buildKnockout(lowerFinal, { tournamentId: cat.tournament_id, categoryId, startMatchNo: 1, stage: 'lower' }), 'สายล่าง')
         : [];
       setState((prev) => ({
         ...prev,
@@ -778,7 +815,7 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
           ...low,
         ],
       }));
-      toast('สร้างรอบน็อคเอาท์ เรียบร้อย');
+      toast(fill ? `สร้างรอบน็อคเอาท์ เรียบร้อย (${order.length} ทีม${filled ? ` · เติมทีมอันดับถัดไป ${filled} ทีม` : ''})` : 'สร้างรอบน็อคเอาท์ เรียบร้อย');
     },
     [state.categories, state.brackets, state.matches, state.rules, toast],
   );

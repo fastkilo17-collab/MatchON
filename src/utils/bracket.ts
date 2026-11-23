@@ -710,3 +710,57 @@ export function prizeLines(c?: { prizes?: { u?: number[]; l?: number[] } } | nul
 
 /** แมตช์ที่ได้บาย (จบแล้วแต่มีฝั่งว่าง) — ไม่นับเป็นแมตช์จริง */
 export const isByeMatch = (m: { status: string; reg_a: string | null; reg_b: string | null }) => m.status === 'finished' && (!m.reg_a || !m.reg_b);
+
+/** ทีมที่เข้าสายได้: สถานะ "ผ่าน" และชำระแล้ว (รุ่นที่ไม่มีค่าสมัครไม่ต้องชำระ) */
+export function eligibleForBracket(r: Registration, cat?: { fee?: number; shuttle_fee?: number } | null): boolean {
+  if (r.status !== 'confirmed') return false;
+  return r.pay_status === 'paid' || catTotal(cat) === 0;
+}
+
+/** ขนาดสายน็อคเอาท์ที่ปัดขึ้นเป็นกำลังของ 2 */
+export const bracketSize = (n: number): number => 2 ** Math.ceil(Math.log2(Math.max(2, n)));
+
+/**
+ * สลับทีมไม่ให้ทีมกลุ่มเดียวกันเจอกันรอบแรก (teams เรียงตามมือวาง: index = seed-1)
+ * สลับกับทีมที่มือวางใกล้ที่สุดซึ่งไม่ทำให้เกิดคู่กลุ่มเดียวกันใหม่
+ */
+export function avoidSameGroupFirstRound(teams: string[], groupOf: Record<string, number | undefined>): string[] {
+  const out = [...teams];
+  const n = out.length;
+  if (n < 4) return out;
+  const order = seedOrder(bracketSize(n));
+  const mate = (seed: number): number => {
+    const i = order.indexOf(seed);
+    return i % 2 === 0 ? order[i + 1] : order[i - 1];
+  };
+  const g = (seed: number) => (seed <= n ? groupOf[out[seed - 1]] : undefined);
+  const clash = (a: number, b: number) => a <= n && b <= n && g(a) !== undefined && g(a) === g(b);
+  for (let pass = 0; pass < 3; pass++) {
+    let changed = false;
+    for (let i = 0; i < order.length; i += 2) {
+      const a = order[i];
+      const b = order[i + 1];
+      if (!clash(a, b)) continue;
+      // ย้ายทีมที่มือวางต่ำกว่า (เลขมากกว่า) ออก
+      const y = Math.max(a, b);
+      const x = Math.min(a, b);
+      const cands: number[] = [];
+      for (let c = 1; c <= n; c++) if (c !== x && c !== y && c !== mate(y)) cands.push(c);
+      cands.sort((p, q) => Math.abs(p - y) - Math.abs(q - y));
+      for (const c of cands) {
+        const gy = g(y);
+        const gc = g(c);
+        const cm = mate(c);
+        const okY = !(gc !== undefined && gc === g(x));
+        const okC = !(gy !== undefined && cm <= n && g(cm) === gy && cm !== y);
+        if (okY && okC) {
+          [out[y - 1], out[c - 1]] = [out[c - 1], out[y - 1]];
+          changed = true;
+          break;
+        }
+      }
+    }
+    if (!changed) break;
+  }
+  return out;
+}

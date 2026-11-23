@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { AlertTriangle, ArrowDown, ArrowUp, CalendarX, GripVertical, Search, Wand2 } from 'lucide-react';
+import { AlertTriangle, ArrowDown, ChevronDown, ArrowUp, CalendarX, GripVertical, Search, Wand2 } from 'lucide-react';
 import { useMatchON } from '../context/MatchONContext';
 import type { Match } from '../types/matchon';
 import {
@@ -8,11 +8,12 @@ import {
   fmtTime,
   MATCH_TH,
   planAutoSchedule,
+  playersNick,
   scoreText,
   teamName,
 } from '../utils/bracket';
 import { MatchScoreSheet } from '../components/MatchScoreSheet';
-import { MatchNo, ResponsiveSheet } from '../components/UiKit';
+import { ResponsiveSheet, TeamAvatars } from '../components/UiKit';
 
 export function SchedulePage() {
   const {
@@ -27,6 +28,7 @@ export function SchedulePage() {
     clearSchedule,
     saveTournament,
   } = useMatchON();
+  const [openDays, setOpenDays] = useState<Record<string, boolean>>({});
 
   const [statusFilter, setStatusFilter] = useState<'all' | 'scheduled' | 'live' | 'finished'>('all');
   const [catFilter, setCatFilter] = useState<string>('');
@@ -265,32 +267,57 @@ export function SchedulePage() {
               if (last && last.key === k) last.items.push(m);
               else days.push({ key: k, items: [m] });
             }
+            const multi = days.length > 1;
+            const todayKey = (() => { const d = new Date(); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; })();
+            const firstOpen = days.find((x) => x.key === todayKey) || days.find((x) => !x.key.startsWith('fin:') && x.items.some((y) => y.status !== 'finished')) || days[0];
+            const isOpen = (k: string) => (!multi ? true : openDays[k] ?? k === firstOpen.key);
+            const side = (r: any, align: 'left' | 'right') => (
+              <div className={`min-w-0 ${align === 'right' ? 'text-right' : 'text-left'}`}>
+                <div className="text-[13px] leading-tight font-extrabold text-slate-900 truncate">{r ? playersNick(r) : 'รอผลการแข่ง'}</div>
+                {r?.club && <div className="text-[11px] leading-tight font-normal text-slate-500 truncate">{r.club}</div>}
+              </div>
+            );
             return days.map((d) => (
               <section key={d.key} className="space-y-1.5">
-                <h3 className="text-sm font-bold text-slate-700 px-1 flex items-center justify-between gap-2">
-                  <span>{d.key.startsWith('fin:') ? 'จบแล้ว · ' : ''}{d.key.endsWith('none') ? 'ยังไม่กำหนดเวลา' : fmtDate(d.items[0].scheduled_at!)}</span>
-                                    {!d.key.startsWith('fin:') && (() => {
-                    const left = d.items.filter((x) => x.status !== 'finished').length;
-                    return left > 0 ? <span className="text-xs font-bold text-blue-700 bg-blue-50 rounded-md px-1.5 py-0.5">เหลือ {left} แมตช์</span> : <span className="text-xs font-bold text-emerald-700 bg-emerald-50 rounded-md px-1.5 py-0.5">จบครบแล้ว</span>;
-                  })()}
+                <h3 className="text-sm font-bold text-slate-700">
+                  <button
+                    type="button"
+                    disabled={!multi}
+                    onClick={() => setOpenDays((o) => ({ ...o, [d.key]: !isOpen(d.key) }))}
+                    className="w-full px-1 min-h-[36px] flex items-center justify-between gap-2 text-left"
+                    aria-expanded={isOpen(d.key)}
+                  >
+                    <span className="flex items-center gap-1.5 min-w-0">
+                      {multi && <ChevronDown className={`w-4 h-4 text-slate-400 shrink-0 transition-transform ${isOpen(d.key) ? '' : '-rotate-90'}`} />}
+                      <span className="truncate">{d.key.startsWith('fin:') ? 'จบแล้ว · ' : ''}{d.key.endsWith('none') ? 'ยังไม่กำหนดเวลา' : fmtDate(d.items[0].scheduled_at!)}</span>
+                      {multi && <span className="text-[11px] font-semibold text-slate-400 shrink-0">({d.items.length})</span>}
+                    </span>
+                    {!d.key.startsWith('fin:') && (() => {
+                      const left = d.items.filter((x) => x.status !== 'finished').length;
+                      return left > 0 ? <span className="text-xs font-bold text-blue-700 bg-blue-50 rounded-md px-1.5 py-0.5 shrink-0">เหลือ {left} แมตช์</span> : <span className="text-xs font-bold text-emerald-700 bg-emerald-50 rounded-md px-1.5 py-0.5 shrink-0">จบครบแล้ว</span>;
+                    })()}
+                  </button>
                 </h3>
+                {isOpen(d.key) && (
                 <div className="bg-white border border-slate-200/80 rounded-2xl divide-y divide-slate-100 overflow-hidden">
-                  {d.items.map((m) => (
+                  {d.items.map((m) => {
+                    const ra = m.reg_a ? regMap[m.reg_a] : null;
+                    const rb = m.reg_b ? regMap[m.reg_b] : null;
+                    return (
                     <button
                       key={m.id}
                       type="button"
                       onClick={() => isManager && setEditingMatch(m)}
-                      className={`w-full p-4 text-left transition-colors space-y-1.5 ${m.status === 'live' ? 'bg-red-50 border-l-4 border-red-500 hover:bg-red-50' : m.status === 'finished' ? 'opacity-75 hover:bg-slate-50/70' : 'hover:bg-slate-50/70'}`}
+                      className={`w-full px-3 py-2.5 text-left transition-colors space-y-1.5 ${m.status === 'live' ? 'bg-red-50 border-l-4 border-red-500 hover:bg-red-50' : m.status === 'finished' ? 'opacity-80 hover:bg-slate-50/70' : 'hover:bg-slate-50/70'}`}
                     >
-                      <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center justify-between gap-3">
                         <div className="flex items-center gap-2 min-w-0 text-xs text-slate-500">
-                          {m.match_no ? <MatchNo n={m.match_no} className="text-sm px-2 py-1" /> : <span className="text-slate-400">—</span>}
+                          {m.match_no ? <span className="text-lg leading-none font-extrabold text-slate-900 tabular-nums shrink-0">#{m.match_no}</span> : <span className="text-slate-400">—</span>}
                           {m.status === 'live' && (
                             <span className="inline-flex items-center gap-1 rounded-md bg-red-600 text-white px-1.5 py-0.5 text-[11px] font-extrabold shrink-0">
                               <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />LIVE
                             </span>
                           )}
-                          <span aria-hidden="true">·</span>
                           <span className="truncate">{catMap[m.category_id]?.name || ''}</span>
                           <span aria-hidden="true">·</span>
                           <span className="truncate">{m.round_label}</span>
@@ -299,39 +326,43 @@ export function SchedulePage() {
                           {m.scheduled_at ? fmtTime(m.scheduled_at) : '--:--'}
                         </span>
                       </div>
-                      <div className="text-sm font-bold text-slate-900 truncate">
-                        {teamName(m.reg_a ? regMap[m.reg_a] : null)}{' '}
-                        <span className="font-normal text-slate-400">vs</span>{' '}
-                        {teamName(m.reg_b ? regMap[m.reg_b] : null)}
+                      <div className="grid grid-cols-[auto_minmax(0,1fr)_auto_minmax(0,1fr)_auto] items-center gap-x-2">
+                        <TeamAvatars reg={ra} size={30} flat />
+                        {side(ra, 'left')}
+                        <span className="text-xs font-semibold text-slate-400">vs</span>
+                        {side(rb, 'right')}
+                        <TeamAvatars reg={rb} size={30} flat />
                       </div>
-                      <div className="flex items-center justify-between gap-3 text-xs">
-                        <span className="text-slate-600 tabular-nums">{m.court ? `สนาม ${m.court}` : 'รอสนาม'}</span>
-                        <span className="inline-flex items-center gap-2">
-                        {m.status === 'finished' && (
-                          <span className="inline-flex items-center rounded-md bg-emerald-100 text-emerald-800 px-1.5 py-0.5 text-[11px] font-bold shrink-0">จบแล้ว</span>
-                        )}
-                        <span
-                          className={`font-mono font-bold tabular-nums ${
-                            m.status === 'live' ? 'text-red-600' : m.status === 'finished' ? 'text-emerald-700' : 'text-slate-500'
-                          }`}
-                        >
+                      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 text-xs">
+                        <span />
+                        <span className={`font-mono font-bold tabular-nums text-center ${m.status === 'live' ? 'text-red-600' : 'text-slate-500'}`}>
                           {m.status === 'finished' && m.sets.length > 0 ? (
-                            <span className="inline-flex items-center gap-1">
+                            <span className="inline-flex items-center gap-1.5">
                               {m.sets.map((st, i) => (
                                 <span key={i} className="inline-flex items-center gap-0.5">
-                                  <span className={`px-1 rounded-full ${st[0] > st[1] ? 'bg-emerald-100 text-blue-700' : 'text-slate-500'}`}>{st[0]}</span>
+                                  <span className="text-slate-300">(</span>
+                                  <span className={st[0] > st[1] ? 'text-blue-700' : 'text-slate-500'}>{st[0]}</span>
                                   <span className="text-slate-300">-</span>
-                                  <span className={`px-1 rounded-full ${st[1] > st[0] ? 'bg-emerald-100 text-blue-700' : 'text-slate-500'}`}>{st[1]}</span>
+                                  <span className={st[1] > st[0] ? 'text-blue-700' : 'text-slate-500'}>{st[1]}</span>
+                                  <span className="text-slate-300">)</span>
                                 </span>
                               ))}
                             </span>
-                          ) : m.status === 'live' ? scoreText(m) || MATCH_TH[m.status] : MATCH_TH[m.status]}
+                          ) : m.status === 'live' ? scoreText(m) || MATCH_TH[m.status] : ''}
                         </span>
+                        <span className="justify-self-end">
+                          {m.status === 'finished' ? (
+                            <span className="inline-flex items-center rounded-md bg-emerald-100 text-emerald-800 px-1.5 py-0.5 text-[11px] font-bold">จบแล้ว</span>
+                          ) : (
+                            <span className={`text-[11px] font-bold ${m.status === 'live' ? 'text-red-600' : 'text-slate-500'}`}>{MATCH_TH[m.status]}</span>
+                          )}
                         </span>
                       </div>
                     </button>
-                  ))}
+                    );
+                  })}
                 </div>
+                )}
               </section>
             ));
           })()

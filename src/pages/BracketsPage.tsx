@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { ChevronDown, GitBranch, Hand, Lock, Printer, Shuffle, Sparkles, Trash2, Unlock, X } from 'lucide-react';
 import { useMatchON } from '../context/MatchONContext';
 import type { BracketFormat, Match, Registration } from '../types/matchon';
-import { isByeMatch, computeStandings, standingPtsFor, fmtTime, FORMAT_TH, teamName, groupPlan, clubKey } from '../utils/bracket';
+import { eligibleForBracket, isByeMatch, computeStandings, standingPtsFor, fmtTime, FORMAT_TH, teamName, groupPlan, clubKey } from '../utils/bracket';
 import type { StandingRow, StandingPts } from '../utils/bracket';
 import { MatchScoreSheet } from '../components/MatchScoreSheet';
 import { MatchNo, ResponsiveSheet, TeamAvatars } from '../components/UiKit';
@@ -34,6 +34,7 @@ export function BracketsPage() {
   const [advance, setAdvance] = useState(2);
   const [seeded, setSeeded] = useState(false);
   const [hasLower, setHasLower] = useState(false);
+  const [fillNoBye, setFillNoBye] = useState(false);
   const [manualOpen, setManualOpen] = useState(false);
   const [view, setView] = useState<'groups' | 'upper' | 'lower'>('groups');
   const [editGroup, setEditGroup] = useState<number | null>(null);
@@ -58,9 +59,9 @@ export function BracketsPage() {
     );
   }
 
-  const confirmedTeams = tRegistrations.filter(
-    (r) => r.category_id === activeCat.id && r.status === 'confirmed',
-  );
+  const confirmedAll = tRegistrations.filter((r) => r.category_id === activeCat.id && r.status === 'confirmed');
+  const confirmedTeams = confirmedAll.filter((r) => eligibleForBracket(r, activeCat));
+  const unpaidCount = confirmedAll.length - confirmedTeams.length;
   const catMatches = tMatches.filter((m) => m.category_id === activeCat.id);
   const meta = tBrackets.find((b) => b.category_id === activeCat.id);
   const locked = Boolean(meta?.locked);
@@ -213,6 +214,11 @@ export function BracketsPage() {
                 <GitBranch className="w-4 h-4 text-blue-600" />
                 ตั้งค่ารูปแบบสายการแข่งขัน ({confirmedTeams.length} ทีมพร้อมจัดสาย)
               </div>
+              {unpaidCount > 0 && (
+                <div className="text-xs rounded-xl bg-amber-50 border border-amber-200 text-amber-900 px-3 py-2">
+                  มี {unpaidCount} ทีมที่ผ่านแล้วแต่ยังไม่ชำระเงิน — ทีมเหล่านี้จะไม่เข้าสายจนกว่าจะชำระแล้ว
+                </div>
+              )}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 <label className="block space-y-1">
                   <span className="text-xs font-medium text-slate-600">รูปแบบการแข่งขัน</span>
@@ -327,11 +333,23 @@ export function BracketsPage() {
                   !catMatches.some((m) => m.stage === 'knockout') && (
                     <button
                       type="button"
-                      onClick={() => generateGroupKnockoutStage(activeCat.id)}
+                      onClick={() => generateGroupKnockoutStage(activeCat.id, { fill: fillNoBye })}
                       className="min-h-[40px] px-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold"
                     >
                       สร้างรอบน็อคเอาท์
                     </button>
+                  )}
+                {meta?.format === 'group_knockout' &&
+                  !catMatches.some((m) => m.stage === 'knockout') && (
+                    <label className="basis-full flex items-start gap-2 text-xs text-slate-700 cursor-pointer rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                      <input type="checkbox" checked={fillNoBye} onChange={(e) => setFillNoBye(e.target.checked)} className="w-4 h-4 mt-0.5" />
+                      <span>
+                        <span className="font-semibold">เติมทีมที่ 3/4 ที่ดีที่สุดให้ครบสายแบบไม่มีบาย</span>
+                        <span className="block text-[11px] text-slate-500">
+                          เติมทีมอันดับถัดไปที่ผลงานดีสุดจนครบ 2/4/8/16… · เรียงมือวางตามผลงานจริง (แต้ม › ผลต่างคะแนน › ผลต่างเซต) · เลี่ยงทีมกลุ่มเดียวกันเจอกันรอบแรก
+                        </span>
+                      </span>
+                    </label>
                   )}
                 {meta?.format === 'swiss' && (
                   <button

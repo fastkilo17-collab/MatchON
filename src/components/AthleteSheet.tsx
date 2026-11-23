@@ -356,37 +356,37 @@ export function AthleteCard({ r, cat, seq, onOpen, extra }: { r: Registration; c
   const one = (n?: string, k?: string) => (n ? (k && k !== n ? `${n} (${k})` : n) : '');
   const names = r.p2_name ? [one(r.p1_name, r.p1_nick), one(r.p2_name, r.p2_nick)] : [r.p1_name, r.p1_nick && r.p1_nick !== r.p1_name ? r.p1_nick : ''];
   return (
-    <div role="button" tabIndex={0} onClick={onOpen} onKeyDown={(e) => { if (e.key === 'Enter') onOpen(); }} className="px-4 py-3 hover:bg-slate-50/70 transition-colors cursor-pointer min-w-0 space-y-2">
-      <div className="flex items-start justify-between gap-3">
+    <div role="button" tabIndex={0} onClick={onOpen} onKeyDown={(e) => { if (e.key === 'Enter') onOpen(); }} className="px-3 py-2 hover:bg-slate-50/70 transition-colors cursor-pointer min-w-0 space-y-1">
+      <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex items-center gap-2.5">
-          {seq != null && <span className="shrink-0 min-w-[30px] h-[30px] px-1.5 grid place-items-center rounded-lg bg-blue-50 text-blue-700 text-sm font-extrabold tabular-nums">{seq}</span>}
-          <div className="min-w-0 text-[15px] font-extrabold text-slate-900 truncate">
+          {seq != null && <span className="shrink-0 min-w-[24px] h-6 px-1 grid place-items-center rounded-md bg-blue-50 text-blue-700 text-xs font-extrabold tabular-nums">{seq}</span>}
+          <div className="min-w-0 text-[13px] leading-tight font-extrabold text-slate-900 truncate">
             {r.club || 'ไม่ระบุทีม'}{cat ? <span className="font-bold text-slate-500"> | {cat.name}</span> : null}
           </div>
         </div>
-        <div className="shrink-0 flex flex-col items-end gap-1">
+        <div className="shrink-0 flex flex-col items-end gap-0.5">
           <div className="flex items-center gap-1.5">
             {extra}
-            <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md ${REG_TONE[r.status]}`}>{REG_STATUS_TH[r.status]}</span>
-            <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md ${pay.tone}`}>{pay.label}</span>
+            <span className={`text-[10px] leading-tight font-bold px-1.5 py-0.5 rounded ${REG_TONE[r.status]}`}>{REG_STATUS_TH[r.status]}</span>
+            <span className={`text-[10px] leading-tight font-bold px-1.5 py-0.5 rounded ${pay.tone}`}>{pay.label}</span>
           </div>
-          <span className="text-[10px] text-slate-400 tabular-nums">สมัคร {fmtDate(r.created_at)}</span>
+          <span className="text-[9px] leading-none text-slate-400 tabular-nums">สมัคร {fmtDate(r.created_at)}</span>
         </div>
       </div>
-      <div className="flex items-start gap-3 min-w-0">
-        <div className="shrink-0 flex flex-col items-center gap-1.5">
-          <TeamAvatars reg={r} size={42} />
+      <div className="flex items-start gap-2 min-w-0">
+        <div className="shrink-0 flex flex-col items-center gap-1">
+          <TeamAvatars reg={r} size={30} flat />
           {clip && (
-            <a href={clip} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md bg-red-50 text-red-600">
-              <Film className="w-3 h-3" /> คลิป
+            <a href={clip} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="inline-flex items-center gap-0.5 text-[10px] leading-tight font-bold px-1.5 py-0.5 rounded bg-red-50 text-red-600">
+              <Film className="w-2.5 h-2.5" /> คลิป
             </a>
           )}
         </div>
-        <div className="min-w-0 flex-1 space-y-0.5 pt-0.5">
+        <div className="min-w-0 flex-1 space-y-0 pt-0">
           {names.filter(Boolean).map((l, i) => (
-            <div key={i} className="text-[13px] font-normal text-slate-600 truncate">{l}</div>
+            <div key={i} className="text-[12px] leading-snug font-normal text-slate-600 truncate">{l}</div>
           ))}
-          {r.note && <div className="text-[11px] text-slate-600 bg-amber-50/70 rounded-md px-2 py-1 mt-1 break-words">📝 {r.note}</div>}
+          {r.note && <div className="text-[10px] leading-snug text-slate-600 bg-amber-50/70 rounded px-1.5 py-0.5 mt-0.5 break-words">📝 {r.note}</div>}
         </div>
       </div>
     </div>

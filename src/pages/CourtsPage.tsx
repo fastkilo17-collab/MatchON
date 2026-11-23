@@ -6,7 +6,7 @@ import {
   Play,
   Plus,
   RotateCcw,
-  Wrench,
+  MoreVertical,
   Trash2,
 } from 'lucide-react';
 import { useMatchON } from '../context/MatchONContext';
@@ -14,6 +14,29 @@ import type { Match } from '../types/matchon';
 import { fmtTime, scoreText, teamName } from '../utils/bracket';
 import { MatchScoreSheet } from '../components/MatchScoreSheet';
 import { MatchNo, ResponsiveSheet, TeamAvatars } from '../components/UiKit';
+
+function CourtMenu({ name, maintenance, canCancelCall, onCancelCall, onToggle, onDelete }: { name: string; maintenance: boolean; canCancelCall: boolean; onCancelCall: () => void; onToggle: () => void; onDelete: () => void }) {
+  const [open, setOpen] = useState(false);
+  const item = 'w-full flex items-center gap-2 min-h-[40px] px-3 text-left text-xs font-semibold hover:bg-slate-50';
+  const run = (fn: () => void) => () => { setOpen(false); fn(); };
+  return (
+    <div className="relative ml-auto">
+      <button type="button" aria-label={`เมนู ${name}`} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((o) => !o)} className="inline-flex items-center gap-1 min-h-[42px] px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold">
+        <MoreVertical className="w-4 h-4" /> เมนู
+      </button>
+      {open && (
+        <>
+          <button type="button" aria-label="ปิดเมนู" className="fixed inset-0 z-30 cursor-default" onClick={() => setOpen(false)} />
+          <div role="menu" className="absolute right-0 bottom-full mb-1 z-40 min-w-[180px] rounded-xl border border-slate-200 bg-white shadow-lg py-1">
+            {canCancelCall && <button type="button" role="menuitem" onClick={run(onCancelCall)} className={`${item} text-slate-700`}>ยกเลิกการเรียก</button>}
+            <button type="button" role="menuitem" onClick={run(onToggle)} className={`${item} text-slate-700`}>{maintenance ? 'เปิดใช้สนาม' : 'งดใช้สนาม'}</button>
+            <button type="button" role="menuitem" onClick={run(onDelete)} className={`${item} text-red-600`}><Trash2 className="w-3.5 h-3.5" /> ลบสนาม</button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
 
 export function CourtsPage() {
   const {
@@ -138,30 +161,6 @@ export function CourtsPage() {
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2 min-w-0">
                     <h3 className="font-display text-lg font-bold text-slate-900 truncate">{court.name}</h3>
-                    {isManager && (
-                      <button
-                        type="button"
-                        onClick={() => toggleCourtMaintenance(court.id)}
-                        className={`inline-flex items-center gap-1 min-h-[30px] px-2.5 rounded-lg border text-xs font-semibold shrink-0 ${
-                          court.status === 'maintenance'
-                            ? 'bg-emerald-600 border-emerald-600 text-white hover:bg-emerald-700'
-                            : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                        }`}
-                      >
-                        {court.status === 'maintenance' ? <PauseCircle className="w-3.5 h-3.5" /> : <Wrench className="w-3.5 h-3.5 text-slate-400" />}
-                        {court.status === 'maintenance' ? 'เปิดใช้' : 'งดใช้'}
-                      </button>
-                    )}
-                    {isManager && (
-                      <button
-                        type="button"
-                        aria-label={`ลบ ${court.name}`}
-                        onClick={() => { if (window.confirm(`ลบ ${court.name} ? แมตช์ที่ยังไม่แข่งในสนามนี้จะกลับเป็นไม่กำหนดสนาม`)) deleteCourt(court.id); }}
-                        className="inline-flex items-center justify-center min-h-[30px] min-w-[30px] rounded-lg border border-red-200 text-red-600 hover:bg-red-50 shrink-0"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    )}
                   </div>
                   <span className={`text-xs font-bold shrink-0 ${statusMeta.textCls}`}>{statusMeta.label}</span>
                 </div>
@@ -206,8 +205,9 @@ export function CourtsPage() {
                 )}
               </div>
 
-              {isManager && kind !== 'off' && (
+              {isManager && (
                 <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100">
+                  {kind !== 'off' && (<>
                   {kind === 'wait' && m && (
                     <button
                       type="button"
@@ -237,15 +237,6 @@ export function CourtsPage() {
                       </button>
                     </>
                   )}
-                  {kind === 'wait' && m && (
-                    <button
-                      type="button"
-                      onClick={() => updateMatchMeta(m.id, { court: null })}
-                      className="inline-flex items-center gap-1.5 min-h-[42px] px-3 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 text-xs font-semibold"
-                    >
-                      ยกเลิกการเรียก
-                    </button>
-                  )}
                   {(kind === 'free' || kind === 'wait') && (
                     <button
                       type="button"
@@ -256,6 +247,15 @@ export function CourtsPage() {
                       เรียกแมตช์
                     </button>
                   )}
+                  </>)}
+                  <CourtMenu
+                    name={court.name}
+                    maintenance={court.status === 'maintenance'}
+                    canCancelCall={kind === 'wait' && !!m}
+                    onCancelCall={() => m && updateMatchMeta(m.id, { court: null })}
+                    onToggle={() => toggleCourtMaintenance(court.id)}
+                    onDelete={() => { if (window.confirm(`ลบ ${court.name} ? แมตช์ที่ยังไม่แข่งในสนามนี้จะกลับเป็นไม่กำหนดสนาม`)) deleteCourt(court.id); }}
+                  />
                 </div>
               )}
             </div>
