@@ -107,6 +107,7 @@ interface MatchONContextValue {
   toggleCourtMaintenance: (courtId: string) => void;
   addCourt: () => void;
   deleteCourt: (courtId: string) => void;
+  restoreBackup: (bk: any) => { ok: boolean; msg: string };
   addRulePreset: (rule: Omit<RulePreset, 'id'>) => void;
   deleteRulePreset: (id: string) => void;
   updateRulePreset: (id: string, patch: Partial<RulePreset>) => void;
@@ -479,9 +480,9 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
       data: Omit<Registration, 'id' | 'created_at' | 'status' | 'pay_status' | 'seed'>,
       opts?: { autoConfirm?: boolean; payStatus?: PayStatus },
     ): Promise<{ id: string; token?: string } | null> => {
-      const p1 = { name: data.p1_name, nick: data.p1_nick, phone: data.p1_phone, year: data.p1_year, photo: data.p1_photo };
+      const p1 = { name: data.p1_name, nick: data.p1_nick, phone: data.p1_phone, year: data.p1_year, photo: data.p1_photo, history: data.p1_history };
       const p2 = data.p2_name
-        ? { name: data.p2_name, nick: data.p2_nick, phone: data.p2_phone, year: data.p2_year, photo: data.p2_photo }
+        ? { name: data.p2_name, nick: data.p2_nick, phone: data.p2_phone, year: data.p2_year, photo: data.p2_photo, history: data.p2_history }
         : undefined;
       try {
         let out: { id: string; token?: string } | null = null;
@@ -1101,6 +1102,46 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
     [toast],
   );
 
+  // กู้คืนจากไฟล์สำรอง: รวมเข้ากับข้อมูลปัจจุบันตาม id (แถวเดิมถูกแทนที่ แถวใหม่ถูกเพิ่ม) แล้วระบบซิงก์ขึ้นฐานข้อมูลเอง
+  const restoreBackup = useCallback(
+    (bk: any) => {
+      const uid = profileRef.current?.id;
+      if (!uid) return { ok: false, msg: 'ต้องเข้าสู่ระบบก่อน' };
+      if (!bk || bk.app !== 'MatchON' || !Array.isArray(bk.tournaments)) return { ok: false, msg: 'ไฟล์นี้ไม่ใช่ไฟล์สำรองของ MatchON' };
+      const okT = new Set<string>();
+      const tours: any[] = [];
+      for (const t of bk.tournaments) {
+        const ex = state.tournaments.find((x) => x.id === t.id) as any;
+        if (ex && ex.organizer_id !== uid && !state.tournaments.some((x) => x.id === t.id && isManagerOf(x.id))) continue;
+        okT.add(t.id);
+        tours.push(ex ? { ...t, organizer_id: ex.organizer_id } : { ...t, organizer_id: uid });
+      }
+      if (!okT.size) return { ok: false, msg: 'ไม่มีรายการที่คุณมีสิทธิ์กู้คืน' };
+      const keep = (a: any) => (Array.isArray(a) ? a.filter((x) => okT.has(x.tournament_id)) : []);
+      const merge = (cur: any[], inc: any[]) => {
+        const ids = new Set(inc.map((x) => x.id));
+        return [...cur.filter((x) => !ids.has(x.id)), ...inc];
+      };
+      const inc = {
+        categories: keep(bk.categories), registrations: keep(bk.registrations), matches: keep(bk.matches),
+        courts: keep(bk.courts), brackets: keep(bk.brackets), rules: keep(bk.rules), referees: keep(bk.referees),
+      };
+      setState((prev: any) => ({
+        ...prev,
+        tournaments: merge(prev.tournaments, tours),
+        categories: merge(prev.categories, inc.categories),
+        registrations: merge(prev.registrations, inc.registrations),
+        matches: merge(prev.matches, inc.matches),
+        courts: merge(prev.courts, inc.courts),
+        brackets: merge(prev.brackets, inc.brackets),
+        rules: merge(prev.rules, inc.rules),
+        referees: merge(prev.referees, inc.referees),
+      }));
+      return { ok: true, msg: `กู้คืนแล้ว: ${tours.length} รายการ, ${inc.registrations.length} ใบสมัคร, ${inc.matches.length} แมตช์` };
+    },
+    [state.tournaments, isManagerOf],
+  );
+
   const deleteCourt = useCallback(
     (courtId: string) => {
       const court = state.courts.find((c) => c.id === courtId);
@@ -1300,6 +1341,7 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
     toggleCourtMaintenance,
     addCourt,
     deleteCourt,
+    restoreBackup,
     addRulePreset,
     deleteRulePreset,
     updateRulePreset,

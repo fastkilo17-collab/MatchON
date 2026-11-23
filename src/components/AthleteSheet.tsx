@@ -71,14 +71,14 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 type Draft = {
   category_id: string; club: string; status: RegStatus; pay_status: PayStatus; note: string; seed: string; video_url: string;
-  p1_name: string; p1_nick: string; p1_phone: string; p1_year: string; p1_photo: string;
-  p2_name: string; p2_nick: string; p2_phone: string; p2_year: string; p2_photo: string;
+  p1_name: string; p1_nick: string; p1_phone: string; p1_year: string; p1_photo: string; p1_history: string;
+  p2_name: string; p2_nick: string; p2_phone: string; p2_year: string; p2_photo: string; p2_history: string;
 };
 
 const toDraft = (r: Registration): Draft => ({
   category_id: r.category_id, club: r.club || '', status: r.status, pay_status: r.pay_status, note: r.note || '', seed: r.seed != null ? String(r.seed) : '', video_url: r.video_url || '',
-  p1_name: r.p1_name, p1_nick: r.p1_nick || '', p1_phone: r.p1_phone || '', p1_year: r.p1_year ? String(r.p1_year) : '', p1_photo: r.p1_photo || '',
-  p2_name: r.p2_name || '', p2_nick: r.p2_nick || '', p2_phone: r.p2_phone || '', p2_year: r.p2_year ? String(r.p2_year) : '', p2_photo: r.p2_photo || '',
+  p1_name: r.p1_name, p1_nick: r.p1_nick || '', p1_phone: r.p1_phone || '', p1_year: r.p1_year ? String(r.p1_year) : '', p1_photo: r.p1_photo || '', p1_history: r.p1_history || '',
+  p2_name: r.p2_name || '', p2_nick: r.p2_nick || '', p2_phone: r.p2_phone || '', p2_year: r.p2_year ? String(r.p2_year) : '', p2_photo: r.p2_photo || '', p2_history: r.p2_history || '',
 });
 
 /**
@@ -135,8 +135,8 @@ export function AthleteSheet({ reg, onClose, seq, startEdit }: { reg: Registrati
       updateRegistration(live.id, {
         category_id: d.category_id, club: d.club.trim(), status: d.status, pay_status: d.pay_status, note: d.note.trim(),
         seed: d.seed === '' ? null : Number(d.seed), video_url: d.video_url.trim(),
-        p1_name: d.p1_name.trim(), p1_nick: d.p1_nick.trim(), p1_phone: d.p1_phone.trim(), p1_year: yr(d.p1_year), p1_photo: d.p1_photo || null,
-        ...(doubles ? { p2_name: d.p2_name.trim(), p2_nick: d.p2_nick.trim(), p2_phone: d.p2_phone.trim(), p2_year: yr(d.p2_year), p2_photo: d.p2_photo || null } : {}),
+        p1_name: d.p1_name.trim(), p1_nick: d.p1_nick.trim(), p1_phone: d.p1_phone.trim(), p1_year: yr(d.p1_year), p1_photo: d.p1_photo || null, p1_history: d.p1_history.trim(),
+        ...(doubles ? { p2_name: d.p2_name.trim(), p2_nick: d.p2_nick.trim(), p2_phone: d.p2_phone.trim(), p2_year: yr(d.p2_year), p2_photo: d.p2_photo || null, p2_history: d.p2_history.trim() } : {}),
       });
       setEdit(false);
       return;
@@ -145,8 +145,8 @@ export function AthleteSheet({ reg, onClose, seq, startEdit }: { reg: Registrati
     try {
       await rpcUpdateRegistration({
         id: live.id, token: live.edit_token!, club: d.club.trim(), video: d.video_url.trim(),
-        p1: { name: d.p1_name, nick: d.p1_nick, phone: d.p1_phone, year: yr(d.p1_year), photo: d.p1_photo || null },
-        p2: doubles ? { name: d.p2_name, nick: d.p2_nick, phone: d.p2_phone, year: yr(d.p2_year), photo: d.p2_photo || null } : undefined,
+        p1: { name: d.p1_name, nick: d.p1_nick, phone: d.p1_phone, year: yr(d.p1_year), photo: d.p1_photo || null, history: d.p1_history },
+        p2: doubles ? { name: d.p2_name, nick: d.p2_nick, phone: d.p2_phone, year: yr(d.p2_year), photo: d.p2_photo || null, history: d.p2_history } : undefined,
       });
       toast('บันทึกข้อมูลแล้ว');
       setEdit(false);
@@ -169,8 +169,9 @@ export function AthleteSheet({ reg, onClose, seq, startEdit }: { reg: Registrati
     const ph = n === 1 ? live.p1_phone : live.p2_phone;
     const yr = n === 1 ? live.p1_year : live.p2_year;
     const photo = n === 1 ? live.p1_photo : live.p2_photo;
-    const dn = (k: 'name' | 'nick' | 'phone' | 'year' | 'photo') => (d as any)[`p${n}_${k}`] as string;
-    const sk = (k: 'name' | 'nick' | 'phone' | 'year') => (v: string) => set({ [`p${n}_${k}`]: v } as Partial<Draft>);
+    const hist = n === 1 ? live.p1_history : live.p2_history;
+    const dn = (k: 'name' | 'nick' | 'phone' | 'year' | 'photo' | 'history') => (d as any)[`p${n}_${k}`] as string;
+    const sk = (k: 'name' | 'nick' | 'phone' | 'year' | 'history') => (v: string) => set({ [`p${n}_${k}`]: v } as Partial<Draft>);
     return (
       <Section icon={Users} title={doubles ? `นักกีฬาคนที่ ${n}` : 'นักกีฬา'}>
         {edit && d ? (
@@ -188,6 +189,9 @@ export function AthleteSheet({ reg, onClose, seq, startEdit }: { reg: Registrati
               <Field label="ปีเกิด (พ.ศ.)"><input className={inp} inputMode="numeric" maxLength={4} value={dn('year')} onChange={(e) => sk('year')(e.target.value.replace(/\D/g, ''))} /></Field>
             </div>
             <Field label="เบอร์โทร"><input className={inp} inputMode="tel" value={dn('phone')} onChange={(e) => sk('phone')(e.target.value)} /></Field>
+            <Field label="ประวัติการแข่ง">
+              <textarea rows={2} maxLength={500} value={dn('history')} onChange={(e) => sk('history')(e.target.value)} placeholder="เช่น แชมป์ … ปี 2568 / รองแชมป์ …" className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm" />
+            </Field>
           </div>
         ) : (
           <div className="flex items-center gap-3.5">
@@ -204,6 +208,12 @@ export function AthleteSheet({ reg, onClose, seq, startEdit }: { reg: Registrati
             </div>
           </div>
         )}
+        {!edit && (
+          <div className="rounded-xl bg-slate-50 px-3 py-2">
+            <div className="text-[11px] font-bold text-slate-500 mb-0.5">ประวัติการแข่ง</div>
+            <div className="text-sm text-slate-800 whitespace-pre-wrap break-words">{hist || <span className="text-slate-400 text-xs">ไม่ได้ระบุ</span>}</div>
+          </div>
+        )}
       </Section>
     );
   };
@@ -216,7 +226,7 @@ export function AthleteSheet({ reg, onClose, seq, startEdit }: { reg: Registrati
         open
         onClose={onClose}
         title={teamName(live)}
-        subtitle={`${seq ? `#${seq} · ` : ''}${cat?.name || ''}${live.club ? ` · ${live.club}` : ''}`}
+        subtitle={`${seq ? `#${seq} · ` : ''}${cat?.name || ''}`}
         footer={
           edit ? (
             <div className="grid grid-cols-2 gap-2.5">
@@ -242,21 +252,21 @@ export function AthleteSheet({ reg, onClose, seq, startEdit }: { reg: Registrati
             {/* สถานะ */}
             <div className="flex flex-wrap items-center gap-1.5">
               <span className={`text-[11px] font-bold px-2.5 py-1 rounded-lg ${REG_TONE[live.status]}`}>{REG_STATUS_TH[live.status]}</span>
-              <span className={`text-[11px] font-bold px-2.5 py-1 rounded-lg ${pay.tone}`}>{pay.label}</span>
+              {canSee && <span className={`text-[11px] font-bold px-2.5 py-1 rounded-lg ${pay.tone}`}>{pay.label}</span>}
               {live.seed != null && <span className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700">มือวาง {live.seed}</span>}
             </div>
 
-            <Section icon={Trophy} title="ทีม / ก๊วน">
+            {canSee && <Section icon={Trophy} title="ทีม / ก๊วน">
               {edit && d ? (
                 <input className={inp} value={d.club} onChange={(e) => set({ club: e.target.value })} placeholder="ชื่อทีม / ก๊วน" />
               ) : (
                 <div className="text-base font-extrabold text-slate-900">{live.club || 'ไม่ระบุทีม'}</div>
               )}
-            </Section>
+            </Section>}
             {playerCard(1)}
             {doubles && playerCard(2)}
 
-            <Section icon={ReceiptText} title="ข้อมูลการสมัคร">
+            {canSee && <Section icon={ReceiptText} title="ข้อมูลการสมัคร">
               {edit && isMgr ? (
                 <div className="space-y-3">
                   <Field label="รุ่นที่สมัคร">
@@ -283,7 +293,7 @@ export function AthleteSheet({ reg, onClose, seq, startEdit }: { reg: Registrati
                   {tournament && <Row label="รายการ">{tournament.name}</Row>}
                 </div>
               )}
-            </Section>
+            </Section>}
 
             {canSee && (
               <Section icon={ReceiptText} title="การชำระเงิน">
@@ -338,33 +348,45 @@ export function AthleteSheet({ reg, onClose, seq, startEdit }: { reg: Registrati
 }
 
 /** การ์ดนักกีฬาในรายการ (ใช้ร่วมกันทุกบทบาท)
- *  บรรทัด 1: ทีม | รุ่น · บรรทัด 2: ชื่อนักกีฬา (ชื่อจริง/ชื่อเล่น) · บรรทัด 3: หมายเหตุ
- *  ใต้รูป: ลิงก์คลิป · ขวาล่าง: สถานะ/ชำระ/วันที่สมัคร */
+ *  แถวบน: ลำดับ + ทีม | รุ่น ........ [ผ่าน][ชำระ] / วันที่สมัคร (ชิดขวา)
+ *  แถวล่าง: รูป (ใต้รูป = ลิงก์คลิป) + ชื่อนักกีฬา (บาง/เล็ก) + หมายเหตุใต้คนที่ 2 */
 export function AthleteCard({ r, cat, seq, onOpen, extra }: { r: Registration; cat?: Category | null; seq?: number; onOpen: () => void; extra?: React.ReactNode }) {
   const pay = payInfo(r, cat);
   const clip = r.video_url && /^https?:\/\//i.test(r.video_url) ? r.video_url : '';
+  const one = (n?: string, k?: string) => (n ? (k && k !== n ? `${n} (${k})` : n) : '');
+  const names = r.p2_name ? [one(r.p1_name, r.p1_nick), one(r.p2_name, r.p2_nick)] : [r.p1_name, r.p1_nick && r.p1_nick !== r.p1_name ? r.p1_nick : ''];
   return (
-    <div role="button" tabIndex={0} onClick={onOpen} onKeyDown={(e) => { if (e.key === 'Enter') onOpen(); }} className="px-4 py-3 flex items-start gap-3 hover:bg-slate-50/70 transition-colors cursor-pointer min-w-0">
-      {seq != null && <span className="w-5 shrink-0 pt-1 text-center font-mono text-xs font-bold text-slate-400 tabular-nums">{seq}</span>}
-      <div className="shrink-0 flex flex-col items-center gap-1.5">
-        <TeamAvatars reg={r} size={42} />
-        {clip && (
-          <a href={clip} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md bg-red-50 text-red-600">
-            <Film className="w-3 h-3" /> คลิป
-          </a>
-        )}
-      </div>
-      <div className="min-w-0 flex-1 space-y-1">
-        <div className="text-[13px] font-extrabold text-slate-900 truncate">
-          {r.club || 'ไม่ระบุทีม'}{cat ? <span className="font-semibold text-slate-500"> | {cat.name}</span> : null}{r.seed != null ? <span className="font-semibold text-blue-700"> · มือวาง {r.seed}</span> : null}
+    <div role="button" tabIndex={0} onClick={onOpen} onKeyDown={(e) => { if (e.key === 'Enter') onOpen(); }} className="px-4 py-3 hover:bg-slate-50/70 transition-colors cursor-pointer min-w-0 space-y-2">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex items-center gap-2.5">
+          {seq != null && <span className="shrink-0 min-w-[30px] h-[30px] px-1.5 grid place-items-center rounded-lg bg-blue-50 text-blue-700 text-sm font-extrabold tabular-nums">{seq}</span>}
+          <div className="min-w-0 text-[15px] font-extrabold text-slate-900 truncate">
+            {r.club || 'ไม่ระบุทีม'}{cat ? <span className="font-bold text-slate-500"> | {cat.name}</span> : null}
+          </div>
         </div>
-        <PlayerLines r={r} />
-        {r.note && <div className="text-[11px] text-slate-600 bg-amber-50/70 rounded-md px-2 py-1 break-words">📝 {r.note}</div>}
-        <div className="flex flex-wrap items-center justify-end gap-1.5 pt-0.5">
-          {extra}
-          <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md ${REG_TONE[r.status]}`}>{REG_STATUS_TH[r.status]}</span>
-          <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md ${pay.tone}`}>{pay.label}</span>
-          <span className="text-[11px] text-slate-400 tabular-nums">สมัคร {fmtDate(r.created_at)}</span>
+        <div className="shrink-0 flex flex-col items-end gap-1">
+          <div className="flex items-center gap-1.5">
+            {extra}
+            <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md ${REG_TONE[r.status]}`}>{REG_STATUS_TH[r.status]}</span>
+            <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md ${pay.tone}`}>{pay.label}</span>
+          </div>
+          <span className="text-[10px] text-slate-400 tabular-nums">สมัคร {fmtDate(r.created_at)}</span>
+        </div>
+      </div>
+      <div className="flex items-start gap-3 min-w-0">
+        <div className="shrink-0 flex flex-col items-center gap-1.5">
+          <TeamAvatars reg={r} size={42} />
+          {clip && (
+            <a href={clip} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md bg-red-50 text-red-600">
+              <Film className="w-3 h-3" /> คลิป
+            </a>
+          )}
+        </div>
+        <div className="min-w-0 flex-1 space-y-0.5 pt-0.5">
+          {names.filter(Boolean).map((l, i) => (
+            <div key={i} className="text-[13px] font-normal text-slate-600 truncate">{l}</div>
+          ))}
+          {r.note && <div className="text-[11px] text-slate-600 bg-amber-50/70 rounded-md px-2 py-1 mt-1 break-words">📝 {r.note}</div>}
         </div>
       </div>
     </div>

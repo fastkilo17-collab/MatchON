@@ -2,17 +2,18 @@ import React, { useState } from 'react';
 import type { Registration } from '../types/matchon';
 import { useMatchON } from '../context/MatchONContext';
 import { AthleteCard, AthleteSheet } from '../components/AthleteSheet';
-import { REG_STATUS_TH, teamFullName, byRegTime, regSeqMap } from '../utils/bracket';
+import { REG_STATUS_TH, teamFullName, byRegTime, regSeqMap, catTotal } from '../utils/bracket';
 
 export function RosterPage() {
-  const { activeTournament: t, tCategories, tRegistrations } = useMatchON();
+  const { activeTournament: t, tCategories, tRegistrations, state } = useMatchON();
   const [cat, setCat] = useState('');
   const [st, setSt] = useState('');
+  const [pf, setPf] = useState<'' | 'unpaid' | 'paid'>('');
   const [q, setQ] = useState('');
   const [open, setOpen] = useState<Registration | null>(null);
   if (!t) return <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center text-sm text-slate-500">ยังไม่มีรายการแข่งขัน</div>;
 
-  const regs = [...tRegistrations].sort(byRegTime).filter((r) => (!st || r.status === st) && (!q || teamFullName(r).toLowerCase().includes(q.toLowerCase()) || (r.club || '').toLowerCase().includes(q.toLowerCase())));
+  const regs = [...tRegistrations].sort(byRegTime).filter((r) => (!st || r.status === st) && (!pf || (pf === 'paid' ? r.pay_status === 'paid' : r.pay_status === 'unpaid' && catTotal(state.categories.find((c) => c.id === r.category_id)) > 0)) && (!q || teamFullName(r).toLowerCase().includes(q.toLowerCase()) || (r.club || '').toLowerCase().includes(q.toLowerCase())));
   const cats = tCategories.filter((c) => !cat || c.id === cat);
   const statusCount = (s: string) => tRegistrations.filter((r) => r.status === s).length;
 
@@ -38,6 +39,12 @@ export function RosterPage() {
         {Object.entries(REG_STATUS_TH).map(([k, label]) => (
           <button key={k} type="button" onClick={() => setSt(k)} className={`shrink-0 min-h-[34px] px-3 rounded-lg text-xs font-semibold whitespace-nowrap ${st === k ? 'bg-slate-800 text-white' : 'bg-white border border-slate-200 text-slate-600'}`}>
             {label} ({statusCount(k)})
+          </button>
+        ))}
+        <span className="shrink-0 w-px bg-slate-200 mx-0.5" aria-hidden="true" />
+        {([['unpaid', 'รอชำระ'], ['paid', 'ชำระแล้ว']] as const).map(([k, label]) => (
+          <button key={k} type="button" onClick={() => setPf(pf === k ? '' : k)} className={`shrink-0 min-h-[34px] px-3 rounded-lg text-xs font-semibold whitespace-nowrap ${pf === k ? 'bg-blue-600 text-white' : 'bg-white border border-slate-200 text-slate-600'}`}>
+            {label}
           </button>
         ))}
       </div>

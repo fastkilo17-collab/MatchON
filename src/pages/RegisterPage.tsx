@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { sb, photoUrl, uploadPhoto } from '../lib/supabase';
 import { LineLoginCard } from '../components/AuthDialog';
 import { promptPayPayload } from '../utils/promptpay';
-import { rpcSubmitSlip, rpcUpdateRegistration } from '../lib/db';
-import { Bell, CheckCircle2, ChevronLeft, ChevronRight, QrCode, Ticket } from 'lucide-react';
+import { rpcSubmitSlip, rpcUpdateRegistration, rpcCancelMyRegistration, rpcDeleteMyRegistration } from '../lib/db';
+import { Bell, CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, QrCode, Ticket } from 'lucide-react';
 import { useMatchON } from '../context/MatchONContext';
 import type { Registration } from '../types/matchon';
 import {
@@ -64,6 +64,8 @@ function RegisterForm() {
   const [p1Nick, setP1Nick] = useState('');
   const [p1Phone, setP1Phone] = useState('');
   const [p1Year, setP1Year] = useState('');
+  const [p1Hist, setP1Hist] = useState('');
+  const [p2Hist, setP2Hist] = useState('');
   const [video, setVideo] = useState('');
   const [p2Name, setP2Name] = useState('');
   const [p2Nick, setP2Nick] = useState('');
@@ -161,10 +163,12 @@ function RegisterForm() {
           p1_phone: p1Phone.trim(),
           p1_year: p1Year ? Number(p1Year) : null,
           p1_photo: p1Photo,
+          p1_history: p1Hist.trim(),
           p2_name: dbl ? p2Name.trim() : undefined,
           p2_nick: dbl ? p2Nick.trim() || p2Name.trim().split(' ')[0] : undefined,
           p2_phone: dbl ? p2Phone.trim() : undefined,
           p2_photo: dbl ? p2Photo : null,
+          p2_history: dbl ? p2Hist.trim() : undefined,
           video_url: video.trim(),
         });
         if (!res) continue;
@@ -197,34 +201,6 @@ function RegisterForm() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-3 min-w-0 overflow-x-hidden">
-      {(targetTournament.poster || targetTournament.posters?.length || targetTournament.format_text || targetTournament.rules_text || targetTournament.notice) && (
-        <details className="group bg-white border border-slate-200/80 rounded-2xl overflow-hidden">
-          <summary className="px-4 min-h-[48px] flex items-center justify-between gap-2 cursor-pointer text-sm font-bold text-slate-800 list-none">
-            รายละเอียดรายการ / กติกา / เงื่อนไข
-            <ChevronRight className="w-4 h-4 text-slate-400 transition-transform group-open:rotate-90" />
-          </summary>
-        <div className="px-4 pb-4 space-y-3">
-          {(targetTournament.posters?.length || targetTournament.poster) ? (
-            <div className="rounded-xl overflow-hidden">
-              <PosterSlider images={targetTournament.posters?.length ? targetTournament.posters : [targetTournament.poster as string]} maxH={384} />
-            </div>
-          ) : null}
-          {[
-            ['รูปแบบการแข่งขัน', targetTournament.format_text],
-            ['รายละเอียดกติกา', targetTournament.rules_text],
-            ['เงื่อนไขที่นักกีฬาต้องทราบ', targetTournament.notice],
-          ].map(([h, v]) =>
-            v ? (
-              <div key={h}>
-                <div className="text-xs font-bold text-slate-800">{h}</div>
-                <p className="text-xs text-slate-600 whitespace-pre-line mt-0.5">{v}</p>
-              </div>
-            ) : null,
-          )}
-        </div>
-        </details>
-      )}
-
       {/* Tournament Picker when multiple open */}
       <div className="bg-white border border-slate-200/80 rounded-2xl p-4 space-y-2.5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -233,9 +209,9 @@ function RegisterForm() {
             <h2 className="font-display text-lg font-bold text-slate-900 leading-snug">
               {targetTournament.name}
             </h2>
-            <p className="text-xs text-slate-500 mt-0.5">
-              {fmtRange(targetTournament.start_date, targetTournament.end_date)} · {targetTournament.venue}
-            </p>
+            {targetTournament.reg_deadline && (
+              <p className="text-xs text-slate-500 mt-0.5">ปิดรับสมัคร {fmtDate(targetTournament.reg_deadline)}</p>
+            )}
           </div>
           {openTournaments.length > 1 && (
             <select
@@ -259,7 +235,7 @@ function RegisterForm() {
         {/* Clean 3-Step Indicator */}
         <div className="grid grid-cols-3 gap-2 pt-2">
           {[
-            [1, '1. เลือกรุ่น'],
+            [1, `1. เลือกรุ่น${selectedCats.length ? ' · ' + selectedCats.map((c) => c.name).join(', ') : ''}`],
             [2, '2. ข้อมูลนักกีฬา'],
             [3, '3. ชำระและยืนยัน'],
           ].map(([num, label]) => {
@@ -268,7 +244,7 @@ function RegisterForm() {
             return (
               <div key={n} className="space-y-1.5">
                 <div className={`h-1.5 rounded-full transition-colors ${active ? 'bg-blue-600' : 'bg-slate-200'}`} />
-                <div className={`text-[11px] font-semibold ${step === n ? 'text-blue-700' : 'text-slate-500'}`}>
+                <div className={`text-[11px] font-semibold leading-snug break-words ${step === n ? 'text-blue-700' : 'text-slate-500'}`}>
                   {label}
                 </div>
               </div>
@@ -318,106 +294,68 @@ function RegisterForm() {
       {step === 2 && (
         <div className="space-y-3">
           <div className="bg-white border border-slate-200/80 rounded-2xl p-4 space-y-3">
-            <h3 className="font-display text-base font-bold text-slate-900">ข้อมูลผู้สมัคร</h3>
-            <label className="block space-y-1">
-              <span className="text-xs font-medium text-slate-600">ชื่อทีม / ก๊วน / สโมสร (ถ้ามี)</span>
-              <input
-                value={club}
-                onChange={(e) => setClub(e.target.value)}
-                placeholder="เช่น ก๊วนเจอแน่ / Smash Club"
-                className="w-full min-h-[44px] px-3.5 rounded-xl border border-slate-200 text-sm"
-              />
-            </label>
+            <h3 className="font-display text-base font-bold text-slate-900">ทีมและคลิป</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <label className="block space-y-1">
+                <span className="text-xs font-medium text-slate-600">ทีม / ก๊วน / สโมสร (ถ้ามี)</span>
+                <input value={club} onChange={(e) => setClub(e.target.value)} placeholder="เช่น ก๊วนเจอแน่" className="w-full min-h-[42px] px-3 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:border-blue-500" />
+              </label>
+              <label className="block space-y-1">
+                <span className="text-xs font-medium text-slate-600">คลิปการแข่ง (ลิงก์ ไม่บังคับ)</span>
+                <input inputMode="url" value={video} onChange={(e) => setVideo(e.target.value)} placeholder="https://youtube.com/…" className="w-full min-h-[42px] px-3 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:border-blue-500" />
+              </label>
+            </div>
+          </div>
+
+          <div className="bg-white border border-slate-200/80 rounded-2xl p-4 space-y-3">
+            <h3 className="font-display text-base font-bold text-slate-900">{needsDoubles ? 'นักกีฬาคนที่ 1 (ผู้สมัคร)' : 'ผู้สมัคร'}</h3>
             <div className="grid grid-cols-2 gap-2.5">
               <label className="block space-y-1 col-span-2">
-                <span className="text-xs font-medium text-slate-600">ชื่อ-นามสกุล ผู้สมัคร *</span>
-                <input
-                  value={p1Name}
-                  onChange={(e) => setP1Name(e.target.value)}
-                  placeholder="ชื่อจริง นามสกุล"
-                  className="w-full min-h-[44px] px-3.5 rounded-xl border border-slate-200 text-sm"
-                />
+                <span className="text-xs font-medium text-slate-600">ชื่อ-นามสกุล *</span>
+                <input value={p1Name} onChange={(e) => setP1Name(e.target.value)} placeholder="ชื่อจริง นามสกุล" className="w-full min-h-[42px] px-3 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:border-blue-500" />
               </label>
               <label className="block space-y-1">
-                <span className="text-xs font-medium text-slate-600">ชื่อเล่น (แสดงบนบอร์ด/Live Score)</span>
-                <input
-                  value={p1Nick}
-                  onChange={(e) => setP1Nick(e.target.value)}
-                  placeholder="เช่น กฤต"
-                  className="w-full min-h-[44px] px-3.5 rounded-xl border border-slate-200 text-sm"
-                />
+                <span className="text-xs font-medium text-slate-600">ชื่อเล่น</span>
+                <input value={p1Nick} onChange={(e) => setP1Nick(e.target.value)} placeholder="เช่น กฤต" className="w-full min-h-[42px] px-3 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:border-blue-500" />
               </label>
               <label className="block space-y-1">
+                <span className="text-xs font-medium text-slate-600">ปีเกิด พ.ศ.</span>
+                <input inputMode="numeric" maxLength={4} value={p1Year} onChange={(e) => setP1Year(e.target.value)} placeholder="2538" className="w-full min-h-[42px] px-3 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:border-blue-500 tabular-nums" />
+              </label>
+              <label className="block space-y-1 col-span-2">
                 <span className="text-xs font-medium text-slate-600">เบอร์โทรศัพท์ *</span>
-                <input
-                  type="tel"
-                  inputMode="tel"
-                  value={p1Phone}
-                  onChange={(e) => setP1Phone(e.target.value)}
-                  placeholder="08x-xxx-xxxx"
-                  className="w-full min-h-[44px] px-3.5 rounded-xl border border-slate-200 text-sm tabular-nums"
-                />
-              </label>
-              <label className="block space-y-1">
-                <span className="text-xs font-medium text-slate-600">ปีเกิด พ.ศ. (ถ้ามี)</span>
-                <input
-                  inputMode="numeric"
-                  maxLength={4}
-                  value={p1Year}
-                  onChange={(e) => setP1Year(e.target.value)}
-                  placeholder="เช่น 2538"
-                  className="w-full min-h-[44px] px-3.5 rounded-xl border border-slate-200 text-sm tabular-nums"
-                />
+                <input type="tel" inputMode="tel" value={p1Phone} onChange={(e) => setP1Phone(e.target.value)} placeholder="08x-xxx-xxxx" className="w-full min-h-[42px] px-3 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:border-blue-500 tabular-nums" />
               </label>
             </div>
             <PhotoPick label="รูปถ่ายผู้สมัคร" file={p1File} onPick={setP1File} />
             <label className="block space-y-1">
-              <span className="text-xs font-medium text-slate-600">คลิปการแข่ง — ลิงก์วิดีโอ (ไม่บังคับ)</span>
-              <input
-                inputMode="url"
-                value={video}
-                onChange={(e) => setVideo(e.target.value)}
-                placeholder="https://youtube.com/…"
-                className="w-full min-h-[44px] px-3.5 rounded-xl border border-slate-200 text-sm"
-              />
+              <span className="text-xs font-medium text-slate-600">ประวัติการแข่ง (ไม่บังคับ)</span>
+              <textarea rows={2} maxLength={500} value={p1Hist} onChange={(e) => setP1Hist(e.target.value)} placeholder="เช่น แชมป์ … ปี 2568 / รองแชมป์ …" className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm" />
             </label>
           </div>
 
           {needsDoubles && (
             <div className="bg-white border border-slate-200/80 rounded-2xl p-4 space-y-3">
-              <h3 className="font-display text-base font-bold text-slate-900">ข้อมูลคู่ (ประเภทคู่)</h3>
+              <h3 className="font-display text-base font-bold text-slate-900">นักกีฬาคนที่ 2 (คู่)</h3>
               <div className="grid grid-cols-2 gap-2.5">
                 <label className="block space-y-1 col-span-2">
-                  <span className="text-xs font-medium text-slate-600">ชื่อ-นามสกุล คู่ *</span>
-                  <input
-                    value={p2Name}
-                    onChange={(e) => setP2Name(e.target.value)}
-                    placeholder="ชื่อจริง นามสกุล"
-                    className="w-full min-h-[44px] px-3.5 rounded-xl border border-slate-200 text-sm"
-                  />
+                  <span className="text-xs font-medium text-slate-600">ชื่อ-นามสกุล *</span>
+                  <input value={p2Name} onChange={(e) => setP2Name(e.target.value)} placeholder="ชื่อจริง นามสกุล" className="w-full min-h-[42px] px-3 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:border-blue-500" />
                 </label>
                 <label className="block space-y-1">
-                  <span className="text-xs font-medium text-slate-600">ชื่อเล่น คู่</span>
-                  <input
-                    value={p2Nick}
-                    onChange={(e) => setP2Nick(e.target.value)}
-                    placeholder="เช่น แพร"
-                    className="w-full min-h-[44px] px-3.5 rounded-xl border border-slate-200 text-sm"
-                  />
+                  <span className="text-xs font-medium text-slate-600">ชื่อเล่น</span>
+                  <input value={p2Nick} onChange={(e) => setP2Nick(e.target.value)} placeholder="เช่น แพร" className="w-full min-h-[42px] px-3 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:border-blue-500" />
                 </label>
-                <label className="block space-y-1 col-span-2">
-                  <span className="text-xs font-medium text-slate-600">เบอร์โทรศัพท์ คู่ (ไม่บังคับ)</span>
-                  <input
-                    type="tel"
-                    inputMode="tel"
-                    value={p2Phone}
-                    onChange={(e) => setP2Phone(e.target.value)}
-                    placeholder="08x-xxx-xxxx"
-                    className="w-full min-h-[44px] px-3.5 rounded-xl border border-slate-200 text-sm tabular-nums"
-                  />
+                <label className="block space-y-1">
+                  <span className="text-xs font-medium text-slate-600">เบอร์โทร (ไม่บังคับ)</span>
+                  <input type="tel" inputMode="tel" value={p2Phone} onChange={(e) => setP2Phone(e.target.value)} placeholder="08x-xxx-xxxx" className="w-full min-h-[42px] px-3 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:border-blue-500 tabular-nums" />
                 </label>
               </div>
               <PhotoPick label="รูปถ่ายคู่" file={p2File} onPick={setP2File} />
+              <label className="block space-y-1">
+                <span className="text-xs font-medium text-slate-600">ประวัติการแข่ง (ไม่บังคับ)</span>
+                <textarea rows={2} maxLength={500} value={p2Hist} onChange={(e) => setP2Hist(e.target.value)} placeholder="เช่น แชมป์ … ปี 2568 / รองแชมป์ …" className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm" />
+              </label>
             </div>
           )}
         </div>
@@ -569,6 +507,34 @@ function RegActions({ r }: { r: Registration }) {
       setBusy(false);
     }
   };
+  const cancelReg = async () => {
+    if (!token) return;
+    if (!window.confirm('ยืนยันยกเลิกใบสมัครนี้? ผู้จัดจะเห็นสถานะ "ยกเลิก"')) return;
+    setBusy(true);
+    try {
+      await rpcCancelMyRegistration(r.id, token);
+      toast('ยกเลิกใบสมัครแล้ว');
+      await reload();
+    } catch (e: any) {
+      toast(e?.message || 'ยกเลิกไม่สำเร็จ', 'err');
+    } finally {
+      setBusy(false);
+    }
+  };
+  const deleteReg = async () => {
+    if (!token) return;
+    if (!window.confirm('ยืนยันลบใบสมัครนี้ถาวร? ไม่สามารถกู้คืนได้')) return;
+    setBusy(true);
+    try {
+      await rpcDeleteMyRegistration(r.id, token);
+      toast('ลบใบสมัครแล้ว');
+      await reload();
+    } catch (e: any) {
+      toast(e?.message || 'ลบไม่สำเร็จ (ถ้าชำระเงินแล้วหรืออยู่ในตารางแข่ง ให้ติดต่อผู้จัด)', 'err');
+    } finally {
+      setBusy(false);
+    }
+  };
   const inp = 'w-full min-h-[40px] px-3 rounded-xl border border-slate-200 text-sm';
   return (
     <div className="space-y-2">
@@ -587,6 +553,18 @@ function RegActions({ r }: { r: Registration }) {
           </button>
         )}
       </div>
+      {token && (
+        <div className="flex flex-wrap gap-2 pt-1">
+          {r.status !== 'cancelled' && (
+            <button type="button" disabled={busy} onClick={() => void cancelReg()} className="min-h-[36px] px-3 rounded-lg border border-amber-300 text-amber-700 text-xs font-semibold hover:bg-amber-50">
+              ยกเลิกใบสมัคร
+            </button>
+          )}
+          <button type="button" disabled={busy} onClick={() => void deleteReg()} className="min-h-[36px] px-3 rounded-lg border border-red-300 text-red-600 text-xs font-semibold hover:bg-red-50">
+            ลบใบสมัคร
+          </button>
+        </div>
+      )}
       {edit && <AthleteSheet reg={r} startEdit onClose={() => setEdit(false)} />}
     </div>
   );
@@ -595,8 +573,7 @@ function RegActions({ r }: { r: Registration }) {
 export function MyRegistrationsPage() {
   const { state, navigate } = useMatchON();
   const myRegs = state.registrations.filter((r) => r.is_mine);
-  const myRegIds = new Set(myRegs.map((r) => r.id));
-  const myNotes = state.notifications.filter((n) => myRegIds.has(n.registration_id));
+  const [openNotes, setOpenNotes] = useState<Record<string, boolean>>({});
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -615,29 +592,6 @@ export function MyRegistrationsPage() {
           + สมัครรุ่นเพิ่ม
         </button>
       </div>
-
-      {/* Notifications */}
-      {myNotes.length > 0 && (
-        <section className="bg-white border border-slate-200/80 rounded-2xl p-5 space-y-3">
-          <div className="flex items-center gap-2 text-sm font-bold text-slate-900">
-            <Bell className="w-4 h-4 text-blue-600" />
-            แจ้งเตือนล่าสุด ({myNotes.length})
-          </div>
-          <div className="divide-y divide-slate-100">
-            {myNotes.slice(0, 5).map((n) => (
-              <div key={n.id} className="py-2.5 flex items-start justify-between gap-3">
-                <div>
-                  <div className="text-sm font-semibold text-slate-900">{n.title}</div>
-                  <div className="text-xs text-slate-600 mt-0.5">{n.body}</div>
-                </div>
-                <span className="text-[11px] text-slate-400 tabular-nums shrink-0">
-                  {fmtTime(n.created_at)}
-                </span>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
 
       {/* Registration Cards */}
       {myRegs.length ? (
@@ -671,6 +625,35 @@ export function MyRegistrationsPage() {
                 )}
 
                 <RegActions r={r} />
+
+                {(() => {
+                  const notes = state.notifications.filter((n) => n.registration_id === r.id);
+                  if (!notes.length) return null;
+                  const open = !!openNotes[r.id];
+                  return (
+                    <div className="pt-3 border-t border-slate-100">
+                      <button type="button" onClick={() => setOpenNotes((o) => ({ ...o, [r.id]: !o[r.id] }))} className="w-full flex items-center gap-2 text-xs font-semibold text-slate-700 min-h-[36px]">
+                        <Bell className="w-4 h-4 text-blue-600" />
+                        แจ้งเตือน
+                        <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-red-500 text-white text-[11px] grid place-items-center tabular-nums">{notes.length}</span>
+                        <ChevronDown className={`w-4 h-4 ml-auto text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} />
+                      </button>
+                      {open && (
+                        <div className="divide-y divide-slate-100">
+                          {notes.slice(0, 10).map((n) => (
+                            <div key={n.id} className="py-2 flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <div className="text-sm font-semibold text-slate-900">{n.title}</div>
+                                <div className="text-xs text-slate-600 mt-0.5">{n.body}</div>
+                              </div>
+                              <span className="text-[11px] text-slate-400 tabular-nums shrink-0 text-right">{fmtDate(n.created_at)}<br />{fmtTime(n.created_at)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 {myMatches.length > 0 && (
                   <div className="pt-3 border-t border-slate-100 space-y-2">

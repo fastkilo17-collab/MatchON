@@ -92,11 +92,13 @@ export interface Registration {
   p1_phone: string;
   p1_year?: number | null;
   p1_photo?: string | null;
+  p1_history?: string;
   p2_name?: string;
   p2_nick?: string;
   p2_phone?: string;
   p2_year?: number | null;
   p2_photo?: string | null;
+  p2_history?: string;
   edit_token?: string;
   reg_open?: boolean;
   status: RegStatus;

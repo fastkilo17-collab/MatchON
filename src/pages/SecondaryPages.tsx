@@ -714,7 +714,7 @@ const THEMES: ReadonlyArray<readonly [Theme, string, string[]]> = [
 ];
 
 export function SettingsPage() {
-  const { state, profile, toast, reload, isManagerOf, activeTournament } = useMatchON();
+  const { state, profile, toast, reload, isManagerOf, activeTournament, restoreBackup } = useMatchON();
   const [name, setName] = useState(profile?.display_name || '');
   const [phone, setPhone] = useState(profile?.phone || '');
   const [busy, setBusy] = useState(false);
@@ -821,6 +821,24 @@ export function SettingsPage() {
             >
               สำรองทุกรายการที่ดูแล
             </button>
+            <label className="min-h-[44px] px-4 rounded-xl bg-white border border-emerald-300 hover:bg-emerald-50 text-emerald-700 text-sm font-semibold inline-flex items-center cursor-pointer">
+              กู้คืนจากไฟล์สำรอง
+              <input type="file" accept="application/json,.json" className="hidden" onChange={async (e) => {
+                const f = e.target.files?.[0];
+                e.target.value = '';
+                if (!f) return;
+                try {
+                  const bk = JSON.parse(await f.text());
+                  if (bk?.app !== 'MatchON') return toast('ไฟล์นี้ไม่ใช่ไฟล์สำรองของ MatchON', 'err');
+                  const c = bk.counts || {};
+                  if (!window.confirm(`กู้คืนข้อมูลจากไฟล์นี้?\nรายการ ${c.tournaments ?? '-'} · ใบสมัคร ${c.registrations ?? '-'} · แมตช์ ${c.matches ?? '-'}\n(ข้อมูลที่มี id เดียวกันจะถูกแทนที่ ข้อมูลอื่นไม่ถูกลบ)`)) return;
+                  const r = restoreBackup(bk);
+                  toast(r.msg, r.ok ? 'ok' : 'err');
+                } catch {
+                  toast('อ่านไฟล์ไม่ได้', 'err');
+                }
+              }} />
+            </label>
           </div>
         </section>
       )}

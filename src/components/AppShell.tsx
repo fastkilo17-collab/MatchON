@@ -85,7 +85,16 @@ function NotificationBell() {
   const [seen, setSeen] = useState<number>(() => {
     try { return Number(localStorage.getItem(KEY)) || 0; } catch { return 0; }
   });
-  const list = [...state.notifications].sort((a, b) => (b.created_at || '').localeCompare(a.created_at || '')).slice(0, 50);
+  // ล้างเฉพาะในเครื่องนี้ (ไม่ลบข้อมูลจริงในระบบ)
+  const CLR = 'matchon.notifCleared';
+  const [cleared, setCleared] = useState<{ at: number; ids: string[] }>(() => {
+    try { return JSON.parse(localStorage.getItem(CLR) || '') || { at: 0, ids: [] }; } catch { return { at: 0, ids: [] }; }
+  });
+  const saveCleared = (v: { at: number; ids: string[] }) => {
+    setCleared(v);
+    try { localStorage.setItem(CLR, JSON.stringify(v)); } catch { /* ignore */ }
+  };
+  const list = [...state.notifications].filter((n) => new Date(n.created_at).getTime() > cleared.at && !cleared.ids.includes(n.id)).sort((a, b) => (b.created_at || '').localeCompare(a.created_at || '')).slice(0, 50);
   const unread = list.filter((n) => new Date(n.created_at).getTime() > seen).length;
   const openIt = () => {
     setOpen(true);
@@ -102,6 +111,11 @@ function NotificationBell() {
         )}
       </button>
       <ResponsiveSheet open={open} onClose={() => setOpen(false)} title="การแจ้งเตือน" subtitle={list.length ? `ล่าสุด ${list.length} รายการ` : undefined}>
+        {list.length > 0 && (
+          <div className="flex justify-end -mt-1 mb-1">
+            <button type="button" onClick={() => saveCleared({ at: Date.now(), ids: [] })} className="min-h-[36px] px-3 rounded-lg text-xs font-semibold text-red-600 hover:bg-red-50">ล้างทั้งหมด</button>
+          </div>
+        )}
         {list.length ? (
           <ul className="divide-y divide-slate-100">
             {list.map((n) => (
@@ -111,6 +125,7 @@ function NotificationBell() {
                   <div className="text-xs text-slate-600 mt-0.5 break-words">{n.body}</div>
                 </div>
                 <span className="text-[11px] text-slate-400 tabular-nums shrink-0 text-right">{fmtDate(n.created_at)}<br />{fmtTime(n.created_at)}</span>
+                <button type="button" aria-label="ลบข้อความนี้" onClick={() => saveCleared({ ...cleared, ids: [...cleared.ids, n.id] })} className="shrink-0 w-8 h-8 grid place-items-center rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50">✕</button>
               </li>
             ))}
           </ul>

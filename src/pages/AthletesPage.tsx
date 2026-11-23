@@ -1,3 +1,4 @@
+import { catTotal as catTotalOf } from '../utils/bracket';
 import { RosterPage } from './RosterPage';
 import { AthleteCard, AthleteSheet } from '../components/AthleteSheet';
 import React, { useEffect, useState } from 'react';
@@ -45,7 +46,7 @@ function ManageAthletes() {
 
   const [query, setQuery] = useState('');
   const [catFilter, setCatFilter] = useState('');
-  const [quickFilter, setQuickFilter] = useState<'all' | 'slip_sent' | 'pending' | 'confirmed' | 'waitlist'>('all');
+  const [quickFilter, setQuickFilter] = useState<'all' | 'slip_sent' | 'unpaid' | 'paid' | 'pending' | 'confirmed' | 'waitlist'>('all');
   const [selectedReg, setSelectedReg] = useState<Registration | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [slipSrc, setSlipSrc] = useState<string | null>(null);
@@ -79,6 +80,8 @@ function ManageAthletes() {
   const filtered = [...tRegistrations].sort(byRegTime).filter((r) => {
     if (catFilter && r.category_id !== catFilter) return false;
     if (quickFilter === 'slip_sent' && r.pay_status !== 'slip_sent') return false;
+    if (quickFilter === 'unpaid' && !(r.pay_status === 'unpaid' && catMap[r.category_id] && catTotalOf(catMap[r.category_id]) > 0)) return false;
+    if (quickFilter === 'paid' && r.pay_status !== 'paid') return false;
     if (quickFilter === 'pending' && r.status !== 'pending') return false;
     if (quickFilter === 'confirmed' && r.status !== 'confirmed') return false;
     if (quickFilter === 'waitlist' && r.status !== 'waitlist') return false;
@@ -224,6 +227,8 @@ function ManageAthletes() {
             [
               ['all', `ทั้งหมด (${tRegistrations.length})`],
               ['slip_sent', `รอตรวจสลิป (${tRegistrations.filter((r) => r.pay_status === 'slip_sent').length})`],
+              ['unpaid', `รอชำระ (${tRegistrations.filter((r) => r.pay_status === 'unpaid' && catMap[r.category_id] && catTotalOf(catMap[r.category_id]) > 0).length})`],
+              ['paid', `ชำระแล้ว (${tRegistrations.filter((r) => r.pay_status === 'paid').length})`],
               ['pending', `รอประเมิน (${tRegistrations.filter((r) => r.status === 'pending').length})`],
               ['confirmed', `ผ่าน (${tRegistrations.filter((r) => r.status === 'confirmed').length})`],
               ['waitlist', `สำรอง (${tRegistrations.filter((r) => r.status === 'waitlist').length})`],

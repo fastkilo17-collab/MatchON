@@ -127,9 +127,7 @@ export function BracketsPage() {
           <div className="flex items-center justify-between gap-2">
             <span className="flex items-center gap-1.5 min-w-0">
               {m.reg_a && <TeamAvatars reg={regMap[m.reg_a]} size={26} flat />}
-              <span className={`truncate ${aWon ? 'font-bold text-emerald-700' : 'font-medium text-slate-900'}`}>
-                {teamName(m.reg_a ? regMap[m.reg_a] : null)}
-              </span>
+              <SideName reg={m.reg_a ? regMap[m.reg_a] : null} won={aWon} />
             </span>
             <span className="font-mono text-xs tabular-nums text-slate-600 shrink-0 flex items-center gap-1">
               {m.sets.map((s, i) => (
@@ -142,9 +140,7 @@ export function BracketsPage() {
           <div className="flex items-center justify-between gap-2">
             <span className="flex items-center gap-1.5 min-w-0">
               {m.reg_b && <TeamAvatars reg={regMap[m.reg_b]} size={26} flat />}
-              <span className={`truncate ${bWon ? 'font-bold text-emerald-700' : 'font-medium text-slate-900'}`}>
-                {teamName(m.reg_b ? regMap[m.reg_b] : null)}
-              </span>
+              <SideName reg={m.reg_b ? regMap[m.reg_b] : null} won={bWon} />
             </span>
             <span className="font-mono text-xs tabular-nums text-slate-600 shrink-0 flex items-center gap-1">
               {m.sets.map((s, i) => (
@@ -420,7 +416,7 @@ export function BracketsPage() {
                         onClick={() => setEditGroup(gNo)}
                         className="w-full flex items-center justify-between text-left"
                       >
-                        <h3 className="font-display text-base font-bold text-slate-900">กลุ่ม {letter}</h3>
+                        <h3 className="font-display text-base font-bold text-slate-900">กลุ่ม {letter} <span className="font-semibold text-slate-500">• {activeCat.name}</span></h3>
                         <span className="text-[11px] font-semibold text-blue-700 noprint">{isManager ? 'ดูแมตช์/แก้ไขกลุ่ม ›' : 'ดูแมตช์ ›'}</span>
                       </button>
                       <div className="space-y-1.5">
@@ -530,6 +526,7 @@ export function BracketsPage() {
         open={editGroup !== null}
         onClose={() => setEditGroup(null)}
         groupNo={editGroup ?? 0}
+        catName={activeCat.name}
         showTeams={isManager}
         current={editGroup === null ? [] : [...new Set(groupMatches.filter((m) => (m.group_no ?? 0) === editGroup).flatMap((m) => [m.reg_a, m.reg_b]).filter(Boolean) as string[])]}
         assigned={new Set(groupMatches.flatMap((m) => [m.reg_a, m.reg_b]).filter(Boolean) as string[])}
@@ -613,6 +610,21 @@ function KnockoutTree({ list, title, renderCard }: { list: Match[]; title: strin
   );
 }
 
+
+/** ชื่อทีม (หนา) + ชื่อนักกีฬา (บาง/เล็ก) */
+function SideName({ reg, won }: { reg?: Registration | null; won?: boolean }) {
+  const one = (n?: string, k?: string) => (n ? (k && k !== n ? `${n} (${k})` : n) : '');
+  const people = reg ? [one(reg.p1_name, reg.p1_nick), one(reg.p2_name, reg.p2_nick)].filter(Boolean) : [];
+  const title = reg?.club || (reg ? people[0] : 'รอผลการแข่ง') || teamName(reg);
+  const rest = reg?.club ? people : people.slice(1);
+  return (
+    <span className="min-w-0 leading-tight">
+      <span className={`block truncate ${won ? 'font-bold text-emerald-700' : 'font-semibold text-slate-900'}`}>{title}</span>
+      {rest.map((n, i) => <span key={i} className="block truncate text-[11px] font-normal text-slate-500">{n}</span>)}
+    </span>
+  );
+}
+
 /* ---------- การ์ดทีมในกลุ่ม (ย่อ/ขยาย) ---------- */
 function TeamStandCard({
   row, rank, reg, pts, matches, regMap, open, onToggle,
@@ -644,7 +656,7 @@ function TeamStandCard({
         </span>
         <span className="flex items-center gap-2.5">
           <TeamAvatars reg={reg} size={34} flat />
-          <span className="min-w-0 flex-1 text-xs text-slate-700 leading-snug">
+          <span className="min-w-0 flex-1 text-[12px] font-normal text-slate-600 leading-snug">
             {people.map((n, i) => <span key={i} className="block truncate">{n}</span>)}
           </span>
         </span>
@@ -678,12 +690,23 @@ function TeamStandCard({
                 const done = m.status === 'finished' && m.reg_a && m.reg_b;
                 const res = !done ? null : !m.winner ? 'draw' : m.winner === row.id ? 'win' : 'loss';
                 const got = res === 'win' ? pts.win : res === 'draw' ? pts.draw : res === 'loss' ? pts.loss : null;
-                const sc = m.sets.map((x) => (isA ? `${x[0]}-${x[1]}` : `${x[1]}-${x[0]}`)).join('  ');
                 return (
                   <div key={m.id} className="flex items-center gap-2 px-2.5 py-2 text-sm">
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-slate-800">พบ {opp ? (opp.club || teamName(opp)) : 'รอผลการแข่ง'}</span>
-                      <span className="block text-xs font-mono tabular-nums text-slate-500">{done ? sc || '-' : m.status === 'live' ? 'กำลังแข่ง' : 'รอแข่ง'}</span>
+                      <span className="flex items-center gap-1.5 text-xs font-mono tabular-nums text-slate-500">
+                        {done && m.sets.length ? m.sets.map((x, i) => {
+                          const mine = isA ? x[0] : x[1];
+                          const theirs = isA ? x[1] : x[0];
+                          return (
+                            <span key={i} className="inline-flex items-center gap-0.5">
+                              <span className={`inline-flex min-w-[22px] h-5 items-center justify-center rounded-full px-1 ${mine > theirs ? 'bg-emerald-100 font-bold text-blue-700' : ''}`}>{mine}</span>
+                              <span className="text-slate-300">-</span>
+                              <span className={`inline-flex min-w-[22px] h-5 items-center justify-center rounded-full px-1 ${theirs > mine ? 'text-slate-700' : ''}`}>{theirs}</span>
+                            </span>
+                          );
+                        }) : done ? '-' : m.status === 'live' ? 'กำลังแข่ง' : 'รอแข่ง'}
+                      </span>
                     </span>
                     {res && (
                       <span className={`shrink-0 min-w-[68px] text-center rounded-lg py-1 text-xs font-bold ${res === 'win' ? 'bg-emerald-100 text-emerald-700' : res === 'loss' ? 'bg-red-50 text-red-600' : 'bg-slate-100 text-slate-600'}`}>
@@ -900,9 +923,9 @@ function ManualDraw({
 
 /* ---------- popup กลุ่ม: ดูทีม/แมตช์ (ย่อขยายได้) และแก้ทีมหลังจัดสาย ---------- */
 function GroupEditSheet({
-  open, onClose, groupNo, current, assigned, teams, regs, canEdit, showTeams, matches, renderMatch, onSave,
+  open, onClose, groupNo, catName, current, assigned, teams, regs, canEdit, showTeams, matches, renderMatch, onSave,
 }: {
-  showTeams: boolean; open: boolean; onClose: () => void; groupNo: number; current: string[]; assigned: Set<string>;
+  showTeams: boolean; open: boolean; onClose: () => void; groupNo: number; catName: string; current: string[]; assigned: Set<string>;
   teams: import('../types/matchon').Registration[]; regs: Record<string, import('../types/matchon').Registration>; canEdit: boolean;
   matches: Match[]; renderMatch: (m: Match) => React.ReactNode; onSave: (ids: string[]) => void;
 }) {
@@ -914,7 +937,7 @@ function GroupEditSheet({
   const free = teams.filter((t) => !assigned.has(t.id) && !ids.includes(t.id));
   const changed = ids.length !== current.length || ids.some((x) => !current.includes(x));
   return (
-    <ResponsiveSheet open={open} onClose={onClose} title={`กลุ่ม ${String.fromCharCode(65 + groupNo)}`} subtitle={canEdit ? 'ลบ/เพิ่มทีม แล้วกด บันทึก (แก้ได้เฉพาะกลุ่มที่ยังไม่มีผลแข่ง)' : `${ids.length} ทีม · ${matches.length} แมตช์`}>
+    <ResponsiveSheet open={open} onClose={onClose} title={`กลุ่ม ${String.fromCharCode(65 + groupNo)} • ${catName}`} subtitle={canEdit ? 'ลบ/เพิ่มทีม แล้วกด บันทึก (แก้ได้เฉพาะกลุ่มที่ยังไม่มีผลแข่ง)' : `${ids.length} ทีม · ${matches.length} แมตช์`}>
       <div className="space-y-4">
         {showTeams && <div className="space-y-2">
           <div className="text-xs font-semibold text-slate-700">ทีมในกลุ่ม ({ids.length})</div>

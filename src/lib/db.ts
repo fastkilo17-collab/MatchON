@@ -181,11 +181,13 @@ export const registrationFromDb = (r: any): Registration => ({
   p1_phone: r.p1_phone || '',
   p1_year: toBE(r.p1_birth_year),
   p1_photo: r.p1_photo || null,
+  p1_history: r.p1_history || '',
   p2_name: r.p2_name || undefined,
   p2_nick: r.p2_nick || undefined,
   p2_phone: r.p2_phone || undefined,
   p2_year: toBE(r.p2_birth_year),
   p2_photo: r.p2_photo || null,
+  p2_history: r.p2_history || '',
   status: r.status || 'pending',
   pay_status: r.pay_status || 'unpaid',
   note: r.note || '',
@@ -203,11 +205,13 @@ const registrationToDb = (r: Registration) => ({
   p1_phone: r.p1_phone || null,
   p1_birth_year: toCE(r.p1_year),
   p1_photo: r.p1_photo || null,
+  p1_history: r.p1_history || null,
   p2_name: r.p2_name || null,
   p2_nick: r.p2_nick || null,
   p2_phone: r.p2_phone || null,
   p2_birth_year: toCE(r.p2_year),
   p2_photo: r.p2_photo || null,
+  p2_history: r.p2_history || null,
   status: r.status,
   pay_status: r.pay_status,
   note: r.note || null,
@@ -368,11 +372,13 @@ export async function loadAll(profile: Profile | null): Promise<Loaded> {
         p1_phone: data.p1_phone || '',
         p1_year: toBE(data.p1_birth_year),
         p1_photo: data.p1_photo || null,
+        p1_history: data.p1_history || '',
         p2_name: data.p2_name || undefined,
         p2_nick: data.p2_nick || undefined,
         p2_phone: data.p2_phone || undefined,
         p2_year: toBE(data.p2_birth_year),
         p2_photo: data.p2_photo || null,
+        p2_history: data.p2_history || '',
         status: data.status,
         pay_status: data.pay_status,
         note: data.note || '',
@@ -569,6 +575,7 @@ export interface PersonInput {
   phone?: string;
   year?: number | null;
   photo?: string | null;
+  history?: string;
 }
 
 const person = (p: PersonInput | undefined, club?: string) => ({
@@ -577,6 +584,7 @@ const person = (p: PersonInput | undefined, club?: string) => ({
   phone: p?.phone || '',
   birth_year: toCE(p?.year),
   photo: p?.photo || null,
+  history: p?.history || '',
   club: club || '',
 });
 
@@ -653,4 +661,14 @@ export async function slipSignedUrl(path: string): Promise<string> {
   const { data, error } = await sb.storage.from('slips').createSignedUrl(path, 600);
   if (error || !data) throw error || new Error('เปิดสลิปไม่ได้');
   return data.signedUrl;
+}
+
+export async function rpcCancelMyRegistration(id: string, token: string): Promise<void> {
+  const { error } = await sb.rpc('cancel_my_registration', { p_reg: id, p_token: token });
+  if (error) throw error;
+}
+
+export async function rpcDeleteMyRegistration(id: string, token: string): Promise<void> {
+  const { error } = await sb.rpc('delete_my_registration', { p_reg: id, p_token: token });
+  if (error) throw error;
 }
