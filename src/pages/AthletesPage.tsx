@@ -1,4 +1,5 @@
 import { RosterPage } from './RosterPage';
+import { AthleteCard, AthleteSheet } from '../components/AthleteSheet';
 import React, { useEffect, useState } from 'react';
 import {
   CheckCircle2,
@@ -47,14 +48,10 @@ function ManageAthletes() {
   const [quickFilter, setQuickFilter] = useState<'all' | 'slip_sent' | 'pending' | 'confirmed' | 'waitlist'>('all');
   const [selectedReg, setSelectedReg] = useState<Registration | null>(null);
   const [addOpen, setAddOpen] = useState(false);
-  const [draft, setDraft] = useState<Registration | null>(null);
-  const [confirmDel, setConfirmDel] = useState(false);
   const [slipSrc, setSlipSrc] = useState<string | null>(null);
   const openSlip = async (path: string) => {
     try { setSlipSrc(await slipSignedUrl(path)); } catch (e: any) { toast(e?.message || 'เปิดสลิปไม่ได้', 'err'); }
   };
-  const openReg = (r: Registration) => { setSelectedReg(r); setDraft({ ...r }); setConfirmDel(false); };
-  const closeReg = () => { setSelectedReg(null); setDraft(null); setConfirmDel(false); };
 
   const [f1, setF1] = useState<File | null>(null);
   const [f2, setF2] = useState<File | null>(null);
@@ -249,182 +246,24 @@ function ManageAthletes() {
       {/* Athlete List (Mobile Tap Cards + Desktop Clean Rows) */}
       <div className="bg-white border border-slate-200/80 rounded-2xl divide-y divide-slate-100 overflow-hidden">
         {filtered.length ? (
-          filtered.map((r) => {
-            const cat = catMap[r.category_id];
-            return (
-              <div
-                key={r.id}
-                role="button"
-                tabIndex={0}
-                onClick={() => openReg(r)}
-                onKeyDown={(e) => { if (e.key === 'Enter') openReg(r); }}
-                className="p-3.5 flex items-center gap-3 hover:bg-slate-50/70 transition-colors cursor-pointer"
-              >
-                <span className="w-7 shrink-0 text-center font-mono text-xs font-bold text-slate-400 tabular-nums">{seq[r.id]}</span>
-                <div className="flex -space-x-3 shrink-0">
-                  {[r.p1_photo, r.p2_photo].filter(Boolean).map((ph, i) => (
-                    <PhotoThumb key={i} photo={ph} name={i === 0 ? r.p1_name : r.p2_name} size={42} />
-                  ))}
-                </div>
-                <div className="min-w-0 flex-1 space-y-0.5">
-                  <div className="text-sm font-bold text-slate-900 truncate">
-                    {r.club || playersNick(r)}{cat ? <span className="font-semibold text-slate-500"> • {cat.name}</span> : null}
-                    {r.seed != null && <span className="font-mono text-xs font-bold text-blue-700"> · มือวาง {r.seed}</span>}
-                  </div>
-                  <div className="text-xs text-slate-500 truncate">{teamRealWithNick(r)}</div>
-                  <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                    <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md ${r.status === 'confirmed' ? 'bg-emerald-50 text-emerald-700' : r.status === 'cancelled' || r.status === 'rejected' ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-700'}`}>{REG_STATUS_TH[r.status]}</span>
-                    <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md ${r.pay_status === 'paid' ? 'bg-emerald-50 text-emerald-700' : r.pay_status === 'slip_sent' ? 'bg-blue-50 text-blue-700' : r.pay_status === 'rejected' ? 'bg-red-50 text-red-600' : 'bg-slate-100 text-slate-500'}`}>{PAY_TH[r.pay_status]}</span>
-                    {r.slip_path && (
-                      <button
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); void openSlip(r.slip_path!); }}
-                        className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-violet-50 text-violet-700"
-                      >
-                        ดูสลิป
-                      </button>
-                    )}
-                    {r.note && <span className="text-[11px] text-slate-500 truncate">📝 {r.note}</span>}
-                  </div>
-                </div>
-              </div>
-            );
-          })
+          filtered.map((r) => (
+            <AthleteCard
+              key={r.id}
+              r={r}
+              cat={catMap[r.category_id]}
+              seq={seq[r.id]}
+              onOpen={() => setSelectedReg(r)}
+              extra={r.slip_path ? (
+                <button type="button" onClick={(e) => { e.stopPropagation(); void openSlip(r.slip_path!); }} className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-violet-50 text-violet-700">ดูสลิป</button>
+              ) : null}
+            />
+          ))
         ) : (
           <div className="p-10 text-center text-sm text-slate-500">ไม่พบข้อมูลนักกีฬาตามเงื่อนไขที่เลือก</div>
         )}
       </div>
 
-      {/* Manage Registration Sheet (แก้ใน draft แล้วกด "บันทึก" ถึงจะอัปเดตจริง) */}
-      <ResponsiveSheet
-        open={Boolean(selectedReg)}
-        onClose={closeReg}
-        title={selectedReg ? teamName(selectedReg) : ''}
-        subtitle={selectedReg ? `#${seq[selectedReg.id] || ''} · ${catMap[selectedReg.category_id]?.name || ''} · ${selectedReg.club || 'ไม่ระบุก๊วน'}` : ''}
-      >
-        {selectedReg && draft && (
-          <div className="space-y-4">
-            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/70 text-xs space-y-1">
-              <div className="font-semibold text-slate-900">{teamRealWithNick(selectedReg)}</div>
-              <div className="text-slate-600">โทร: {selectedReg.p1_phone || '-'}</div>
-              <div className="text-slate-600">
-                ค่าสมัคร: {baht(catTotal(catMap[selectedReg.category_id]))}{catMap[selectedReg.category_id]?.shuttle_fee ? ` (รวม ${shuttleText(catMap[selectedReg.category_id])})` : ''}
-              </div>
-              {selectedReg.slip_path && (
-                <button type="button" onClick={() => void openSlip(selectedReg.slip_path!)} className="mt-1 min-h-[34px] px-3 rounded-lg bg-violet-100 text-violet-700 font-semibold">
-                  ดูสลิปโอนเงิน
-                </button>
-              )}
-            </div>
-
-            <label className="block space-y-1">
-              <span className="text-xs font-semibold text-slate-700">รุ่นที่สมัคร</span>
-              <select
-                value={draft.category_id}
-                onChange={(e) => setDraft({ ...draft, category_id: e.target.value })}
-                className="w-full min-h-[44px] px-3 rounded-xl border border-slate-200 bg-white text-sm"
-              >
-                {tCategories.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
-              {draft.category_id !== selectedReg.category_id && (
-                <span className="block text-[11px] text-amber-700">ย้ายรุ่น: ถ้ารุ่นเดิมจัดสายไปแล้ว ควรล้างสาย/จัดสายใหม่ และค่าสมัครจะเปลี่ยนตามรุ่นใหม่</span>
-              )}
-            </label>
-
-            <div className="grid grid-cols-2 gap-3">
-              <label className="block space-y-1">
-                <span className="text-xs font-semibold text-slate-700">สถานะใบสมัคร</span>
-                <select
-                  value={draft.status}
-                  onChange={(e) => setDraft({ ...draft, status: e.target.value as RegStatus })}
-                  className="w-full min-h-[44px] px-3 rounded-xl border border-slate-200 bg-white text-sm"
-                >
-                  {Object.entries(REG_STATUS_TH).map(([k, label]) => (
-                    <option key={k} value={k}>{label}</option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="block space-y-1">
-                <span className="text-xs font-semibold text-slate-700">สถานะการชำระเงิน</span>
-                <select
-                  value={draft.pay_status}
-                  onChange={(e) => setDraft({ ...draft, pay_status: e.target.value as PayStatus })}
-                  className="w-full min-h-[44px] px-3 rounded-xl border border-slate-200 bg-white text-sm"
-                >
-                  {Object.entries(PAY_TH).map(([k, label]) => (
-                    <option key={k} value={k}>{label}</option>
-                  ))}
-                </select>
-              </label>
-            </div>
-
-            <label className="block space-y-1">
-              <span className="text-xs font-semibold text-slate-700">หมายเหตุ (ผู้สมัครเห็นข้อความนี้)</span>
-              <textarea
-                rows={3}
-                maxLength={500}
-                placeholder="เช่น เหตุผลที่ไม่ผ่าน / สิ่งที่ต้องแก้ไข"
-                value={draft.note ?? ''}
-                onChange={(e) => setDraft({ ...draft, note: e.target.value })}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm"
-              />
-            </label>
-
-            <label className="block space-y-1">
-              <span className="text-xs font-semibold text-slate-700">ลำดับมือวาง (Seed)</span>
-              <input
-                type="number"
-                min={1}
-                placeholder="เว้นว่างหากไม่ใช่มือวาง"
-                value={draft.seed ?? ''}
-                onChange={(e) => setDraft({ ...draft, seed: e.target.value === '' ? null : Number(e.target.value) })}
-                className="w-full min-h-[44px] px-3.5 rounded-xl border border-slate-200 text-sm tabular-nums"
-              />
-            </label>
-
-            {confirmDel ? (
-              <div className="rounded-xl border border-red-200 bg-red-50 p-3 space-y-2">
-                <div className="text-xs font-semibold text-red-700">ยืนยันลบใบสมัคร "{teamName(selectedReg)}" ? ลบแล้วกู้คืนไม่ได้</div>
-                <div className="grid grid-cols-2 gap-2">
-                  <button type="button" onClick={() => setConfirmDel(false)} className="min-h-[42px] rounded-xl bg-white border border-slate-200 text-xs font-semibold text-slate-700">ไม่ลบ</button>
-                  <button
-                    type="button"
-                    onClick={async () => { if (await deleteRegistration(selectedReg.id)) closeReg(); }}
-                    className="min-h-[42px] rounded-xl bg-red-600 text-white text-xs font-semibold"
-                  >
-                    ลบเลย
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 gap-2.5 pt-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    updateRegistration(selectedReg.id, { category_id: draft.category_id, status: draft.status, pay_status: draft.pay_status, note: draft.note, seed: draft.seed });
-                    closeReg();
-                  }}
-                  className="inline-flex items-center justify-center gap-1.5 min-h-[46px] rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold"
-                >
-                  <CheckCircle2 className="w-4 h-4" />
-                  บันทึก
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setConfirmDel(true)}
-                  className="inline-flex items-center justify-center gap-1.5 min-h-[46px] rounded-xl bg-red-50 hover:bg-red-100 text-red-700 text-xs font-semibold"
-                >
-                  <XCircle className="w-4 h-4" />
-                  ลบใบสมัคร
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-      </ResponsiveSheet>
+      <AthleteSheet reg={selectedReg} onClose={() => setSelectedReg(null)} seq={selectedReg ? seq[selectedReg.id] : undefined} />
       <PhotoLightbox src={slipSrc} caption="สลิปโอนเงิน" onClose={() => setSlipSrc(null)} />
 
       {/* Add Athlete Sheet */}

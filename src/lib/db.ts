@@ -189,6 +189,7 @@ export const registrationFromDb = (r: any): Registration => ({
   status: r.status || 'pending',
   pay_status: r.pay_status || 'unpaid',
   note: r.note || '',
+  video_url: r.video_url || '',
   seed: r.seed ?? null,
   slip_path: r.slip_path || null,
   created_at: r.created_at,
@@ -210,6 +211,7 @@ const registrationToDb = (r: Registration) => ({
   status: r.status,
   pay_status: r.pay_status,
   note: r.note || null,
+  video_url: r.video_url || null,
   seed: r.seed ?? null,
 });
 
@@ -337,7 +339,7 @@ export async function loadAll(profile: Profile | null): Promise<Loaded> {
       const { data } = await sb.rpc('public_entries', { p_tournament: t.id });
       (data || []).forEach((r: any) => {
         if (!regs.has(r.id)) {
-          regs.set(r.id, registrationFromDb({ ...r, tournament_id: t.id, p1_phone: '', pay_status: 'unpaid' }));
+          regs.set(r.id, registrationFromDb({ ...r, tournament_id: t.id, p1_phone: '' }));
         }
       });
     }),
@@ -374,6 +376,7 @@ export async function loadAll(profile: Profile | null): Promise<Loaded> {
         status: data.status,
         pay_status: data.pay_status,
         note: data.note || '',
+        video_url: data.video_url || '',
         category_id: base?.category_id || '',
         created_at: base?.created_at || new Date().toISOString(),
         edit_token: token,
@@ -581,13 +584,14 @@ export async function rpcRegister(args: {
   club: string;
   p1: PersonInput;
   p2?: PersonInput;
+  video?: string;
 }): Promise<{ id: string; token: string; status: string }> {
   const { data, error } = await sb.rpc('register_team', {
     p_tournament: args.tournamentId,
     p_category: args.categoryId,
     p_p1: person(args.p1, args.club),
     p_p2: args.p2 ? person(args.p2) : {},
-    p_video: null,
+    p_video: args.video?.trim() || null,
   });
   if (error) throw error;
   saveToken(data.id, data.token);
@@ -620,6 +624,7 @@ export async function rpcUpdateRegistration(args: {
   club: string;
   p1: PersonInput;
   p2?: PersonInput;
+  video?: string;
 }): Promise<void> {
   const { error } = await sb.rpc('update_registration', {
     p_reg: args.id,
@@ -627,6 +632,7 @@ export async function rpcUpdateRegistration(args: {
     p_club: args.club,
     p_p1: person(args.p1),
     p_p2: args.p2 ? person(args.p2) : {},
+    p_video: args.video ?? '',
   });
   if (error) throw error;
 }

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Bell } from 'lucide-react';
 import {
   ShieldCheck,
   Activity,
@@ -24,7 +25,8 @@ import { AnimatePresence, motion } from 'motion/react';
 import { useMatchON } from '../context/MatchONContext';
 import { AccountBox } from './AuthDialog';
 import type { NavRoute, UserRole } from '../types/matchon';
-import { ToastStack } from './UiKit';
+import { ToastStack, ResponsiveSheet } from './UiKit';
+import { fmtDate, fmtTime } from '../utils/bracket';
 
 interface NavItem {
   id: NavRoute;
@@ -72,6 +74,51 @@ const GROUP_TITLES: Record<NavItem['group'], string> = {
   arena: 'สนามและคะแนนสด',
   info: 'ผลลัพธ์และระบบ',
 };
+
+/** กระดิ่งแจ้งเตือน: จำเวลาที่เปิดอ่านล่าสุดไว้ในเครื่อง */
+function NotificationBell() {
+  const { state } = useMatchON();
+  const [open, setOpen] = useState(false);
+  const KEY = 'matchon.notifSeen';
+  const [seen, setSeen] = useState<number>(() => {
+    try { return Number(localStorage.getItem(KEY)) || 0; } catch { return 0; }
+  });
+  const list = [...state.notifications].sort((a, b) => (b.created_at || '').localeCompare(a.created_at || '')).slice(0, 50);
+  const unread = list.filter((n) => new Date(n.created_at).getTime() > seen).length;
+  const openIt = () => {
+    setOpen(true);
+    const now = Date.now();
+    setSeen(now);
+    try { localStorage.setItem(KEY, String(now)); } catch { /* ignore */ }
+  };
+  return (
+    <>
+      <button type="button" onClick={openIt} aria-label="การแจ้งเตือน" title="การแจ้งเตือน" className="relative shrink-0 w-10 h-10 rounded-full grid place-items-center bg-slate-100 hover:bg-blue-50 text-slate-600 hover:text-blue-700 transition-colors">
+        <Bell className="w-5 h-5" />
+        {unread > 0 && (
+          <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-600 text-white text-[10px] font-bold grid place-items-center tabular-nums">{unread > 9 ? '9+' : unread}</span>
+        )}
+      </button>
+      <ResponsiveSheet open={open} onClose={() => setOpen(false)} title="การแจ้งเตือน" subtitle={list.length ? `ล่าสุด ${list.length} รายการ` : undefined}>
+        {list.length ? (
+          <ul className="divide-y divide-slate-100">
+            {list.map((n) => (
+              <li key={n.id} className="py-3 flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold text-slate-900">{n.title}</div>
+                  <div className="text-xs text-slate-600 mt-0.5 break-words">{n.body}</div>
+                </div>
+                <span className="text-[11px] text-slate-400 tabular-nums shrink-0 text-right">{fmtDate(n.created_at)}<br />{fmtTime(n.created_at)}</span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <div className="py-10 text-center text-sm text-slate-400">ยังไม่มีการแจ้งเตือน</div>
+        )}
+      </ResponsiveSheet>
+    </>
+  );
+}
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { state, route, navigate, activeTournament, toasts, profile, isAdmin } = useMatchON();
@@ -177,6 +224,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </button>
             )}
 
+            {profile && <NotificationBell />}
             {profile && (
               <button type="button" onClick={() => handleNav('settings')} aria-label="โปรไฟล์ของฉัน" title={profile.display_name || 'โปรไฟล์'} className="shrink-0 w-10 h-10 rounded-full overflow-hidden ring-2 ring-white shadow bg-blue-100 grid place-items-center text-sm font-bold text-blue-700">
                 {profile.avatar_url ? (

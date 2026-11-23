@@ -1,21 +1,15 @@
 import React, { useState } from 'react';
+import type { Registration } from '../types/matchon';
 import { useMatchON } from '../context/MatchONContext';
-import { TeamAvatars } from '../components/UiKit';
-import { REG_STATUS_TH, PAY_TH, teamFullName, playersNick, teamRealWithNick, byRegTime } from '../utils/bracket';
-
-const TONE: Record<string, string> = {
-  pending: 'bg-amber-50 text-amber-700',
-  confirmed: 'bg-emerald-50 text-emerald-700',
-  waitlist: 'bg-blue-50 text-blue-700',
-  rejected: 'bg-red-50 text-red-600',
-  cancelled: 'bg-slate-100 text-slate-500',
-};
+import { AthleteCard, AthleteSheet } from '../components/AthleteSheet';
+import { REG_STATUS_TH, teamFullName, byRegTime, regSeqMap } from '../utils/bracket';
 
 export function RosterPage() {
   const { activeTournament: t, tCategories, tRegistrations } = useMatchON();
   const [cat, setCat] = useState('');
   const [st, setSt] = useState('');
   const [q, setQ] = useState('');
+  const [open, setOpen] = useState<Registration | null>(null);
   if (!t) return <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center text-sm text-slate-500">ยังไม่มีรายการแข่งขัน</div>;
 
   const regs = [...tRegistrations].sort(byRegTime).filter((r) => (!st || r.status === st) && (!q || teamFullName(r).toLowerCase().includes(q.toLowerCase()) || (r.club || '').toLowerCase().includes(q.toLowerCase())));
@@ -60,18 +54,7 @@ export function RosterPage() {
             {rows.length ? (
               <ul className="divide-y divide-slate-100">
                 {rows.map((r, i) => (
-                  <li key={r.id} className="px-4 py-3 flex items-center gap-3">
-                    <span className="w-6 text-xs text-slate-400 tabular-nums shrink-0">{i + 1}</span>
-                    <TeamAvatars reg={r} size={40} />
-                    <div className="min-w-0 flex-1">
-                      <div className="text-sm font-semibold text-slate-900 truncate">{r.club || playersNick(r)}</div>
-                      <div className="text-xs text-slate-500 truncate">{teamRealWithNick(r)}</div>
-                    </div>
-                    <div className="flex flex-col items-end gap-1 shrink-0">
-                      <span className={`text-[11px] font-bold px-2 py-0.5 rounded-lg whitespace-nowrap ${TONE[r.status]}`}>{REG_STATUS_TH[r.status]}</span>
-                      <span className={`text-[11px] font-bold px-2 py-0.5 rounded-lg whitespace-nowrap ${r.pay_status === 'paid' ? 'bg-emerald-50 text-emerald-700' : r.pay_status === 'slip_sent' ? 'bg-blue-50 text-blue-700' : r.pay_status === 'rejected' ? 'bg-red-50 text-red-600' : 'bg-slate-100 text-slate-500'}`}>{PAY_TH[r.pay_status]}</span>
-                    </div>
-                  </li>
+                  <li key={r.id}><AthleteCard r={r} cat={c} seq={i + 1} onOpen={() => setOpen(r)} /></li>
                 ))}
               </ul>
             ) : (
@@ -80,6 +63,7 @@ export function RosterPage() {
           </section>
         );
       })}
+      <AthleteSheet reg={open} onClose={() => setOpen(null)} seq={open ? regSeqMap(tRegistrations)[open.id] : undefined} />
     </div>
   );
 }

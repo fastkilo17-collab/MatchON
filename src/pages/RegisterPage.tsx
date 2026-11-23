@@ -23,15 +23,16 @@ import {
   prizeText,
 } from '../utils/bracket';
 import { PhotoThumb, PosterSlider, QrCodeSvg } from '../components/UiKit';
+import { AthleteSheet } from '../components/AthleteSheet';
 
 function PhotoPick({ label, file, onPick }: { label: string; file: File | null; onPick: (f: File | null) => void }) {
   const url = React.useMemo(() => (file ? URL.createObjectURL(file) : ''), [file]);
   return (
-    <label className="flex items-center gap-3 p-3 rounded-xl border border-dashed border-slate-300 cursor-pointer hover:bg-slate-50">
+    <label className="flex items-center gap-3 p-2.5 rounded-xl border border-dashed border-slate-300 cursor-pointer hover:bg-slate-50">
       {url ? (
-        <img src={url} alt="" className="w-14 h-14 rounded-xl object-cover" />
+        <img src={url} alt="" className="w-12 h-12 rounded-xl object-cover" />
       ) : (
-        <div className="w-14 h-14 rounded-xl bg-slate-100 grid place-items-center text-slate-400 text-xl">📷</div>
+        <div className="w-12 h-12 rounded-xl bg-slate-100 grid place-items-center text-slate-400 text-xl">📷</div>
       )}
       <div className="text-xs">
         <div className="font-semibold text-slate-800">{label} *</div>
@@ -63,6 +64,7 @@ function RegisterForm() {
   const [p1Nick, setP1Nick] = useState('');
   const [p1Phone, setP1Phone] = useState('');
   const [p1Year, setP1Year] = useState('');
+  const [video, setVideo] = useState('');
   const [p2Name, setP2Name] = useState('');
   const [p2Nick, setP2Nick] = useState('');
   const [p2Phone, setP2Phone] = useState('');
@@ -124,6 +126,10 @@ function RegisterForm() {
         toast('รุ่นที่เลือกเป็นประเภทคู่ กรุณากรอกชื่อคู่ของคุณ', 'err');
         return;
       }
+      if (video.trim() && !/^https?:\/\//i.test(video.trim())) {
+        toast('ลิงก์คลิปต้องขึ้นต้นด้วย http:// หรือ https://', 'err');
+        return;
+      }
       if (!p1File || (needsDoubles && !p2File)) {
         toast('กรุณาแนบรูปถ่ายผู้เล่นให้ครบ', 'err');
         return;
@@ -159,6 +165,7 @@ function RegisterForm() {
           p2_nick: dbl ? p2Nick.trim() || p2Name.trim().split(' ')[0] : undefined,
           p2_phone: dbl ? p2Phone.trim() : undefined,
           p2_photo: dbl ? p2Photo : null,
+          video_url: video.trim(),
         });
         if (!res) continue;
         ok++;
@@ -189,9 +196,14 @@ function RegisterForm() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-5">
+    <div className="max-w-2xl mx-auto space-y-3">
       {(targetTournament.poster || targetTournament.posters?.length || targetTournament.format_text || targetTournament.rules_text || targetTournament.notice) && (
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-5 space-y-3">
+        <details className="group bg-white border border-slate-200/80 rounded-2xl overflow-hidden">
+          <summary className="px-4 min-h-[48px] flex items-center justify-between gap-2 cursor-pointer text-sm font-bold text-slate-800 list-none">
+            รายละเอียดรายการ / กติกา / เงื่อนไข
+            <ChevronRight className="w-4 h-4 text-slate-400 transition-transform group-open:rotate-90" />
+          </summary>
+        <div className="px-4 pb-4 space-y-3">
           {(targetTournament.posters?.length || targetTournament.poster) ? (
             <div className="rounded-xl overflow-hidden">
               <PosterSlider images={targetTournament.posters?.length ? targetTournament.posters : [targetTournament.poster as string]} maxH={384} />
@@ -210,14 +222,15 @@ function RegisterForm() {
             ) : null,
           )}
         </div>
+        </details>
       )}
 
       {/* Tournament Picker when multiple open */}
-      <div className="bg-white border border-slate-200/80 rounded-2xl p-5 space-y-3">
+      <div className="bg-white border border-slate-200/80 rounded-2xl p-4 space-y-2.5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
             <div className="text-xs font-semibold text-emerald-700">เปิดรับสมัครออนไลน์</div>
-            <h2 className="font-display text-xl font-bold text-slate-900 mt-0.5">
+            <h2 className="font-display text-lg font-bold text-slate-900 leading-snug">
               {targetTournament.name}
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
@@ -266,13 +279,10 @@ function RegisterForm() {
 
       {/* Step 1: Select Categories */}
       {step === 1 && (
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-5 space-y-3">
-          <div>
-            <h3 className="font-display text-base font-bold text-slate-900">เลือกรุ่นที่ต้องการสมัคร</h3>
-            <p className="text-xs text-slate-500 mt-0.5">สามารถเลือกได้มากกว่า 1 รุ่นในครั้งเดียว</p>
-          </div>
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-4 space-y-3">
+          <h3 className="font-display text-base font-bold text-slate-900">เลือกรุ่น <span className="text-xs font-normal text-slate-500">(เลือกได้หลายรุ่น)</span></h3>
 
-          <div className="space-y-2.5">
+          <div className="space-y-2">
             {cats.map((c) => {
               const used = usedByCat[c.id] || 0;
               const left = Math.max(0, c.max_teams - used);
@@ -280,7 +290,7 @@ function RegisterForm() {
               return (
                 <label
                   key={c.id}
-                  className={`flex items-center justify-between gap-3 p-4 min-h-[64px] rounded-2xl border cursor-pointer transition-colors ${
+                  className={`flex items-center justify-between gap-3 px-3.5 py-3 rounded-xl border cursor-pointer transition-colors ${
                     checked
                       ? 'bg-blue-50/70 border-blue-500'
                       : 'bg-white border-slate-200 hover:border-slate-300'
@@ -316,9 +326,9 @@ function RegisterForm() {
 
       {/* Step 2: Athlete Form */}
       {step === 2 && (
-        <div className="space-y-4">
-          <div className="bg-white border border-slate-200/80 rounded-2xl p-5 space-y-3">
-            <h3 className="font-display text-base font-bold text-slate-900">ข้อมูลทีมและผู้สมัคร</h3>
+        <div className="space-y-3">
+          <div className="bg-white border border-slate-200/80 rounded-2xl p-4 space-y-3">
+            <h3 className="font-display text-base font-bold text-slate-900">ข้อมูลผู้สมัคร</h3>
             <label className="block space-y-1">
               <span className="text-xs font-medium text-slate-600">ชื่อทีม / ก๊วน / สโมสร (ถ้ามี)</span>
               <input
@@ -328,8 +338,8 @@ function RegisterForm() {
                 className="w-full min-h-[44px] px-3.5 rounded-xl border border-slate-200 text-sm"
               />
             </label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <label className="block space-y-1">
+            <div className="grid grid-cols-2 gap-2.5">
+              <label className="block space-y-1 col-span-2">
                 <span className="text-xs font-medium text-slate-600">ชื่อ-นามสกุล ผู้สมัคร *</span>
                 <input
                   value={p1Name}
@@ -371,13 +381,23 @@ function RegisterForm() {
               </label>
             </div>
             <PhotoPick label="รูปถ่ายผู้สมัคร" file={p1File} onPick={setP1File} />
+            <label className="block space-y-1">
+              <span className="text-xs font-medium text-slate-600">คลิปการแข่ง — ลิงก์วิดีโอ (ไม่บังคับ)</span>
+              <input
+                inputMode="url"
+                value={video}
+                onChange={(e) => setVideo(e.target.value)}
+                placeholder="https://youtube.com/…"
+                className="w-full min-h-[44px] px-3.5 rounded-xl border border-slate-200 text-sm"
+              />
+            </label>
           </div>
 
           {needsDoubles && (
-            <div className="bg-white border border-slate-200/80 rounded-2xl p-5 space-y-3">
-              <h3 className="font-display text-base font-bold text-slate-900">ข้อมูลคู่ของคุณ (ประเภทคู่)</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <label className="block space-y-1">
+            <div className="bg-white border border-slate-200/80 rounded-2xl p-4 space-y-3">
+              <h3 className="font-display text-base font-bold text-slate-900">ข้อมูลคู่ (ประเภทคู่)</h3>
+              <div className="grid grid-cols-2 gap-2.5">
+                <label className="block space-y-1 col-span-2">
                   <span className="text-xs font-medium text-slate-600">ชื่อ-นามสกุล คู่ *</span>
                   <input
                     value={p2Name}
@@ -395,7 +415,7 @@ function RegisterForm() {
                     className="w-full min-h-[44px] px-3.5 rounded-xl border border-slate-200 text-sm"
                   />
                 </label>
-                <label className="block space-y-1 sm:col-span-2">
+                <label className="block space-y-1 col-span-2">
                   <span className="text-xs font-medium text-slate-600">เบอร์โทรศัพท์ คู่ (ไม่บังคับ)</span>
                   <input
                     type="tel"
@@ -415,8 +435,8 @@ function RegisterForm() {
 
       {/* Step 3: Summary & PromptPay QR */}
       {step === 3 && (
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-5 space-y-5">
-          <h3 className="font-display text-base font-bold text-slate-900">ตรวจสอบข้อมูลและชำระค่าสมัคร</h3>
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-4 space-y-4">
+          <h3 className="font-display text-base font-bold text-slate-900">ตรวจสอบและชำระค่าสมัคร</h3>
 
           <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/70 space-y-2 text-sm">
             {selectedCats.map((c) => (
@@ -572,28 +592,12 @@ function RegActions({ r }: { r: Registration }) {
           </label>
         )}
         {token && r.reg_open !== false && (
-          <button type="button" onClick={() => setEdit((v) => !v)} className="text-xs font-semibold text-slate-600">
-            {edit ? 'ยกเลิก' : '✏️ แก้ไขข้อมูล'}
+          <button type="button" onClick={() => setEdit(true)} className="text-xs font-semibold text-slate-600">
+            ✏️ แก้ไขข้อมูล
           </button>
         )}
       </div>
-      {edit && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 rounded-xl bg-slate-50">
-          <input className={inp} value={f.club} onChange={(e) => setF({ ...f, club: e.target.value })} placeholder="ทีม / ก๊วน" />
-          <input className={inp} value={f.ph1} onChange={(e) => setF({ ...f, ph1: e.target.value })} placeholder="เบอร์โทร" />
-          <input className={inp} value={f.n1} onChange={(e) => setF({ ...f, n1: e.target.value })} placeholder="ชื่อ-นามสกุล" />
-          <input className={inp} value={f.k1} onChange={(e) => setF({ ...f, k1: e.target.value })} placeholder="ชื่อเล่น" />
-          {r.p2_name !== undefined && (
-            <>
-              <input className={inp} value={f.n2} onChange={(e) => setF({ ...f, n2: e.target.value })} placeholder="ชื่อคู่" />
-              <input className={inp} value={f.k2} onChange={(e) => setF({ ...f, k2: e.target.value })} placeholder="ชื่อเล่นคู่" />
-            </>
-          )}
-          <button type="button" disabled={busy} onClick={() => void save()} className="min-h-[40px] rounded-xl bg-blue-600 text-white text-xs font-semibold sm:col-span-2">
-            บันทึกการแก้ไข
-          </button>
-        </div>
-      )}
+      {edit && <AthleteSheet reg={r} startEdit onClose={() => setEdit(false)} />}
     </div>
   );
 }

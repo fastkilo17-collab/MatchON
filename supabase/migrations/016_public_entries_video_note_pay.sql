@@ -1,0 +1,2 @@
+-- 016: public_entries คืน pay_status/club/note/video_url; update_registration รับ p_video/p_note; my_registration คืน video_url
+-- (ใช้งานจริงแล้วผ่าน Supabase MCP — ดูนิยามฟังก์ชันล่าสุดในฐานข้อมูล)

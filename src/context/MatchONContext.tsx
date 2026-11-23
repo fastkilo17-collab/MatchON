@@ -132,6 +132,9 @@ const dataOf = (s: MatchONState): Data => ({
 });
 
 const ACTIVE_KEY = 'matchon.activeTid';
+const ROUTE_KEY = 'matchon.route';
+// หน้าที่จำตอนรีเฟรชได้ (ไม่รวมหน้าที่ต้องมีข้อมูลประกอบ)
+const ROUTES_OK: NavRoute[] = ['site', 'tournaments', 'home', 'my', 'athletes', 'roster', 'brackets', 'schedule', 'courts', 'live', 'rules', 'staff', 'results', 'reports', 'settings', 'mine', 'cats', 'info', 'dashboard', 'register', 'admin'];
 const DEFAULT_REF_PHONE = '0801234567';
 // one referee per court, created automatically; the organizer edits names / phones later
 function withAutoReferees(referees: Referee[], tid: string, courtCount: number): Referee[] {
@@ -147,7 +150,14 @@ const INITIAL_STATE: MatchONState = { role: 'player', activeTid: '', ...EMPTY_DA
 
 export function MatchONProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<MatchONState>(INITIAL_STATE);
-  const [route, setRoute] = useState<NavRoute>('tournaments');
+  const [route, setRoute] = useState<NavRoute>(() => {
+    try {
+      const saved = localStorage.getItem(ROUTE_KEY) as NavRoute | null;
+      return saved && ROUTES_OK.includes(saved) ? saved : 'tournaments';
+    } catch {
+      return 'tournaments';
+    }
+  });
   const [routeParam, setRouteParam] = useState<string | null>(null);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -291,6 +301,7 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
       }
       setRouteParam(opts?.filter ?? null);
       setRoute(next);
+      try { localStorage.setItem(ROUTE_KEY, next); } catch { /* ignore */ }
       window.scrollTo({ top: 0, behavior: 'smooth' });
     },
     [],
@@ -475,7 +486,7 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
             paid: (opts?.payStatus ?? 'unpaid') === 'paid',
           });
         } else {
-          out = await rpcRegister({ tournamentId: data.tournament_id, categoryId: data.category_id, club: data.club, p1, p2 });
+          out = await rpcRegister({ tournamentId: data.tournament_id, categoryId: data.category_id, club: data.club, p1, p2, video: data.video_url });
         }
         await reload();
         return out || { id: '' };

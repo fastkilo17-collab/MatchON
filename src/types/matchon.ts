@@ -101,6 +101,7 @@ export interface Registration {
   status: RegStatus;
   pay_status: PayStatus;
   note?: string;
+  video_url?: string;
   seed: number | null;
   is_mine?: boolean;
   slip_path?: string | null;
