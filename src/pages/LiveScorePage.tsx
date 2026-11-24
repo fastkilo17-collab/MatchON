@@ -215,13 +215,15 @@ export function LiveScorePage() {
       {/* Live Courts Grid */}
       <div className={`grid grid-cols-1 gap-2.5 ${compact ? "sm:grid-cols-2 xl:grid-cols-3" : "md:grid-cols-2"}`}>
         {tCourts.filter((c) => c.status !== 'maintenance').map((court) => {
-          const liveM = tMatches.find((m) => m.court === court.no && m.status === 'live');
-          const nextM = !liveM
+          const f = fb[court.no];
+          // ผู้ชม: กรรมการกดจบเกมแล้ว (สนามใน Firebase กลับเป็นว่าง) แต่ข้อมูลในระบบยังไม่อัปเดต -> แสดงเป็นสนามว่าง ไม่โชว์คะแนนค้าง
+          const refFinished = !canOperate && !!f && f.status === 'READY';
+          const liveM = refFinished ? undefined : tMatches.find((m) => m.court === court.no && m.status === 'live');
+          const nextM = !liveM && !refFinished
             ? tMatches.find((m) => m.court === court.no && m.status === 'scheduled' && m.reg_a && m.reg_b)
             : undefined;
           const m = liveM || nextM;
           const rule = m ? ruleForMatch(m, tCategories, tRules) : null;
-          const f = fb[court.no];
           const fromRef = !!(m && f && f.status === 'LIVE' && f.matchCode === m.id.slice(0, 8) && (f.startedAt || f.scores.some((x) => x[0] || x[1])));
           const act = fromRef && f.activeSet >= 0 ? f.activeSet : 0;
           const shownSets: [number, number][] = fromRef
@@ -249,7 +251,7 @@ export function LiveScorePage() {
                       {catMap[m.category_id]?.name || ''} · {m.round_label}
                     </div>
                   )}
-                  {m && rule && <div className="text-[11px] text-slate-400 truncate">{ruleShort(rule)}</div>}
+                  {m && rule && !compact && <div className="text-[11px] text-slate-400 truncate">{ruleShort(rule)}</div>}
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0">
@@ -304,6 +306,29 @@ export function LiveScorePage() {
                         <div className={`font-display font-extrabold tabular-nums leading-none ${compact ? 'text-4xl' : 'text-6xl'} ${side === 'a' ? 'text-blue-600' : 'text-slate-900'}`}>{side === 'a' ? shownCur[0] : shownCur[1]}</div>
                       </div>
                     );
+                    if (compact) {
+                      return (
+                        <div className="space-y-1.5 py-0.5">
+                          {([['a', ra, shownCur[0], 0], ['b', rb, shownCur[1], 1]] as const).map(([side, r, cur, k]) => (
+                            <div key={side} className="flex items-center justify-between gap-2">
+                              <span className="flex items-center gap-2 min-w-0">
+                                <TeamAvatars reg={r} size={36} />
+                                <span className="min-w-0 leading-tight">
+                                  <span className="block text-base font-semibold text-slate-900 truncate">{r ? r.club || teamName(r) : 'รอผลการแข่ง'}</span>
+                                  {r && <span className="block text-xs font-normal text-slate-500 truncate">{playersNick(r)}</span>}
+                                </span>
+                              </span>
+                              <span className="flex items-center gap-1 shrink-0 tabular-nums">
+                                {shownSets.map((x, i) => (
+                                  <span key={i} className={`w-7 text-center text-sm ${x[k] > x[1 - k] ? 'font-bold text-emerald-600' : 'font-medium text-slate-400'}`}>{x[k]}</span>
+                                ))}
+                                {started && <span className="w-12 text-center font-display text-3xl font-extrabold text-blue-700">{cur}</span>}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    }
                     return (
                       <div className="space-y-1.5 py-1">
                         <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-2">

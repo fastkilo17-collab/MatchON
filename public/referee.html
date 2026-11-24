@@ -766,6 +766,19 @@ async function finishMatch(skipAsk) {
   } else {
     await commit(reset, (st) => { (st.completedMatches = st.completedMatches || []).unshift(done); });
   }
+  closeAfterFinish();
+}
+// บันทึกผลแล้ว -> ปิดหน้ากรรมการ (ถ้าเบราว์เซอร์ไม่ยอมให้ปิดเอง จะแสดงหน้า "จบแล้ว" ทับทั้งหน้า)
+function closeAfterFinish() {
+  try { if (document.fullscreenElement) document.exitFullscreen(); } catch {}
+  try { wakeLock && wakeLock.release(); } catch {}
+  try { window.close(); } catch {}
+  setTimeout(() => {
+    const d = document.createElement('div');
+    d.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#051F20;color:#DAF1DE;display:grid;place-items:center;text-align:center;font:600 20px/1.6 "Noto Sans Thai",sans-serif;padding:24px';
+    d.innerHTML = '<div><div style="font-size:56px">✓</div>บันทึกผลการแข่งขันแล้ว<br><span style="font-weight:400;font-size:15px;opacity:.75">ปิดหน้านี้ได้เลย</span></div>';
+    document.body.appendChild(d);
+  }, 250);
 }
 
 /* ---------------- events dialog, settings, fullscreen, wake lock ---------------- */

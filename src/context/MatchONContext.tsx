@@ -108,6 +108,7 @@ interface MatchONContextValue {
   runAutoSchedule: (startIso: string, courtNos: number[], timeOnly?: boolean, setTime?: boolean, catStarts?: Record<string, string>, opts?: { order?: string[]; matchMin?: number; restMin?: number }) => number;
   clearSchedule: () => number;
   callMatchToCourt: (matchId: string, courtNo: number) => void;
+  cancelCourtCall: (matchId: string) => void;
   toggleCourtMaintenance: (courtId: string) => void;
   addCourt: () => void;
   deleteCourt: (courtId: string) => void;
@@ -1016,15 +1017,39 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
 
   const returnMatchToQueue = useCallback(
     (matchId: string) => {
-      setState((prev) => ({
-        ...prev,
-        matches: prev.matches.map((m) =>
-          m.id === matchId
-            ? { ...m, status: 'scheduled' as const, court: null, sets: [], cur_a: 0, cur_b: 0, winner: null, updated_at: new Date().toISOString() }
-            : m,
-        ),
-      }));
+      setState((prev) => {
+        const t = prev.matches.find((x) => x.id === matchId);
+        const now = new Date().toISOString();
+        return {
+          ...prev,
+          matches: prev.matches.map((m) => {
+            if (m.id === matchId) return { ...m, status: 'scheduled' as const, court: null, sets: [], cur_a: 0, cur_b: 0, winner: null, updated_at: now };
+            // แมตช์อื่นที่ยังค้างชื่อสนามนี้ (รอเริ่ม) ต้องไม่โผล่ขึ้นการ์ดสนามแทน
+            if (t && t.court != null && m.tournament_id === t.tournament_id && m.court === t.court && m.status === 'scheduled') return { ...m, court: null, updated_at: now };
+            return m;
+          }),
+        };
+      });
       toast('ส่งกลับคิวแล้ว (ล้างคะแนนและสนามของแมตช์นี้)');
+    },
+    [toast],
+  );
+
+  // ยกเลิกการเรียกลงสนาม: ล้างสนามของแมตช์นี้ และของทุกแมตช์ที่ยังรอเริ่มในสนามเดียวกัน
+  const cancelCourtCall = useCallback(
+    (matchId: string) => {
+      setState((prev) => {
+        const t = prev.matches.find((x) => x.id === matchId);
+        if (!t || t.court == null) return prev;
+        const now = new Date().toISOString();
+        return {
+          ...prev,
+          matches: prev.matches.map((m) =>
+            m.tournament_id === t.tournament_id && m.court === t.court && m.status === 'scheduled' ? { ...m, court: null, updated_at: now } : m,
+          ),
+        };
+      });
+      toast('ยกเลิกการเรียกแล้ว');
     },
     [toast],
   );
@@ -1105,6 +1130,7 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
         });
 
         const newNotes = [...prev.notifications];
+        const calledNo = nextMatches.find((x) => x.id === matchId)?.match_no ?? target.match_no;
         [target.reg_a, target.reg_b].filter(Boolean).forEach((regId) => {
           newNotes.unshift({
             id: uuid(),
@@ -1112,7 +1138,7 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
             registration_id: regId!,
             kind: 'schedule',
             title: `เรียกลงสนาม ${courtNo}`,
-            body: `แมตช์ #${target.match_no ?? '-'} (${target.round_label}) กรุณาเตรียมตัวที่สนาม ${courtNo}`,
+            body: `แมตช์ #${calledNo ?? '-'} (${target.round_label}) กรุณาเตรียมตัวที่สนาม ${courtNo}`,
             created_at: now,
             read: false,
           });
@@ -1422,6 +1448,7 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
     runAutoSchedule,
     clearSchedule,
     callMatchToCourt,
+    cancelCourtCall,
     toggleCourtMaintenance,
     addCourt,
     deleteCourt,

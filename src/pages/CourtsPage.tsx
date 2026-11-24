@@ -60,6 +60,7 @@ export function CourtsPage() {
     deleteCourt,
     addCourt,
     setCourtQueue,
+    cancelCourtCall,
   } = useMatchON();
 
   const [callCourtNo, setCallCourtNo] = useState<number | null>(null);
@@ -200,9 +201,9 @@ export function CourtsPage() {
                             </span>
                             <span className="flex items-center gap-2 shrink-0 tabular-nums">
                               {m.sets.map((st, i) => (
-                                <span key={i} className={`text-xs ${st[k] > st[1 - k] ? 'font-bold text-emerald-600' : 'font-medium text-slate-400'}`}>{st[k]}</span>
+                                <span key={i} className={`w-6 text-center text-xs ${st[k] > st[1 - k] ? 'font-bold text-emerald-600' : 'font-medium text-slate-400'}`}>{st[k]}</span>
                               ))}
-                              {kind === 'live' && <span className="font-mono text-xl font-bold text-blue-700">{k === 0 ? m.cur_a : m.cur_b}</span>}
+                              {kind === 'live' && <span className="w-10 text-center font-mono text-xl font-bold text-blue-700">{k === 0 ? m.cur_a : m.cur_b}</span>}
                             </span>
                           </div>
                         );
@@ -319,7 +320,7 @@ export function CourtsPage() {
                     name={court.name}
                     maintenance={court.status === 'maintenance'}
                     canCancelCall={kind === 'wait' && !!m}
-                    onCancelCall={() => m && updateMatchMeta(m.id, { court: null })}
+                    onCancelCall={() => m && cancelCourtCall(m.id)}
                     onToggle={() => toggleCourtMaintenance(court.id)}
                     onDelete={() => { if (window.confirm(`ลบ ${court.name} ? แมตช์ที่ยังไม่แข่งในสนามนี้จะกลับเป็นไม่กำหนดสนาม`)) deleteCourt(court.id); }}
                   />

@@ -94,7 +94,14 @@ function NotificationBell() {
     setCleared(v);
     try { localStorage.setItem(CLR, JSON.stringify(v)); } catch { /* ignore */ }
   };
-  const list = [...state.notifications].filter((n) => new Date(n.created_at).getTime() > cleared.at && !cleared.ids.includes(n.id)).sort((a, b) => (b.created_at || '').localeCompare(a.created_at || '')).slice(0, 50);
+  const seenKey = new Set<string>();
+  const list = [...state.notifications].filter((n) => new Date(n.created_at).getTime() > cleared.at && !cleared.ids.includes(n.id)).sort((a, b) => (b.created_at || '').localeCompare(a.created_at || '')).filter((n) => {
+    // แจ้งเตือนเดียวกันที่ส่งให้ทั้ง 2 ทีม (ผู้จัดเห็นทั้งคู่) แสดงเพียงข้อความเดียว
+    const k = `${n.title}|${n.body}|${(n.created_at || '').slice(0, 19)}`;
+    if (seenKey.has(k)) return false;
+    seenKey.add(k);
+    return true;
+  }).slice(0, 50);
   const unread = list.filter((n) => new Date(n.created_at).getTime() > seen).length;
   const openIt = () => {
     setOpen(true);

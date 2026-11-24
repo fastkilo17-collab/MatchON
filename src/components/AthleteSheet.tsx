@@ -91,9 +91,12 @@ export function AthleteSheet({ reg, onClose, seq, startEdit }: { reg: Registrati
   const [d, setD] = useState<Draft | null>(null);
   const [busy, setBusy] = useState(false);
   const [slipSrc, setSlipSrc] = useState<string | null>(null);
+  const [noteEdit, setNoteEdit] = useState(false);
+  const [noteDraft, setNoteDraft] = useState('');
 
   useEffect(() => {
     setEdit(!!startEdit);
+    setNoteEdit(false);
     setD(reg ? toDraft(reg) : null);
   }, [reg?.id]);
 
@@ -177,7 +180,7 @@ export function AthleteSheet({ reg, onClose, seq, startEdit }: { reg: Registrati
         {edit && d ? (
           <div className="space-y-3">
             <div className="flex items-center gap-3">
-              <PhotoThumb photo={dn('photo')} name={dn('name')} size={64} />
+              <PhotoThumb photo={dn('photo')} name={dn('name')} size={52} />
               <label className="inline-flex items-center gap-1.5 min-h-[40px] px-3 rounded-xl bg-blue-50 text-blue-700 text-xs font-semibold cursor-pointer">
                 <Camera className="w-4 h-4" /> {busy ? 'กำลังอัปโหลด…' : 'เปลี่ยนรูป'}
                 <input type="file" accept="image/*" className="hidden" disabled={busy} onChange={(e) => void pickPhoto(n, e.target.files?.[0])} />
@@ -194,15 +197,15 @@ export function AthleteSheet({ reg, onClose, seq, startEdit }: { reg: Registrati
             </Field>
           </div>
         ) : (
-          <div className="flex items-center gap-3.5">
-            <PhotoThumb photo={photo} name={nm} size={64} />
+          <div className={doubles ? 'flex flex-col items-center gap-2 text-center' : 'flex items-center gap-3.5'}>
+            <PhotoThumb photo={photo} name={nm} size={52} />
             <div className="min-w-0 space-y-0.5">
               <div className="text-base font-bold text-slate-900 break-words">{nm}</div>
               {nk && nk !== nm && <div className="text-xs text-slate-500">ชื่อเล่น {nk}</div>}
               {canSee && ph ? (
-                <div className="flex items-center gap-1.5 text-xs text-slate-600"><Phone className="w-3.5 h-3.5" /> {ph}</div>
+                <div className={`flex items-center gap-1.5 text-xs text-slate-600 ${doubles ? 'justify-center' : ''}`}><Phone className="w-3.5 h-3.5" /> {ph}</div>
               ) : !canSee ? (
-                <div className="flex items-center gap-1.5 text-[11px] text-slate-400"><Lock className="w-3 h-3" /> เบอร์โทรเห็นเฉพาะผู้จัด</div>
+                <div className={`flex items-center gap-1.5 text-[11px] text-slate-400 ${doubles ? 'justify-center' : ''}`}><Lock className="w-3 h-3" /> เบอร์โทรเห็นเฉพาะผู้จัด</div>
               ) : null}
               {yr ? <div className="text-xs text-slate-500">ปีเกิด {yr}</div> : null}
             </div>
@@ -251,9 +254,9 @@ export function AthleteSheet({ reg, onClose, seq, startEdit }: { reg: Registrati
           <div className="space-y-3.5">
             {/* สถานะ */}
             <div className="flex flex-wrap items-center gap-1.5">
-              <span className={`text-[11px] font-bold px-2.5 py-1 rounded-lg ${REG_TONE[live.status]}`}>{REG_STATUS_TH[live.status]}</span>
-              {canSee && <span className={`text-[11px] font-bold px-2.5 py-1 rounded-lg ${pay.tone}`}>{pay.label}</span>}
-              {live.seed != null && <span className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700">มือวาง {live.seed}</span>}
+              <span className={`text-sm font-bold px-3 py-1.5 rounded-lg ${REG_TONE[live.status]}`}>{REG_STATUS_TH[live.status]}</span>
+              {canSee && <span className={`text-sm font-bold px-3 py-1.5 rounded-lg ${pay.tone}`}>{pay.label}</span>}
+              {live.seed != null && <span className="text-sm font-bold px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700">มือวาง {live.seed}</span>}
             </div>
 
             {canSee && <Section icon={Trophy} title="ทีม / ก๊วน">
@@ -263,8 +266,12 @@ export function AthleteSheet({ reg, onClose, seq, startEdit }: { reg: Registrati
                 <div className="text-base font-extrabold text-slate-900">{live.club || 'ไม่ระบุทีม'}</div>
               )}
             </Section>}
-            {playerCard(1)}
-            {doubles && playerCard(2)}
+            {doubles ? (
+              <div className={edit ? 'space-y-3.5' : 'grid grid-cols-2 gap-2.5 items-start'}>
+                {playerCard(1)}
+                {playerCard(2)}
+              </div>
+            ) : playerCard(1)}
 
             {canSee && <Section icon={ReceiptText} title="ข้อมูลการสมัคร">
               {edit && isMgr ? (
@@ -305,7 +312,7 @@ export function AthleteSheet({ reg, onClose, seq, startEdit }: { reg: Registrati
                   </Field>
                 ) : (
                   <div className="space-y-2">
-                    <Row label="สถานะ"><span className={`text-xs font-bold px-2 py-0.5 rounded-md ${pay.tone}`}>{pay.label}</span></Row>
+                    <Row label="สถานะ"><span className={`text-sm font-bold px-2.5 py-1 rounded-lg ${pay.tone}`}>{pay.label}</span></Row>
                     <Row label="ค่าสมัคร">{catTotal(cat) ? `${baht(catTotal(cat))}${cat?.shuttle_fee ? ` (รวม ${shuttleText(cat)})` : ''}` : 'ฟรี'}</Row>
                   </div>
                 )}
@@ -331,12 +338,25 @@ export function AthleteSheet({ reg, onClose, seq, startEdit }: { reg: Registrati
             </Section>
 
             <Section icon={MessageSquare} title="หมายเหตุ">
-              {edit && isMgr ? (
+              {!edit && isMgr && noteEdit ? (
+                <div className="space-y-2">
+                  <textarea rows={3} maxLength={300} autoFocus value={noteDraft} onChange={(e) => setNoteDraft(e.target.value)} placeholder="เช่น เหตุผลที่ไม่ผ่าน / สิ่งที่ต้องแก้ไข (ทุกคนเห็น)" className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm" />
+                  <div className="grid grid-cols-2 gap-2">
+                    <button type="button" onClick={() => setNoteEdit(false)} className="min-h-[40px] rounded-xl bg-white border border-slate-200 text-xs font-semibold text-slate-700">ยกเลิก</button>
+                    <button type="button" onClick={() => { updateRegistration(live.id, { note: noteDraft.trim() }); setD((p) => (p ? { ...p, note: noteDraft.trim() } : p)); setNoteEdit(false); }} className="min-h-[40px] rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold">บันทึกหมายเหตุ</button>
+                  </div>
+                </div>
+              ) : edit && isMgr ? (
                 <textarea rows={3} maxLength={300} value={d.note} onChange={(e) => set({ note: e.target.value })} placeholder="เช่น เหตุผลที่ไม่ผ่าน / สิ่งที่ต้องแก้ไข (ทุกคนเห็น)" className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm" />
               ) : live.note ? (
                 <div className="text-sm text-slate-800 whitespace-pre-wrap break-words">{live.note}</div>
               ) : (
                 <div className="text-xs text-slate-400">ไม่มีหมายเหตุ</div>
+              )}
+              {isMgr && !edit && !noteEdit && (
+                <button type="button" onClick={() => { setNoteDraft(live.note || ''); setNoteEdit(true); }} className="inline-flex items-center gap-1.5 min-h-[36px] px-3 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold">
+                  <Pencil className="w-3.5 h-3.5" /> แก้ไขหมายเหตุ
+                </button>
               )}
             </Section>
           </div>
