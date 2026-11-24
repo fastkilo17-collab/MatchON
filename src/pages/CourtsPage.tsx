@@ -25,15 +25,15 @@ function CourtMenu({ name, maintenance, canCancelCall, onCancelCall, onToggle, o
   const run = (fn: () => void) => () => { setOpen(false); fn(); };
   return (
     <div className="relative ml-auto">
-      <button type="button" aria-label={`เมนู ${name}`} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((o) => !o)} className="inline-flex items-center gap-1 min-h-[42px] px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold">
-        <MoreVertical className="w-4 h-4" /> เมนู
+      <button type="button" aria-label={`เมนู ${name}`} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((o) => !o)} className="inline-flex items-center justify-center min-h-[42px] min-w-[42px] rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700">
+        <MoreVertical className="w-5 h-5" />
       </button>
       {open && (
         <>
           <button type="button" aria-label="ปิดเมนู" className="fixed inset-0 z-30 cursor-default" onClick={() => setOpen(false)} />
           <div role="menu" className="absolute right-0 bottom-full mb-1 z-40 min-w-[180px] rounded-xl border border-slate-200 bg-white shadow-lg py-1">
-            {canCancelCall && <button type="button" role="menuitem" onClick={run(onCancelCall)} className={`${item} text-slate-700`}>ยกเลิกการเรียก</button>}
-            <button type="button" role="menuitem" onClick={run(onToggle)} className={`${item} text-slate-700`}>{maintenance ? 'เปิดใช้สนาม' : 'งดใช้สนาม'}</button>
+            {canCancelCall && <button type="button" role="menuitem" onClick={run(onCancelCall)} className={`${item} text-slate-700`}><RotateCcw className="w-3.5 h-3.5" /> ยกเลิกการเรียก</button>}
+            <button type="button" role="menuitem" onClick={run(onToggle)} className={`${item} text-slate-700`}>{maintenance ? <Play className="w-3.5 h-3.5" /> : <PauseCircle className="w-3.5 h-3.5" />} {maintenance ? 'เปิดใช้สนาม' : 'งดใช้สนาม'}</button>
             <button type="button" role="menuitem" onClick={run(onDelete)} className={`${item} text-red-600`}><Trash2 className="w-3.5 h-3.5" /> ลบสนาม</button>
           </div>
         </>
@@ -59,6 +59,7 @@ export function CourtsPage() {
     toggleCourtMaintenance,
     deleteCourt,
     addCourt,
+    setCourtQueue,
   } = useMatchON();
 
   const [callCourtNo, setCallCourtNo] = useState<number | null>(null);
@@ -197,7 +198,7 @@ export function CourtsPage() {
                                 {r && <span className="block text-xs font-light text-slate-500 truncate">{playersNick(r)}</span>}
                               </span>
                             </span>
-                            <span className="flex items-baseline gap-2 shrink-0 tabular-nums">
+                            <span className="flex items-center gap-2 shrink-0 tabular-nums">
                               {m.sets.map((st, i) => (
                                 <span key={i} className={`text-xs ${st[k] > st[1 - k] ? 'font-bold text-emerald-600' : 'font-medium text-slate-400'}`}>{st[k]}</span>
                               ))}

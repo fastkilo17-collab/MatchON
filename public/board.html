@@ -15,7 +15,7 @@ if(P){var r=document.documentElement.style;['--b0','--b1','--b2','--bd','--tx','
 :root{--b0:#051F20;--b1:#0B2B26;--b2:#163832;--bd:#235347;--tx:#DAF1DE;--mu:#8EB69B;--mu2:#b5d3bf;--mu3:#5f8a78;--win:#4ade80;--cur:#ffd24a;--live:#ef4444;--wait:#f5b301}
 *{box-sizing:border-box;margin:0}
 html,body{height:100%;background:var(--b0);color:var(--tx);font-family:'Noto Sans Thai',sans-serif;overflow:hidden}
-body{display:grid;grid-template-rows:auto minmax(0,1fr) auto}
+body{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto}
 header{display:flex;align-items:center;gap:12px;padding:.8vh 1.2vw;border-bottom:1px solid var(--b2);min-height:5.2vh}
 .logo{font:800 clamp(16px,2.4vh,26px) 'Prompt'}.logo b{color:#f5b301}
 #tname{font:700 clamp(16px,3vh,34px) 'Prompt','Noto Sans Thai';text-align:center;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -23,11 +23,25 @@ header{display:flex;align-items:center;gap:12px;padding:.8vh 1.2vw;border-bottom
 #conn{font-size:clamp(11px,1.6vh,16px);color:var(--mu);white-space:nowrap}
 .btn{background:var(--b2);color:var(--tx);border:1px solid var(--bd);border-radius:10px;min-height:34px;min-width:34px;padding:0 12px;font:600 clamp(12px,1.8vh,16px) 'Noto Sans Thai';cursor:pointer}
 .btn:hover{background:var(--bd)}
-main{min-height:0;display:grid;gap:1vh 1vw;padding:1vh 1vw;grid-template-columns:minmax(0,1fr) 26vw;grid-template-areas:"g q"}
+main{min-height:0;display:grid;gap:1vh 1vw;padding:1vh 1vw;grid-template-columns:minmax(0,1fr) clamp(200px,24vw,480px);grid-template-areas:"g q"}
 main.noq{grid-template-columns:minmax(0,1fr);grid-template-areas:"g"}
+body[data-mode=bottom] main{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) clamp(130px,32vh,420px);grid-template-areas:"g" "q"}
+body[data-mode=bottom] main.noq{grid-template-rows:minmax(0,1fr)}
+body[data-mode=bottom][data-wide] .ql{flex-direction:row}
+body[data-mode=bottom][data-wide] .qi{border-top:0;border-left:1px solid var(--b2);padding:.2em .7em}
+body[data-mode=bottom][data-wide] .qi:first-child{border-left:0}
+body.scroll{display:block;overflow:auto;height:auto}html:has(body.scroll){overflow:auto}
+body.scroll main{display:block;padding:8px}
+body.scroll #g{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr))!important;grid-template-rows:none!important;font-size:13px!important}
+body.scroll .card{min-height:190px}
+body.scroll #q{margin-top:8px;height:auto;font-size:13px!important}
+body.scroll .qc{height:auto}body.scroll .qi{padding:.5em 0}
+body.scroll #ads{height:90px}
+body.scroll header{position:sticky;top:0;background:var(--b0);z-index:5}
 #g{grid-area:g;display:grid;gap:1vh 1vw;min-height:0;min-width:0;align-content:stretch}
 #q{grid-area:q;min-height:0;min-width:0}
-@media (orientation:portrait){main{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) 34vh;grid-template-areas:"g" "q"}main.noq{grid-template-rows:minmax(0,1fr)}}
+@media (max-width:760px){#clock,#conn{display:none}header{gap:8px}.logo{display:none}}
+@media (max-width:520px){.btn .lb{display:none}}
 .card{background:var(--b1);border:1px solid var(--bd);border-radius:1em;padding:.8em 1em;display:flex;flex-direction:column;gap:.35em;min-width:0;min-height:0;overflow:hidden}
 .card.live{border-color:var(--live);box-shadow:0 0 0 1px #ef444466,0 0 1.2em #ef444422}
 .card.wait{border-color:#8a6a10}
@@ -53,13 +67,14 @@ main.noq{grid-template-columns:minmax(0,1fr);grid-template-areas:"g"}
 .idle{flex:1;display:grid;place-items:center;color:var(--mu3);font-size:.95em}
 .qc{height:100%;background:var(--b1);border:1px solid var(--bd);border-radius:1em;padding:.8em 1em;display:flex;flex-direction:column;gap:.4em;overflow:hidden}
 .qh{font:800 1.2em 'Prompt';color:var(--mu2)}
-.qi{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;gap:.1em;border-top:1px solid var(--b2);padding:.2em 0}
+.qi{line-height:1.25;flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;justify-content:center;gap:.1em;border-top:1px solid var(--b2);padding:.2em 0}
 .q1{display:flex;align-items:center;gap:.5em;font:700 .9em 'Prompt'}.q1 .cr{margin-left:auto;color:var(--wait);font:700 .85em 'Noto Sans Thai'}
 .q2{font-size:.72em;color:var(--mu);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .q3{font:700 .95em 'Noto Sans Thai';white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.q3 i{font-style:normal;color:var(--mu3);font-weight:500;padding:0 .35em}
+.ql{flex:1;min-height:0;display:flex;flex-direction:column}
 .qe{flex:1;display:grid;place-items:center;color:var(--mu3);font-size:.9em}
-#ads{height:13vh;padding:.8vh 1vw 1vh;overflow:hidden;border-top:1px solid var(--b2);background:var(--b1)}
-@media (orientation:portrait){#ads{height:10vh}}
+#ads{height:clamp(56px,13vh,200px);padding:.8vh 1vw 1vh;overflow:hidden;border-top:1px solid var(--b2);background:var(--b1)}
+@media (max-height:520px){#ads{height:18vh}}
 #ads[hidden]{display:none}
 .trk{display:flex;gap:2vw;height:100%;width:max-content;align-items:center}
 .trk img{height:100%;width:auto;max-width:none;border-radius:.6vh;object-fit:contain}
@@ -76,7 +91,7 @@ main.noq{grid-template-columns:minmax(0,1fr);grid-template-areas:"g"}
 </style>
 </head>
 <body>
-<header><div class="logo">Match<b>ON</b></div><div id="tname">Live Score</div><div id="clock"></div><div id="conn">กำลังเชื่อมต่อ…</div><button id="setb" class="btn" type="button" aria-label="ตั้งค่า">⚙ ตั้งค่า</button><button id="fs" class="btn" type="button">⛶ เต็มจอ</button></header>
+<header><div class="logo">Match<b>ON</b></div><div id="tname">Live Score</div><div id="clock"></div><div id="conn">กำลังเชื่อมต่อ…</div><button id="setb" class="btn" type="button" aria-label="ตั้งค่า">⚙<span class="lb"> ตั้งค่า</span></button><button id="fs" class="btn" type="button" aria-label="เต็มจอ">⛶<span class="lb"> เต็มจอ</span></button></header>
 <main id="m"><div id="g"></div><div id="q"></div></main>
 <div id="ads" hidden><div class="trk" id="trk"></div></div>
 <div id="set"><div id="setbox"><h3>ตั้งค่าการแสดงผล</h3><div class="sub">การ์ดสนาม</div><div id="setc"></div><div class="sub">ส่วนอื่น</div><label><input type="checkbox" id="sq"> การ์ดแมตช์ถัดไป</label><label><input type="checkbox" id="sa"> แถบรูปโฆษณา</label><button class="btn" id="setx" type="button" style="margin-top:6px">เสร็จสิ้น</button></div></div>
@@ -120,28 +135,37 @@ function queue() {
     const nm = (x) => esc((x && (x.c || x.n)) || '-');
     return `<div class="qi"><div class="q1"><span>${m.no ? '#' + m.no : ''}</span><span>${hm(m.at)}</span>${m.court ? `<span class="cr">→ สนาม ${m.court}</span>` : ''}</div><div class="q2">${esc([m.cat, m.round].filter(Boolean).join(' · '))}</div><div class="q3">${nm(m.a)}<i>vs</i>${nm(m.b)}</div></div>`;
   }).join('');
-  return `<div class="qc"><div class="qh">แมตช์ถัดไป</div>${items || '<div class="qe">ยังไม่มีคิวแมตช์</div>'}</div>`;
+  return `<div class="qc"><div class="qh">แมตช์ถัดไป</div><div class="ql">${items || '<div class="qe">ยังไม่มีคิวแมตช์</div>'}</div></div>`;
 }
 // ---- layout: fit everything on one screen ----
 let shown = [];
-function layout() {
-  const g = $('g'), m = $('m');
-  const W = g.clientWidth, H = g.clientHeight, N = shown.length;
-  if (N) {
-    const gx = 0.01 * innerWidth, gy = 0.01 * innerHeight;
-    let best = null;
-    for (let cols = 1; cols <= N; cols++) {
-      const rows = Math.ceil(N / cols);
-      const u = Math.min((W - gx * (cols - 1)) / cols / 25, (H - gy * (rows - 1)) / rows / 14.5);
-      if (!best || u > best.u) best = { cols, rows, u };
-    }
-    g.style.gridTemplateColumns = `repeat(${best.cols},minmax(0,1fr))`;
-    g.style.gridTemplateRows = `repeat(${best.rows},minmax(0,1fr))`;
-    g.style.fontSize = Math.max(8, Math.min(46, best.u)) + 'px';
+function fitCourts() {
+  const g = $('g'), W = g.clientWidth, H = g.clientHeight, N = shown.length;
+  if (!N) return 99;
+  const gx = 0.01 * innerWidth, gy = 0.01 * innerHeight;
+  let best = null;
+  for (let cols = 1; cols <= N; cols++) {
+    const rows = Math.ceil(N / cols);
+    const u = Math.min((W - gx * (cols - 1)) / cols / 25, (H - gy * (rows - 1)) / rows / 16.5);
+    if (!best || u > best.u) best = { cols, rows, u };
   }
+  g.style.gridTemplateColumns = `repeat(${best.cols},minmax(0,1fr))`;
+  g.style.gridTemplateRows = `repeat(${best.rows},minmax(0,1fr))`;
+  g.style.fontSize = Math.max(8, Math.min(46, best.u)) + 'px';
+  return best.u;
+}
+function layout() {
+  const b = document.body, W = innerWidth, H = innerHeight;
+  b.classList.remove('scroll');
+  b.dataset.mode = W / H >= 1.25 ? 'side' : 'bottom';
+  if (b.dataset.mode === 'bottom' && W >= 900) b.setAttribute('data-wide', ''); else b.removeAttribute('data-wide');
+  let u = fitCourts();
+  // too small to fit everything legibly on one screen (e.g. phones): fall back to a scrollable layout
+  if (u < 9 && shown.length) { b.classList.add('scroll'); return; }
   if (S.q) {
-    const q = $('q');
-    q.style.fontSize = Math.max(8, Math.min(34, Math.min(q.clientWidth / 19, q.clientHeight / (3 + 5 * 4.3)))) + 'px';
+    const q = $('q'), row = b.hasAttribute('data-wide');
+    const f = row ? Math.min(q.clientWidth / 5 / 13, q.clientHeight / (3 + 4.8)) : Math.min(q.clientWidth / 19, q.clientHeight / (3 + 5 * 4.8));
+    q.style.fontSize = Math.max(8, Math.min(34, f)) + 'px';
   }
 }
 function render() {

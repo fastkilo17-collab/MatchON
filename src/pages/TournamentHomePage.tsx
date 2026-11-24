@@ -95,7 +95,7 @@ export function TournamentHomePage() {
 
       <section className="space-y-2">
         <h3 className="font-display text-base font-bold text-slate-900">ประเภทที่เปิดรับสมัคร</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
           {tCategories.map((c) => {
             const mine = tRegistrations.filter((r) => r.category_id === c.id && r.status !== 'cancelled');
             const n = mine.filter((r) => r.status !== 'rejected').length;
@@ -104,13 +104,13 @@ export function TournamentHomePage() {
             const paid = mine.filter((r) => r.pay_status === 'paid').length;
             const pct = c.max_teams ? Math.min(100, Math.round((n / c.max_teams) * 100)) : 0;
             return (
-              <div key={c.id} className="bg-white border border-slate-200/80 rounded-2xl p-4 space-y-3">
+              <div key={c.id} className="bg-white border border-slate-200/80 rounded-2xl px-3 py-2.5 space-y-1.5">
                 <div className="text-sm font-bold text-slate-900 min-w-0 truncate">{c.name}</div>
-                <div className="grid grid-cols-4 gap-2 text-center tabular-nums">
-                  <div><div className="text-base font-bold text-slate-900 leading-tight">{n}<span className="text-[11px] font-normal text-slate-400"> / {c.max_teams}</span></div><div className="text-[11px] text-slate-500">สมัคร</div></div>
-                  <div><div className="text-base font-bold text-emerald-700 leading-tight">{pass}</div><div className="text-[11px] text-emerald-700">ผ่าน</div></div>
-                  <div><div className="text-base font-bold text-red-600 leading-tight">{fail}</div><div className="text-[11px] text-red-600">ไม่ผ่าน</div></div>
-                  <div><div className="text-base font-bold text-blue-700 leading-tight">{paid}</div><div className="text-[11px] text-blue-700">ชำระแล้ว</div></div>
+                <div className="grid grid-cols-4 gap-1 text-center tabular-nums">
+                  <div><div className="text-2xl font-extrabold text-slate-900 leading-none">{n}<span className="text-xs font-normal text-slate-400">/{c.max_teams}</span></div><div className="text-[11px] leading-tight text-slate-500">สมัคร</div></div>
+                  <div><div className="text-2xl font-extrabold text-emerald-700 leading-none">{pass}</div><div className="text-[11px] leading-tight text-emerald-700">ผ่าน</div></div>
+                  <div><div className="text-2xl font-extrabold text-red-600 leading-none">{fail}</div><div className="text-[11px] leading-tight text-red-600">ไม่ผ่าน</div></div>
+                  <div><div className="text-2xl font-extrabold text-blue-700 leading-none">{paid}</div><div className="text-[11px] leading-tight text-blue-700">ชำระแล้ว</div></div>
                 </div>
                 <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden"><div className={`h-full ${pct >= 100 ? 'bg-red-500' : 'bg-blue-500'}`} style={{ width: pct + '%' }} /></div>
               </div>
