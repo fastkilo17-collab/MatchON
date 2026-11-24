@@ -105,16 +105,14 @@ export function TournamentHomePage() {
             const pct = c.max_teams ? Math.min(100, Math.round((n / c.max_teams) * 100)) : 0;
             return (
               <div key={c.id} className="bg-white border border-slate-200/80 rounded-2xl p-4 space-y-3">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="text-sm font-bold text-slate-900 min-w-0 truncate">{c.name}</div>
-                  <div className="text-right shrink-0 tabular-nums text-xs text-slate-500">สมัคร <b className="text-lg text-slate-900">{n}</b> / {c.max_teams}</div>
+                <div className="text-sm font-bold text-slate-900 min-w-0 truncate">{c.name}</div>
+                <div className="grid grid-cols-4 gap-2 text-center tabular-nums">
+                  <div><div className="text-base font-bold text-slate-900 leading-tight">{n}<span className="text-[11px] font-normal text-slate-400"> / {c.max_teams}</span></div><div className="text-[11px] text-slate-500">สมัคร</div></div>
+                  <div><div className="text-base font-bold text-emerald-700 leading-tight">{pass}</div><div className="text-[11px] text-emerald-700">ผ่าน</div></div>
+                  <div><div className="text-base font-bold text-red-600 leading-tight">{fail}</div><div className="text-[11px] text-red-600">ไม่ผ่าน</div></div>
+                  <div><div className="text-base font-bold text-blue-700 leading-tight">{paid}</div><div className="text-[11px] text-blue-700">ชำระแล้ว</div></div>
                 </div>
                 <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden"><div className={`h-full ${pct >= 100 ? 'bg-red-500' : 'bg-blue-500'}`} style={{ width: pct + '%' }} /></div>
-                <div className="grid grid-cols-3 gap-2 text-center">
-                  <div className="rounded-xl bg-emerald-50 py-1.5"><div className="text-base font-bold tabular-nums text-emerald-700">{pass}</div><div className="text-[11px] text-emerald-700">ทีมผ่าน</div></div>
-                  <div className="rounded-xl bg-red-50 py-1.5"><div className="text-base font-bold tabular-nums text-red-600">{fail}</div><div className="text-[11px] text-red-600">ไม่ผ่าน</div></div>
-                  <div className="rounded-xl bg-blue-50 py-1.5"><div className="text-base font-bold tabular-nums text-blue-700">{paid}</div><div className="text-[11px] text-blue-700">ชำระแล้ว</div></div>
-                </div>
               </div>
             );
           })}

@@ -313,19 +313,11 @@ export function SchedulePage() {
                       <div className="flex items-center justify-between gap-3">
                         <div className="flex items-center gap-2 min-w-0 text-xs text-slate-500">
                           {m.match_no ? <MatchNo n={m.match_no} /> : <span className="text-slate-400">—</span>}
-                          {m.status === 'live' && (
-                            <span className="inline-flex items-center gap-1 rounded-md bg-red-600 text-white px-1.5 py-0.5 text-[11px] font-extrabold shrink-0">
-                              <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />LIVE
-                            </span>
-                          )}
                           <span className="truncate">{catMap[m.category_id]?.name || ''}</span>
                           <span aria-hidden="true">·</span>
                           <span className="truncate">{m.round_label}</span>
-                          {m.court && m.status !== 'finished' && (
-                            <span className="shrink-0 rounded-md bg-blue-50 text-blue-700 px-1.5 py-0.5 text-[11px] font-bold">สนาม {m.court}</span>
-                          )}
                         </div>
-                        <span className="shrink-0 text-sm font-light tabular-nums text-slate-600">
+                        <span className="shrink-0 text-[13px] font-light tabular-nums text-slate-600">
                           {m.scheduled_at ? fmtTime(m.scheduled_at) : '--:--'}
                         </span>
                       </div>
@@ -337,7 +329,16 @@ export function SchedulePage() {
                         <TeamAvatars reg={rb} size={30} flat />
                       </div>
                       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 text-xs">
-                        <span />
+                        <span className="flex items-center gap-1.5 justify-self-start min-w-0">
+                          {m.court && m.status !== 'finished' && (
+                            <span className="shrink-0 rounded-md bg-blue-50 text-blue-700 px-1.5 py-0.5 text-[11px] font-bold">สนาม {m.court}</span>
+                          )}
+                          {m.status === 'live' && (
+                            <span className="inline-flex items-center gap-1 rounded-md bg-red-600 text-white px-1.5 py-0.5 text-[11px] font-extrabold shrink-0">
+                              <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />LIVE
+                            </span>
+                          )}
+                        </span>
                         <span className={`font-mono font-bold tabular-nums text-center ${m.status === 'live' ? 'text-red-600' : 'text-slate-500'}`}>
                           {m.status === 'finished' && m.sets.length > 0 ? (
                             <span className="inline-flex items-center gap-1.5">

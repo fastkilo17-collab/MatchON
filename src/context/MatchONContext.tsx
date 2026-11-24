@@ -1184,7 +1184,7 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
     setState((prev) => ({ ...prev, courts: prev.courts.map((c) => (c.id === courtId ? { ...c, queue: ids } : c)) }));
   }, []);
 
-  // คิวแมตช์ถัดไป: เมื่อสนามว่าง (ไม่มีแมตช์กำลังแข่ง/รอเริ่ม) เรียกแมตช์แรกในคิวลงสนามอัตโนมัติ
+  // คิวแมตช์ถัดไป: เมื่อสนามไม่มีแมตช์กำลังแข่ง เรียกแมตช์แรกในคิวลงสนามอัตโนมัติ (ใช้ขั้นตอนเดียวกับปุ่ม "เรียกแมตช์")
   useEffect(() => {
     if (!activeTournament || !isManagerOf(activeTournament.id)) return;
     const tid = activeTournament.id;
@@ -1195,14 +1195,14 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
     for (const c of state.courts.filter((x) => x.tournament_id === tid)) {
       const q = c.queue || [];
       if (!q.length) continue;
-      // ตัดรายการที่ใช้ไม่ได้แล้ว (จบ/กำลังแข่ง/ถูกลบ/มีสนามแล้ว)
+      // ตัดรายการที่ใช้ไม่ได้แล้ว (จบ/กำลังแข่ง/ถูกลบ)
       const valid = q.filter((id) => {
         const m = ms.find((x) => x.id === id);
-        return !!m && m.status === 'scheduled' && !!m.reg_a && !!m.reg_b && !m.court;
+        return !!m && m.status === 'scheduled' && !!m.reg_a && !!m.reg_b;
       });
       let call: string | undefined;
-      const occupied = ms.some((m) => m.court === c.no && (m.status === 'live' || (m.status === 'scheduled' && m.reg_a && m.reg_b)));
-      if (c.status === 'available' && !occupied && valid.length) {
+      const hasLive = ms.some((m) => m.court === c.no && m.status === 'live');
+      if (c.status === 'available' && !hasLive && valid.length) {
         const first = ms.find((x) => x.id === valid[0])!;
         const teams = [first.reg_a, first.reg_b].filter(Boolean) as string[];
         if (!teams.some((t) => liveTeams.has(t)) && !claimed.has(first.id)) {
@@ -1221,12 +1221,8 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
         const p = patches.find((x) => x.court.id === c.id);
         return p ? { ...c, queue: p.keep } : c;
       }),
-      matches: prev.matches.map((m) => {
-        const p = patches.find((x) => x.call === m.id);
-        return p ? { ...m, court: p.court.no, updated_at: new Date().toISOString() } : m;
-      }),
     }));
-    patches.filter((p) => p.call).forEach((p) => toast(`เรียกแมตช์ถัดไปลง ${p.court.name} อัตโนมัติ`));
+    patches.filter((p) => p.call).forEach((p) => callMatchToCourt(p.call!, p.court.no));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.matches, state.courts, activeTournament?.id]);
 

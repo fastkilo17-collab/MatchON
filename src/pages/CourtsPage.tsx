@@ -91,7 +91,7 @@ export function CourtsPage() {
     });
 
   const queuedIds = new Set(tCourts.flatMap((c) => c.queue || []));
-  const addable = readyQueue.filter((m) => !m.court && !queuedIds.has(m.id));
+  const addable = readyQueue.filter((m) => !queuedIds.has(m.id));
   const matchById = new Map(tMatches.map((m) => [m.id, m]));
   const freeCount = tCourts.filter(
     (c) => c.status === 'available' && !liveMatches.some((m) => m.court === c.no),
@@ -181,27 +181,32 @@ export function CourtsPage() {
                         <MatchNo n={m.match_no} />
                         <span className="truncate">{catMap[m.category_id]?.name || ''} · {m.round_label}</span>
                       </span>
-                      {m.scheduled_at && <span className="tabular-nums font-semibold text-slate-700">{fmtTime(m.scheduled_at)}</span>}
+                      {m.scheduled_at && <span className="tabular-nums text-[13px] font-light text-slate-600">{fmtTime(m.scheduled_at)}</span>}
                     </div>
-                    <div className="space-y-1 text-sm font-bold text-slate-900">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="flex items-center gap-2 min-w-0"><TeamAvatars reg={m.reg_a ? regMap[m.reg_a] : null} /><span className="truncate">{teamName(m.reg_a ? regMap[m.reg_a] : null)}</span></span>
-                        {kind === 'live' && (
-                          <span className="font-mono text-base tabular-nums text-blue-700">{m.cur_a}</span>
-                        )}
-                      </div>
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="flex items-center gap-2 min-w-0"><TeamAvatars reg={m.reg_b ? regMap[m.reg_b] : null} /><span className="truncate">{teamName(m.reg_b ? regMap[m.reg_b] : null)}</span></span>
-                        {kind === 'live' && (
-                          <span className="font-mono text-base tabular-nums text-blue-700">{m.cur_b}</span>
-                        )}
-                      </div>
+                    <div className="space-y-1.5">
+                      {(['a', 'b'] as const).map((side) => {
+                        const rid = side === 'a' ? m.reg_a : m.reg_b;
+                        const r = rid ? regMap[rid] : null;
+                        const k = side === 'a' ? 0 : 1;
+                        return (
+                          <div key={side} className="flex items-center justify-between gap-2">
+                            <span className="flex items-center gap-2 min-w-0">
+                              <TeamAvatars reg={r} />
+                              <span className="min-w-0 leading-tight">
+                                <span className="block text-sm font-normal text-slate-900 truncate">{r?.club || teamName(r)}</span>
+                                {r && <span className="block text-xs font-light text-slate-500 truncate">{playersNick(r)}</span>}
+                              </span>
+                            </span>
+                            <span className="flex items-baseline gap-2 shrink-0 tabular-nums">
+                              {m.sets.map((st, i) => (
+                                <span key={i} className={`text-xs ${st[k] > st[1 - k] ? 'font-bold text-emerald-600' : 'font-medium text-slate-400'}`}>{st[k]}</span>
+                              ))}
+                              {kind === 'live' && <span className="font-mono text-xl font-bold text-blue-700">{k === 0 ? m.cur_a : m.cur_b}</span>}
+                            </span>
+                          </div>
+                        );
+                      })}
                     </div>
-                    {m.sets.length > 0 && (
-                      <div className="text-[11px] font-mono text-slate-500 tabular-nums">
-                        เซตก่อนหน้า: {scoreText({ ...m, status: 'finished' })}
-                      </div>
-                    )}
                   </div>
                 ) : (
                   <div className="py-6 text-center text-xs text-slate-400">

@@ -85,7 +85,7 @@ export function useLiveBridge(a: Args) {
       const A = side(ra);
       const B = side(rb);
       return {
-        courtNo: no, hidden: false, status: 'LIVE', matchCode: CODE(m),
+        courtNo: no, hidden: false, status: 'LIVE', matchCode: CODE(m), schedAt: m.scheduled_at ? Date.parse(m.scheduled_at) || 0 : 0,
         round: `${m.match_no ? 'แมตช์ #' + m.match_no : ''} ${C[m.category_id]?.name || ''} ${m.round_label || ''}`.trim(),
         matchNo: m.match_no || null, roundLabel: m.round_label || '', catName: C[m.category_id]?.name || '',
         rule: (() => { const r = ruleForMatch(m, latest.current.categories, latest.current.rules); return { best_of: r.best_of, points: r.points, cap: r.cap, deuce: r.deuce, playTwo: r.play_two }; })(),
@@ -223,6 +223,44 @@ export function useLiveBridge(a: Args) {
       }).catch(() => { delete lastPushed.current[m.id]; });
     }
   }, [matches, fb, bridgeOn, fbLoaded, courts]);
+
+  // ข้อมูลเสริมสำหรับจอใหญ่: คิวแมตช์ถัดไป 5 คู่, รูปโฆษณา (โปสเตอร์รายการ), ชื่อรายการ
+  const lastMeta = useRef('');
+  useEffect(() => {
+    if (!canWrite || !bridgeOn || !FB.current?.writeBoardMeta || !cfg.current || !tournament) return;
+    const R = regMap;
+    const onCourt = new Set(courts.map((c) => currentMatch(c.no)?.id).filter(Boolean) as string[]);
+    const side = (id: string | null) => {
+      const r = id ? R[id] : null;
+      const nick = r ? (['p1', 'p2'] as const).map((k) => (r as any)[`${k}_nick`] || (r as any)[`${k}_name`]).filter(Boolean).join(' / ') : '';
+      return { n: nick, c: r?.club || '' };
+    };
+    const queue = matches
+      .filter((m) => m.status === 'scheduled' && m.reg_a && m.reg_b && !onCourt.has(m.id))
+      .sort((a, b) => {
+        const ta = a.scheduled_at ? Date.parse(a.scheduled_at) : Number.MAX_SAFE_INTEGER;
+        const tb = b.scheduled_at ? Date.parse(b.scheduled_at) : Number.MAX_SAFE_INTEGER;
+        return ta - tb || (a.match_no || 9999) - (b.match_no || 9999);
+      })
+      .slice(0, 5)
+      .map((m) => ({
+        no: m.match_no || 0,
+        at: m.scheduled_at ? Date.parse(m.scheduled_at) || 0 : 0,
+        cat: catMap[m.category_id]?.name || '',
+        round: m.round_label || '',
+        court: m.court || 0,
+        a: side(m.reg_a),
+        b: side(m.reg_b),
+      }));
+    const posters = (tournament.posters && tournament.posters.length ? tournament.posters : tournament.poster ? [tournament.poster] : []) as string[];
+    const ads = posters.filter((u) => u && (!u.startsWith('data:') || u.length < 3000)).map((u) => photoUrl(u));
+    const meta = { tname: tournament.name, queue, ads };
+    const sig = JSON.stringify(meta);
+    if (sig === lastMeta.current) return;
+    lastMeta.current = sig;
+    Promise.resolve(FB.current.writeBoardMeta(cfg.current.live_id, meta)).catch(() => { lastMeta.current = ''; });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [matches, regMap, catMap, courts, tournament, bridgeOn, canWrite]);
 
   // สนามที่ถูกลบในแอป -> ลบออกจาก Firebase ด้วย (จอใหญ่/หน้ากรรมการจะไม่เห็น)
   useEffect(() => {

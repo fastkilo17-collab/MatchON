@@ -314,9 +314,13 @@ export function LiveScorePage() {
                             </span>
                             <span className="text-[11px] font-bold text-slate-300">VS</span>
                             {shownSets.length > 0 && (
-                              <div className="flex flex-col items-center text-[11px] leading-tight font-medium text-slate-500 tabular-nums">
+                              <div className="flex flex-col items-center text-base leading-tight font-bold tabular-nums">
                                 {shownSets.map((x, i) => (
-                                  <span key={i}>{x[0]} - {x[1]}</span>
+                                  <span key={i} className="text-slate-400">
+                                    <span className={x[0] > x[1] ? 'text-emerald-600' : ''}>{x[0]}</span>
+                                    {' - '}
+                                    <span className={x[1] > x[0] ? 'text-emerald-600' : ''}>{x[1]}</span>
+                                  </span>
                                 ))}
                               </div>
                             )}

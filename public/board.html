@@ -12,90 +12,201 @@ try{var T=localStorage.getItem('matchon.theme'),P={purple:['#0B0720','#150d33','
 if(P){var r=document.documentElement.style;['--b0','--b1','--b2','--bd','--tx','--mu','--mu2','--mu3'].forEach(function(k,i){r.setProperty(k,P[i])})}}catch(e){}
 </script>
 <style>
-:root{--b0:#051F20;--b1:#0B2B26;--b2:#163832;--bd:#235347;--tx:#DAF1DE;--mu:#8EB69B;--mu2:#b5d3bf;--mu3:#5f8a78}
+:root{--b0:#051F20;--b1:#0B2B26;--b2:#163832;--bd:#235347;--tx:#DAF1DE;--mu:#8EB69B;--mu2:#b5d3bf;--mu3:#5f8a78;--win:#4ade80;--cur:#ffd24a;--live:#ef4444;--wait:#f5b301}
 *{box-sizing:border-box;margin:0}
 html,body{height:100%;background:var(--b0);color:var(--tx);font-family:'Noto Sans Thai',sans-serif;overflow:hidden}
-body{display:flex;flex-direction:column}
-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 16px;border-bottom:1px solid var(--b2);flex:0 0 auto}
-.logo{font:800 20px 'Prompt'}.logo b{color:#f5b301}
-#tname{font:700 18px 'Noto Sans Thai';color:var(--tx);text-align:center;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#conn{font-size:12px;color:var(--mu);white-space:nowrap}
-#fs{background:var(--b2);color:var(--tx);border:1px solid var(--bd);border-radius:10px;min-height:34px;padding:0 12px;font:600 13px 'Noto Sans Thai';cursor:pointer}
-main{flex:1 1 auto;min-height:0;display:grid;gap:10px;padding:10px 12px;font-size:16px;overflow:auto}
-.card{background:var(--b1);border:1px solid var(--bd);border-radius:1.1em;padding:max(1em,14px) max(1.4em,18px) max(1.2em,16px);display:flex;flex-direction:column;gap:.4em;min-width:0;min-height:0;overflow:hidden}
-.card.live{border-color:#ef4444;box-shadow:0 0 0 1px #ef444455}
+body{display:grid;grid-template-rows:auto minmax(0,1fr) auto}
+header{display:flex;align-items:center;gap:12px;padding:.8vh 1.2vw;border-bottom:1px solid var(--b2);min-height:5.2vh}
+.logo{font:800 clamp(16px,2.4vh,26px) 'Prompt'}.logo b{color:#f5b301}
+#tname{font:700 clamp(16px,3vh,34px) 'Prompt','Noto Sans Thai';text-align:center;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#clock{font:600 clamp(13px,2.2vh,24px) 'Prompt';color:var(--mu2);font-variant-numeric:tabular-nums}
+#conn{font-size:clamp(11px,1.6vh,16px);color:var(--mu);white-space:nowrap}
+.btn{background:var(--b2);color:var(--tx);border:1px solid var(--bd);border-radius:10px;min-height:34px;min-width:34px;padding:0 12px;font:600 clamp(12px,1.8vh,16px) 'Noto Sans Thai';cursor:pointer}
+.btn:hover{background:var(--bd)}
+main{min-height:0;display:grid;gap:1vh 1vw;padding:1vh 1vw;grid-template-columns:minmax(0,1fr) 26vw;grid-template-areas:"g q"}
+main.noq{grid-template-columns:minmax(0,1fr);grid-template-areas:"g"}
+#g{grid-area:g;display:grid;gap:1vh 1vw;min-height:0;min-width:0;align-content:stretch}
+#q{grid-area:q;min-height:0;min-width:0}
+@media (orientation:portrait){main{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) 34vh;grid-template-areas:"g" "q"}main.noq{grid-template-rows:minmax(0,1fr)}}
+.card{background:var(--b1);border:1px solid var(--bd);border-radius:1em;padding:.8em 1em;display:flex;flex-direction:column;gap:.35em;min-width:0;min-height:0;overflow:hidden}
+.card.live{border-color:var(--live);box-shadow:0 0 0 1px #ef444466,0 0 1.2em #ef444422}
+.card.wait{border-color:#8a6a10}
 .top{display:flex;align-items:center;justify-content:space-between;gap:.5em}
-.court{font:800 1.4em 'Prompt'}.court small{font:700 .55em 'Noto Sans Thai';color:var(--mu);background:var(--b2);border-radius:.5em;padding:.15em .5em;margin-left:.4em;vertical-align:middle}
-.st{font:700 .8em 'Noto Sans Thai';color:var(--mu)}.st.l{color:#ff6b6b}
-.cat{font-size:.88em;color:var(--mu2);line-height:1.25}.rule{font-size:.75em;color:var(--mu)}
-.row{display:grid;grid-template-columns:1fr auto auto auto auto;align-items:center;gap:.6em;padding:.3em 0;border-top:1px solid var(--b2);flex:0 0 auto}
+.ti{display:flex;align-items:baseline;gap:.55em;min-width:0;white-space:nowrap}
+.court{font:800 1.5em 'Prompt'}
+.tag{font:700 .8em 'Noto Sans Thai';color:var(--mu2);background:var(--b2);border-radius:.5em;padding:.1em .5em}
+.tm{font:500 .85em 'Prompt';color:var(--mu);font-variant-numeric:tabular-nums}
+.st{font:800 .85em 'Prompt';color:var(--mu);white-space:nowrap}.st.l{color:#ff6b6b}.st.w{color:var(--wait)}
+.st.l::before{content:'';display:inline-block;width:.6em;height:.6em;border-radius:50%;background:var(--live);margin-right:.4em;animation:pulse 1.2s infinite}
+@keyframes pulse{50%{opacity:.25}}
+.cat{font-size:.82em;color:var(--mu2);line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tms{display:flex;flex-direction:column;justify-content:space-evenly;flex:1;min-height:0;gap:.2em}
+.row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:.6em;padding:.25em 0;border-top:1px solid var(--b2)}
 .who{display:flex;align-items:center;gap:.6em;min-width:0}
-.ph{display:flex;gap:.25em;flex:0 0 auto}.ph img,.ph i{width:2.2em;height:2.2em;border-radius:50%;object-fit:cover;background:var(--b2);border:2px solid var(--bd);display:grid;place-items:center;font:700 1em 'Noto Sans Thai';color:#9fb0d0;font-style:normal}
-.tn{font:700 1.2em/1.15 'Noto Sans Thai';min-width:0;overflow:hidden;text-overflow:ellipsis}.tn small{display:block;font:500 .6em 'Noto Sans Thai';color:var(--mu);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sc{font:800 1.3em 'Prompt';min-width:1.6em;text-align:center;color:var(--mu)}
-.cur{font:800 2.3em 'Prompt';min-width:1.5em;text-align:center;color:#ffd24a}
-.empty{color:var(--mu3);text-align:center;padding:1.2em 0;font-size:.9em}
+.ph{display:flex;gap:.2em;flex:0 0 auto}.ph img,.ph i{width:2.3em;height:2.3em;border-radius:50%;object-fit:cover;background:var(--b2);border:2px solid var(--bd);display:grid;place-items:center;font:700 1em 'Noto Sans Thai';color:#9fb0d0;font-style:normal}
+.tn{min-width:0;line-height:1.15}
+.tn b{display:block;font:700 1.15em 'Noto Sans Thai';white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tn small{display:block;font:400 .75em 'Noto Sans Thai';color:var(--mu);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sc{display:flex;align-items:baseline;gap:.5em}
+.ps{font:600 1.05em 'Prompt';color:var(--mu3);min-width:1.2em;text-align:center}.ps.w{color:var(--win);font-weight:800}
+.cur{font:800 2.5em/1 'Prompt';min-width:1.3em;text-align:center;color:var(--cur)}
+.idle{flex:1;display:grid;place-items:center;color:var(--mu3);font-size:.95em}
+.qc{height:100%;background:var(--b1);border:1px solid var(--bd);border-radius:1em;padding:.8em 1em;display:flex;flex-direction:column;gap:.4em;overflow:hidden}
+.qh{font:800 1.2em 'Prompt';color:var(--mu2)}
+.qi{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center;gap:.1em;border-top:1px solid var(--b2);padding:.2em 0}
+.q1{display:flex;align-items:center;gap:.5em;font:700 .9em 'Prompt'}.q1 .cr{margin-left:auto;color:var(--wait);font:700 .85em 'Noto Sans Thai'}
+.q2{font-size:.72em;color:var(--mu);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.q3{font:700 .95em 'Noto Sans Thai';white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.q3 i{font-style:normal;color:var(--mu3);font-weight:500;padding:0 .35em}
+.qe{flex:1;display:grid;place-items:center;color:var(--mu3);font-size:.9em}
+#ads{height:13vh;padding:.8vh 1vw 1vh;overflow:hidden;border-top:1px solid var(--b2);background:var(--b1)}
+@media (orientation:portrait){#ads{height:10vh}}
+#ads[hidden]{display:none}
+.trk{display:flex;gap:2vw;height:100%;width:max-content;align-items:center}
+.trk img{height:100%;width:auto;max-width:none;border-radius:.6vh;object-fit:contain}
+.trk.run{animation:slide var(--dur,30s) linear infinite}
+@keyframes slide{to{transform:translateX(-50%)}}
+.empty{color:var(--mu3);text-align:center;padding:1.2em 0;font-size:1.1em;grid-column:1/-1}
+#set{position:fixed;inset:0;background:#000a;display:none;place-items:center;z-index:9}
+#set.on{display:grid}
+#setbox{background:var(--b1);border:1px solid var(--bd);border-radius:14px;padding:18px 20px;min-width:min(86vw,360px);max-height:86vh;overflow:auto;display:flex;flex-direction:column;gap:10px}
+#setbox h3{font:800 18px 'Prompt'}
+#setbox label{display:flex;align-items:center;gap:10px;font:500 16px 'Noto Sans Thai';min-height:36px;cursor:pointer}
+#setbox input{width:20px;height:20px;accent-color:#f5b301}
+#setbox .sub{font:700 12px 'Noto Sans Thai';color:var(--mu);margin-top:4px}
 </style>
 </head>
 <body>
-<header><div class="logo">Match<b>ON</b></div><div id="tname">Live Score</div><div id="conn">กำลังเชื่อมต่อ…</div><button id="fs" type="button">⛶ เต็มจอ</button></header>
-<main id="g"></main>
+<header><div class="logo">Match<b>ON</b></div><div id="tname">Live Score</div><div id="clock"></div><div id="conn">กำลังเชื่อมต่อ…</div><button id="setb" class="btn" type="button" aria-label="ตั้งค่า">⚙ ตั้งค่า</button><button id="fs" class="btn" type="button">⛶ เต็มจอ</button></header>
+<main id="m"><div id="g"></div><div id="q"></div></main>
+<div id="ads" hidden><div class="trk" id="trk"></div></div>
+<div id="set"><div id="setbox"><h3>ตั้งค่าการแสดงผล</h3><div class="sub">การ์ดสนาม</div><div id="setc"></div><div class="sub">ส่วนอื่น</div><label><input type="checkbox" id="sq"> การ์ดแมตช์ถัดไป</label><label><input type="checkbox" id="sa"> แถบรูปโฆษณา</label><button class="btn" id="setx" type="button" style="margin-top:6px">เสร็จสิ้น</button></div></div>
 <script type="module">
 import * as Live from './js/live.js';
 const liveId = new URLSearchParams(location.search).get('live');
 const $ = (i) => document.getElementById(i);
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-const ruleTxt = (r) => {
-  if (!r) return '';
-  const sets = r.playTwo ? 'แข่ง 2 เซต' : r.best_of === 1 ? '1 เซต' : (Math.floor(r.best_of / 2) + 1) + ' ใน ' + r.best_of + ' เซต';
-  return 'กติกา : ' + sets + ' ' + r.points + ' แต้ม ' + (r.deuce ? 'ดิวถึง ' + r.cap : 'ไม่ดิว');
-};
-function side(c, k) {
-  const t = c['team' + k], club = c['club' + k];
-  const real = c['real' + k] || [];
-  const ph = (c['photo' + k] || []).map((u, i) => u ? `<img src="${esc(u)}" alt="" referrerpolicy="no-referrer">` : `<i>${esc(([...(real[i] || t || '?')][0]) || '?')}</i>`).join('');
-  return `<div class="who"><div class="ph">${ph}</div><div class="tn">${esc(club || t)}${club ? `<small>${esc(t)}</small>` : ''}</div></div>`;
+const arr = (v) => (Array.isArray(v) ? v : v && typeof v === 'object' ? Object.values(v) : []);
+const hm = (t) => (t ? new Date(t).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', hour12: false }) : '');
+// ---- settings (per browser) ----
+const SK = 'matchon.board.' + liveId;
+let S = { hide: {}, q: true, a: true };
+try { S = Object.assign(S, JSON.parse(localStorage.getItem(SK) || '{}')); S.hide = S.hide || {}; } catch (e) {}
+const save = () => { try { localStorage.setItem(SK, JSON.stringify(S)); } catch (e) {} };
+let courts = [], meta = null;
+// ---- cards ----
+function photos(c, k) {
+  const t = c['team' + k], real = c['real' + k] || [];
+  return (c['photo' + k] || []).map((u, i) => u ? `<img src="${esc(u)}" alt="" referrerpolicy="no-referrer">` : `<i>${esc(([...(real[i] || t || '?')][0]) || '?')}</i>`).join('');
 }
 function card(c) {
-  const live = c.status === 'LIVE';
+  const hasM = c.status === 'LIVE';
+  const started = hasM && (c.activeSet >= 0 || c.startedAt > 0);
   const act = c.activeSet >= 0 ? c.activeSet : 0;
-  const done = [0, 1, 2].filter((i) => i !== act && (c.scores[i][0] || c.scores[i][1]));
-  const cell = (k, i) => `<div class="sc${i === act ? ' act' : ''}">${c.scores[i][k]}</div>`;
-  const rows = ['A', 'B'].map((L, k) => `<div class="row">${side(c, L)}${[0, 1, 2].filter((i) => i < act).map((i) => cell(k, i)).join('')}<div class="cur">${c.scores[act][k]}</div></div>`).join('');
-  const head = `<div class="top"><div class="court">สนาม ${c.courtNo}${c.matchNo ? '<small>แมตช์ #' + c.matchNo + '</small>' : ''}</div><div class="st${live ? ' l' : ''}">${live ? '● LIVE' : 'ว่าง'}</div></div>`;
-  if (!live) return `<div class="card">${head}<div class="empty">รอเรียกคู่แข่งขัน</div></div>`;
-  return `<div class="card live">${head}<div class="cat">${esc([c.catName, c.roundLabel].filter(Boolean).join(' · ') || c.round)}</div><div class="rule">${esc(ruleTxt(c.rule))}</div>${rows}</div>`;
+  const head = `<div class="top"><div class="ti"><span class="court">สนาม ${c.courtNo}</span>${hasM && c.matchNo ? `<span class="tag">แมตช์ #${c.matchNo}</span>` : ''}${hasM && c.schedAt ? `<span class="tm">${hm(c.schedAt)}</span>` : ''}</div><div class="st${started ? ' l' : hasM ? ' w' : ''}">${started ? 'LIVE' : hasM ? 'รอเริ่ม' : 'ว่าง'}</div></div>`;
+  if (!hasM) return `<div class="card">${head}<div class="idle">รอเรียกคู่แข่งขัน</div></div>`;
+  const rows = [['A', 0], ['B', 1]].map(([L, k]) => {
+    const prev = [0, 1, 2].filter((i) => i < act).map((i) => {
+      const me = c.scores[i][k], op = c.scores[i][1 - k];
+      return `<span class="ps${me > op ? ' w' : ''}">${me}</span>`;
+    }).join('');
+    const club = c['club' + L], nick = c['team' + L];
+    return `<div class="row"><div class="who"><div class="ph">${photos(c, L)}</div><div class="tn"><b>${esc(nick)}</b>${club ? `<small>${esc(club)}</small>` : ''}</div></div><div class="sc">${prev}<span class="cur">${c.scores[act][k]}</span></div></div>`;
+  }).join('');
+  return `<div class="card ${started ? 'live' : 'wait'}">${head}<div class="cat">${esc([c.catName, c.roundLabel].filter(Boolean).join(' · ') || c.round)}</div><div class="tms">${rows}</div></div>`;
 }
-let N = 0;
+function queue() {
+  const q = arr(meta && meta.queue).slice(0, 5);
+  const items = q.map((m) => {
+    const nm = (x) => esc((x && (x.c || x.n)) || '-');
+    return `<div class="qi"><div class="q1"><span>${m.no ? '#' + m.no : ''}</span><span>${hm(m.at)}</span>${m.court ? `<span class="cr">→ สนาม ${m.court}</span>` : ''}</div><div class="q2">${esc([m.cat, m.round].filter(Boolean).join(' · '))}</div><div class="q3">${nm(m.a)}<i>vs</i>${nm(m.b)}</div></div>`;
+  }).join('');
+  return `<div class="qc"><div class="qh">แมตช์ถัดไป</div>${items || '<div class="qe">ยังไม่มีคิวแมตช์</div>'}</div>`;
+}
+// ---- layout: fit everything on one screen ----
+let shown = [];
 function layout() {
-  const m = $('g');
-  if (!N) return;
-  const W = m.clientWidth - 24, H = m.clientHeight - 20;
-  let best = null;
-  for (let cols = 1; cols <= N; cols++) {
-    const rows = Math.ceil(N / cols);
-    const u = Math.min((W / cols - 10) / 21, (H / rows - 10) / 17);
-    if (!best || u > best.u) best = { cols, rows, u };
+  const g = $('g'), m = $('m');
+  const W = g.clientWidth, H = g.clientHeight, N = shown.length;
+  if (N) {
+    const gx = 0.01 * innerWidth, gy = 0.01 * innerHeight;
+    let best = null;
+    for (let cols = 1; cols <= N; cols++) {
+      const rows = Math.ceil(N / cols);
+      const u = Math.min((W - gx * (cols - 1)) / cols / 25, (H - gy * (rows - 1)) / rows / 14.5);
+      if (!best || u > best.u) best = { cols, rows, u };
+    }
+    g.style.gridTemplateColumns = `repeat(${best.cols},minmax(0,1fr))`;
+    g.style.gridTemplateRows = `repeat(${best.rows},minmax(0,1fr))`;
+    g.style.fontSize = Math.max(8, Math.min(46, best.u)) + 'px';
   }
-  m.style.gridTemplateColumns = `repeat(${best.cols},minmax(0,1fr))`;
-  m.style.gridAutoRows = `${Math.max(120, H / best.rows - 10)}px`;
-  m.style.fontSize = Math.max(9, Math.min(40, best.u)) + 'px';
+  if (S.q) {
+    const q = $('q');
+    q.style.fontSize = Math.max(8, Math.min(34, Math.min(q.clientWidth / 19, q.clientHeight / (3 + 5 * 4.3)))) + 'px';
+  }
 }
-window.addEventListener('resize', layout);
-document.addEventListener('fullscreenchange', () => setTimeout(layout, 100));
+function render() {
+  shown = courts.filter((c) => !S.hide[c.courtNo]);
+  $('g').innerHTML = shown.length ? shown.map(card).join('') : `<div class="empty">${courts.length ? 'ซ่อนการ์ดสนามทั้งหมดอยู่ (ตั้งค่า ⚙)' : 'ยังไม่มีข้อมูลสนาม'}</div>`;
+  $('m').classList.toggle('noq', !S.q);
+  $('q').style.display = S.q ? '' : 'none';
+  if (S.q) $('q').innerHTML = queue();
+  layout();
+}
+// ---- ads strip (auto-scrolls when images overflow) ----
+let adSig = '';
+function ads() {
+  const list = arr(meta && meta.ads).filter(Boolean);
+  const box = $('ads'), trk = $('trk');
+  const on = S.a && list.length > 0;
+  box.hidden = !on;
+  if (!on) { adSig = ''; trk.innerHTML = ''; return; }
+  const sig = list.join('|');
+  if (sig !== adSig) { adSig = sig; trk.className = 'trk'; trk.innerHTML = list.map((u) => `<img src="${esc(u)}" alt="" referrerpolicy="no-referrer">`).join(''); trk.querySelectorAll('img').forEach((im) => { im.onload = fitAds; }); }
+  fitAds();
+}
+function fitAds() {
+  const box = $('ads'), trk = $('trk');
+  if (box.hidden) return;
+  const base = [...trk.querySelectorAll('img')].filter((i) => !i.dataset.c);
+  trk.querySelectorAll('img[data-c]').forEach((i) => i.remove());
+  trk.className = 'trk';
+  const w = trk.scrollWidth;
+  if (w > box.clientWidth + 4) {
+    base.forEach((i) => { const cl = i.cloneNode(); cl.dataset.c = '1'; trk.appendChild(cl); });
+    trk.style.setProperty('--dur', Math.max(12, w / 70) + 's');
+    trk.className = 'trk run';
+  }
+}
+function settings() {
+  $('setc').innerHTML = courts.map((c) => `<label><input type="checkbox" data-c="${c.courtNo}" ${S.hide[c.courtNo] ? '' : 'checked'}> สนาม ${c.courtNo}</label>`).join('') || '<div class="sub">ยังไม่มีสนาม</div>';
+  $('sq').checked = !!S.q; $('sa').checked = !!S.a;
+  $('set').classList.add('on');
+}
+$('setb').onclick = settings;
+$('setx').onclick = () => $('set').classList.remove('on');
+$('set').onclick = (e) => { if (e.target.id === 'set') $('set').classList.remove('on'); };
+$('setbox').addEventListener('change', (e) => {
+  const t = e.target;
+  if (t.dataset.c) S.hide[t.dataset.c] = !t.checked;
+  else if (t.id === 'sq') S.q = t.checked;
+  else if (t.id === 'sa') S.a = t.checked;
+  save(); render(); ads();
+});
+window.addEventListener('resize', () => { layout(); fitAds(); });
+document.addEventListener('fullscreenchange', () => setTimeout(() => { layout(); fitAds(); }, 150));
 $('fs').onclick = () => {
   if (document.fullscreenElement) document.exitFullscreen();
   else (document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen).call(document.documentElement).catch(() => {});
 };
+setInterval(() => { $('clock').textContent = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', hour12: false }); }, 1000);
 if (!liveId) { $('g').innerHTML = '<div class="empty">ลิงก์ไม่ถูกต้อง (ไม่มีรหัสรายการ)</div>'; }
 else {
   Live.watchConnection((on) => { $('conn').textContent = on ? '● ออนไลน์' : 'ออฟไลน์'; });
-  Live.watchCourts(liveId, (all) => {
-    const list = (all || []).filter((c) => !c.hidden);
-    if (!list || !list.length) { $('g').innerHTML = '<div class="empty">ยังไม่มีข้อมูลสนาม</div>'; return; }
-    $('tname').textContent = (list.find((c) => c.tournament) || {}).tournament || 'Live Score';
-    $('g').innerHTML = list.map(card).join('');
-    N = list.length; layout();
+  Live.watchCourts(liveId, (all, m) => {
+    meta = m || null;
+    courts = (all || []).filter((c) => !c.hidden);
+    $('tname').textContent = (m && m.tname) || (courts.find((c) => c.tournament) || {}).tournament || 'Live Score';
+    render(); ads();
   });
 }
 </script>

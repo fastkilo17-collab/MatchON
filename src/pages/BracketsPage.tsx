@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { ChevronDown, GitBranch, Hand, Lock, Printer, Shuffle, Sparkles, Trash2, Unlock, X } from 'lucide-react';
 import { useMatchON } from '../context/MatchONContext';
 import type { BracketFormat, Match, Registration } from '../types/matchon';
-import { eligibleForBracket, isByeMatch, computeStandings, standingPtsFor, fmtTime, FORMAT_TH, teamName, groupPlan, clubKey } from '../utils/bracket';
+import { eligibleForBracket, isByeMatch, computeStandings, standingPtsFor, fmtTime, FORMAT_TH, teamName, playersNick, groupPlan, clubKey } from '../utils/bracket';
 import type { StandingRow, StandingPts } from '../utils/bracket';
 import { MatchScoreSheet } from '../components/MatchScoreSheet';
 import { MatchNo, ResponsiveSheet, TeamAvatars } from '../components/UiKit';
@@ -126,9 +126,12 @@ export function BracketsPage() {
 
         <div className="space-y-1 text-sm">
           <div className="flex items-center justify-between gap-2">
-            <span className="flex items-center gap-1.5 min-w-0">
-              {m.reg_a && <TeamAvatars reg={regMap[m.reg_a]} size={26} flat />}
-              <SideName reg={m.reg_a ? regMap[m.reg_a] : null} won={aWon} />
+            <span className="min-w-0 leading-tight">
+              {regMap[m.reg_a || '']?.club && <span className="block truncate text-[10px] font-light text-slate-500">{regMap[m.reg_a || ''].club}</span>}
+              <span className="flex items-center gap-1.5 min-w-0">
+                {m.reg_a && <TeamAvatars reg={regMap[m.reg_a]} size={26} flat />}
+                <span className={`truncate text-sm font-normal ${aWon ? 'text-emerald-700 font-semibold' : 'text-slate-900'}`}>{m.reg_a && regMap[m.reg_a] ? playersNick(regMap[m.reg_a]) : 'รอผลการแข่ง'}</span>
+              </span>
             </span>
             <span className="font-mono text-xs tabular-nums text-slate-600 shrink-0 flex items-center gap-1">
               {m.sets.map((s, i) => (
@@ -139,9 +142,12 @@ export function BracketsPage() {
           </div>
           <div className="h-px bg-slate-100" />
           <div className="flex items-center justify-between gap-2">
-            <span className="flex items-center gap-1.5 min-w-0">
-              {m.reg_b && <TeamAvatars reg={regMap[m.reg_b]} size={26} flat />}
-              <SideName reg={m.reg_b ? regMap[m.reg_b] : null} won={bWon} />
+            <span className="min-w-0 leading-tight">
+              {regMap[m.reg_b || '']?.club && <span className="block truncate text-[10px] font-light text-slate-500">{regMap[m.reg_b || ''].club}</span>}
+              <span className="flex items-center gap-1.5 min-w-0">
+                {m.reg_b && <TeamAvatars reg={regMap[m.reg_b]} size={26} flat />}
+                <span className={`truncate text-sm font-normal ${bWon ? 'text-emerald-700 font-semibold' : 'text-slate-900'}`}>{m.reg_b && regMap[m.reg_b] ? playersNick(regMap[m.reg_b]) : 'รอผลการแข่ง'}</span>
+              </span>
             </span>
             <span className="font-mono text-xs tabular-nums text-slate-600 shrink-0 flex items-center gap-1">
               {m.sets.map((s, i) => (

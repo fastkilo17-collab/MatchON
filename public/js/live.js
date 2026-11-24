@@ -33,6 +33,7 @@ export function canon(c) {
   return {
     courtNo: num(c.courtNo),
     hidden: !!c.hidden,
+    schedAt: num(c.schedAt),
     status: c.status || 'READY',
     matchCode: c.matchCode || '',
     round: c.round || '',
@@ -113,7 +114,10 @@ export function watchCourts(liveId, cb) {
   boot();
   return onValue(ref(db, `live/${liveId}/courts`), (s) => {
     const v = s.val();
-    cb(v ? Object.values(v).map(canon).sort((a, b) => a.courtNo - b.courtNo) : null);
+    // courts/m0 is not a court: it carries board extras (next-match queue, ad images, tournament name)
+    const meta = v && v.m0 ? v.m0 : null;
+    const list = v ? Object.entries(v).filter(([k]) => k !== 'm0').map(([, c]) => canon(c)).filter((c) => c.courtNo > 0).sort((a, b) => a.courtNo - b.courtNo) : null;
+    cb(list && list.length ? list : null, meta);
   });
 }
 
@@ -127,6 +131,14 @@ export function writeCourts(liveId, courts) {
   const o = {};
   courts.forEach((c) => { o[c.courtNo] = canon(c); });
   return update(ref(db, `live/${liveId}/courts`), o);
+}
+
+/** Organizer only: publish board extras (queue, ads, tournament name) as courts/m0 (passes the existing court rules). */
+export function writeBoardMeta(liveId, meta) {
+  boot();
+  return update(ref(db, `live/${liveId}/courts`), {
+    m0: { courtNo: 0, status: 'META', scores: [[0, 0]], tname: String(meta.tname || '').slice(0, 200), queue: (meta.queue || []).slice(0, 8), ads: (meta.ads || []).slice(0, 12) },
+  });
 }
 
 /** Organizer only: remove courts that were deleted in the app (board / referee pages stop showing them). */
