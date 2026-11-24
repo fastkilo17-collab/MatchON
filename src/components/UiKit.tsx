@@ -246,7 +246,7 @@ export function PosterSlider({ images, onZoom, maxH = 420 }: { images: string[];
 export function MatchNo({ n, className = '' }: { n?: number | null; className?: string }) {
   if (!n) return null;
   return (
-    <span className={`inline-flex items-center rounded-md bg-blue-600 text-white px-1.5 py-0.5 text-xs font-extrabold tabular-nums leading-none shrink-0 ${className}`}>
+    <span className={`inline-flex items-center text-[15px] font-extrabold text-slate-900 tabular-nums leading-none shrink-0 ${className}`}>
       แมตช์ #{n}
     </span>
   );

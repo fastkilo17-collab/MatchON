@@ -183,7 +183,7 @@ export function ResultsPage() {
                 >
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5 text-xs text-slate-500">
-                      <MatchNo n={m.match_no} className="text-sm px-2 py-1" />
+                      <MatchNo n={m.match_no} />
                       {catMap[m.category_id]?.name || ''} · {m.round_label}
                     </div>
                     <div className="text-sm font-bold text-slate-900 mt-0.5">
@@ -424,9 +424,9 @@ export function RulesStaffPage() {
             <span className="text-xs font-semibold text-slate-700">จำนวนเซต</span>
             <select value={mode} onChange={(e) => setMode(e.target.value as typeof mode)} className="w-full min-h-[44px] px-3 rounded-xl border border-slate-200 bg-white text-sm">
               <option value="one">1 เซต</option>
+              <option value="two">2 เซต</option>
               <option value="bo3">2 ใน 3 เซต</option>
               <option value="bo5">3 ใน 5 เซต</option>
-              <option value="two">2 เซต (2-0 ได้ 2, 1-1 ได้ 1)</option>
             </select>
           </label>
           <div className="grid grid-cols-2 gap-3">

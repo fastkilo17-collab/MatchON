@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ExternalLink, Minus, Plus, QrCode, Radio, SlidersHorizontal } from 'lucide-react';
 import { useMatchON } from '../context/MatchONContext';
 import type { Match } from '../types/matchon';
-import { fmtTime, ruleForMatch, ruleShort, teamName } from '../utils/bracket';
+import { fmtTime, ruleForMatch, playersNick, ruleShort, teamName } from '../utils/bracket';
 import { MatchScoreSheet } from '../components/MatchScoreSheet';
 import { MatchNo, QrCodeSvg, ResponsiveSheet, TeamAvatars } from '../components/UiKit';
 import { useLiveBridge } from '../lib/liveBridge';
@@ -241,7 +241,7 @@ export function LiveScorePage() {
                 <div className="min-w-0 leading-tight">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-display font-bold text-base text-slate-900">{court.name}</span>
-                    {m && <MatchNo n={m.match_no} className="text-sm px-2 py-1" />}
+                    {m && <MatchNo n={m.match_no} />}
                     {m?.scheduled_at && <span className="text-xs font-bold text-slate-700 tabular-nums">{fmtTime(m.scheduled_at)}</span>}
                   </div>
                   {m && (
@@ -297,14 +297,10 @@ export function LiveScorePage() {
                     const col = (r: typeof ra, side: 'a' | 'b') => (
                       <div className="min-w-0 flex flex-col items-center gap-1 text-center">
                         <TeamAvatars reg={r} size={av} flat={compact} />
-                        <div className={`font-bold text-slate-900 leading-tight line-clamp-2 ${compact ? 'text-xs' : 'text-base'}`}>{r?.club || teamName(r)}</div>
-                        {!compact && (
-                          <div className="text-xs text-slate-500 leading-snug">
-                            {[[r?.p1_name, r?.p1_nick], [r?.p2_name, r?.p2_nick]].filter(([n]) => n).map(([n, k], i) => (
-                              <div key={i} className="truncate">{n}{k && k !== n ? ` (${k})` : ''}</div>
-                            ))}
-                          </div>
-                        )}
+                        <div className="min-w-0 max-w-full leading-tight">
+                          <div className={`font-extrabold text-slate-900 line-clamp-2 ${compact ? 'text-sm' : 'text-lg'}`}>{r ? playersNick(r) : 'รอผลการแข่ง'}</div>
+                          {r?.club && <div className={`font-medium text-slate-500 truncate ${compact ? 'text-[11px]' : 'text-sm'}`}>{r.club}</div>}
+                        </div>
                         <div className={`font-display font-extrabold tabular-nums leading-none ${compact ? 'text-4xl' : 'text-6xl'} ${side === 'a' ? 'text-blue-600' : 'text-slate-900'}`}>{side === 'a' ? shownCur[0] : shownCur[1]}</div>
                       </div>
                     );
@@ -314,17 +310,19 @@ export function LiveScorePage() {
                           {col(ra, 'a')}
                           <div className="pt-1 flex flex-col items-center gap-1">
                             <span className={`rounded-full px-3 py-1 text-xs font-bold whitespace-nowrap ${started ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500'}`}>
-                              {started ? `เซต ${setNo}` : 'รอเริ่ม'}
+                              เซต {setNo}
                             </span>
                             <span className="text-[11px] font-bold text-slate-300">VS</span>
+                            {shownSets.length > 0 && (
+                              <div className="flex flex-col items-center text-[11px] leading-tight font-medium text-slate-500 tabular-nums">
+                                {shownSets.map((x, i) => (
+                                  <span key={i}>{x[0]} - {x[1]}</span>
+                                ))}
+                              </div>
+                            )}
                           </div>
                           {col(rb, 'b')}
                         </div>
-                        {shownSets.length > 0 && (
-                          <div className="text-center text-xs font-semibold text-slate-600 tabular-nums border-t border-slate-100 pt-1.5">
-                            {shownSets.map((x, i) => `เซต${i + 1} ${x[0]}:${x[1]}`).join(', ')}
-                          </div>
-                        )}
                       </div>
                     );
                   })()}

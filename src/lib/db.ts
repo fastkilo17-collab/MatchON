@@ -509,7 +509,7 @@ export async function pushDiff(prev: Data, next: Data, uid: string, manageable: 
 
   const ctd = diff(prev.courts, next.courts);
   const kRows = [...ctd.added, ...ctd.changed].filter((c) => ok(c.tournament_id)).map((c) => ({
-    id: c.id, tournament_id: c.tournament_id, no: c.no, name: c.name, status: c.status,
+    id: c.id, tournament_id: c.tournament_id, no: c.no, name: c.name, status: c.status, queue: c.queue || [],
   }));
   if (kRows.length) await must(sb.from('courts').upsert(kRows, { onConflict: 'id' }));
   const kDel = ctd.removed.filter((c) => ok(c.tournament_id)).map((c) => c.id);

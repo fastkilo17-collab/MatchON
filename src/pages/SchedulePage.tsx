@@ -13,7 +13,7 @@ import {
   teamName,
 } from '../utils/bracket';
 import { MatchScoreSheet } from '../components/MatchScoreSheet';
-import { ResponsiveSheet, TeamAvatars } from '../components/UiKit';
+import { MatchNo, ResponsiveSheet, TeamAvatars } from '../components/UiKit';
 
 export function SchedulePage() {
   const {
@@ -273,7 +273,7 @@ export function SchedulePage() {
             const isOpen = (k: string) => (!multi ? true : openDays[k] ?? k === firstOpen.key);
             const side = (r: any, align: 'left' | 'right') => (
               <div className={`min-w-0 ${align === 'right' ? 'text-right' : 'text-left'}`}>
-                <div className="text-[13px] leading-tight font-extrabold text-slate-900 truncate">{r ? playersNick(r) : 'รอผลการแข่ง'}</div>
+                <div className="text-[13px] leading-tight font-medium text-slate-900 truncate">{r ? playersNick(r) : 'รอผลการแข่ง'}</div>
                 {r?.club && <div className="text-[11px] leading-tight font-normal text-slate-500 truncate">{r.club}</div>}
               </div>
             );
@@ -312,7 +312,7 @@ export function SchedulePage() {
                     >
                       <div className="flex items-center justify-between gap-3">
                         <div className="flex items-center gap-2 min-w-0 text-xs text-slate-500">
-                          {m.match_no ? <span className="text-lg leading-none font-extrabold text-slate-900 tabular-nums shrink-0">#{m.match_no}</span> : <span className="text-slate-400">—</span>}
+                          {m.match_no ? <MatchNo n={m.match_no} /> : <span className="text-slate-400">—</span>}
                           {m.status === 'live' && (
                             <span className="inline-flex items-center gap-1 rounded-md bg-red-600 text-white px-1.5 py-0.5 text-[11px] font-extrabold shrink-0">
                               <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />LIVE
@@ -321,8 +321,11 @@ export function SchedulePage() {
                           <span className="truncate">{catMap[m.category_id]?.name || ''}</span>
                           <span aria-hidden="true">·</span>
                           <span className="truncate">{m.round_label}</span>
+                          {m.court && m.status !== 'finished' && (
+                            <span className="shrink-0 rounded-md bg-blue-50 text-blue-700 px-1.5 py-0.5 text-[11px] font-bold">สนาม {m.court}</span>
+                          )}
                         </div>
-                        <span className="shrink-0 font-mono text-sm font-bold tabular-nums text-slate-800">
+                        <span className="shrink-0 text-sm font-light tabular-nums text-slate-600">
                           {m.scheduled_at ? fmtTime(m.scheduled_at) : '--:--'}
                         </span>
                       </div>

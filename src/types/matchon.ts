@@ -141,6 +141,8 @@ export interface Court {
   no: number;
   name: string;
   status: CourtStatus;
+  /** คิวแมตช์ถัดไปที่จะถูกเรียกลงสนามอัตโนมัติเมื่อสนามว่าง (id แมตช์ เรียงตามลำดับ) */
+  queue?: string[];
 }
 
 export interface BracketMeta {

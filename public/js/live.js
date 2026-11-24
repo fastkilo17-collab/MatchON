@@ -32,6 +32,7 @@ export function canon(c) {
   const sc = c.scores || [];
   return {
     courtNo: num(c.courtNo),
+    hidden: !!c.hidden,
     status: c.status || 'READY',
     matchCode: c.matchCode || '',
     round: c.round || '',
@@ -125,6 +126,14 @@ export function writeCourts(liveId, courts) {
   boot();
   const o = {};
   courts.forEach((c) => { o[c.courtNo] = canon(c); });
+  return update(ref(db, `live/${liveId}/courts`), o);
+}
+
+/** Organizer only: remove courts that were deleted in the app (board / referee pages stop showing them). */
+export function removeCourts(liveId, courtNos) {
+  boot();
+  const o = {};
+  courtNos.forEach((n) => { o[n] = null; });
   return update(ref(db, `live/${liveId}/courts`), o);
 }
 

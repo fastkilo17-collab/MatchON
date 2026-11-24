@@ -111,6 +111,7 @@ interface MatchONContextValue {
   toggleCourtMaintenance: (courtId: string) => void;
   addCourt: () => void;
   deleteCourt: (courtId: string) => void;
+  setCourtQueue: (courtId: string, ids: string[]) => void;
   restoreBackup: (bk: any) => { ok: boolean; msg: string };
   addRulePreset: (rule: Omit<RulePreset, 'id'>) => void;
   deleteRulePreset: (id: string) => void;
@@ -1179,6 +1180,56 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
     [state.tournaments, isManagerOf],
   );
 
+  const setCourtQueue = useCallback((courtId: string, ids: string[]) => {
+    setState((prev) => ({ ...prev, courts: prev.courts.map((c) => (c.id === courtId ? { ...c, queue: ids } : c)) }));
+  }, []);
+
+  // คิวแมตช์ถัดไป: เมื่อสนามว่าง (ไม่มีแมตช์กำลังแข่ง/รอเริ่ม) เรียกแมตช์แรกในคิวลงสนามอัตโนมัติ
+  useEffect(() => {
+    if (!activeTournament || !isManagerOf(activeTournament.id)) return;
+    const tid = activeTournament.id;
+    const ms = state.matches.filter((m) => m.tournament_id === tid);
+    const patches: { court: Court; keep: string[]; call?: string }[] = [];
+    const liveTeams = new Set(ms.filter((m) => m.status === 'live').flatMap((m) => [m.reg_a, m.reg_b]).filter(Boolean) as string[]);
+    const claimed = new Set<string>();
+    for (const c of state.courts.filter((x) => x.tournament_id === tid)) {
+      const q = c.queue || [];
+      if (!q.length) continue;
+      // ตัดรายการที่ใช้ไม่ได้แล้ว (จบ/กำลังแข่ง/ถูกลบ/มีสนามแล้ว)
+      const valid = q.filter((id) => {
+        const m = ms.find((x) => x.id === id);
+        return !!m && m.status === 'scheduled' && !!m.reg_a && !!m.reg_b && !m.court;
+      });
+      let call: string | undefined;
+      const occupied = ms.some((m) => m.court === c.no && (m.status === 'live' || (m.status === 'scheduled' && m.reg_a && m.reg_b)));
+      if (c.status === 'available' && !occupied && valid.length) {
+        const first = ms.find((x) => x.id === valid[0])!;
+        const teams = [first.reg_a, first.reg_b].filter(Boolean) as string[];
+        if (!teams.some((t) => liveTeams.has(t)) && !claimed.has(first.id)) {
+          call = first.id;
+          claimed.add(first.id);
+          teams.forEach((t) => liveTeams.add(t));
+        }
+      }
+      const keep = call ? valid.slice(1) : valid;
+      if (call || keep.length !== q.length) patches.push({ court: c, keep, call });
+    }
+    if (!patches.length) return;
+    setState((prev) => ({
+      ...prev,
+      courts: prev.courts.map((c) => {
+        const p = patches.find((x) => x.court.id === c.id);
+        return p ? { ...c, queue: p.keep } : c;
+      }),
+      matches: prev.matches.map((m) => {
+        const p = patches.find((x) => x.call === m.id);
+        return p ? { ...m, court: p.court.no, updated_at: new Date().toISOString() } : m;
+      }),
+    }));
+    patches.filter((p) => p.call).forEach((p) => toast(`เรียกแมตช์ถัดไปลง ${p.court.name} อัตโนมัติ`));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.matches, state.courts, activeTournament?.id]);
+
   const deleteCourt = useCallback(
     (courtId: string) => {
       const court = state.courts.find((c) => c.id === courtId);
@@ -1378,6 +1429,7 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
     toggleCourtMaintenance,
     addCourt,
     deleteCourt,
+    setCourtQueue,
     restoreBackup,
     addRulePreset,
     deleteRulePreset,

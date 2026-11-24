@@ -7,11 +7,15 @@ import {
   Plus,
   RotateCcw,
   MoreVertical,
+  ArrowUp,
+  ArrowDown,
+  ChevronDown,
+  X,
   Trash2,
 } from 'lucide-react';
 import { useMatchON } from '../context/MatchONContext';
 import type { Match } from '../types/matchon';
-import { fmtTime, scoreText, teamName } from '../utils/bracket';
+import { fmtTime, playersNick, scoreText, teamName } from '../utils/bracket';
 import { MatchScoreSheet } from '../components/MatchScoreSheet';
 import { MatchNo, ResponsiveSheet, TeamAvatars } from '../components/UiKit';
 
@@ -59,6 +63,8 @@ export function CourtsPage() {
 
   const [callCourtNo, setCallCourtNo] = useState<number | null>(null);
   const [scoreMatch, setScoreMatch] = useState<Match | null>(null);
+  const [openQ, setOpenQ] = useState<Record<string, boolean>>({});
+  const [addSel, setAddSel] = useState<Record<string, string>>({});
 
   if (!activeTournament) {
     return <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center text-sm text-slate-500">ยังไม่มีรายการแข่งขัน</div>;
@@ -84,6 +90,9 @@ export function CourtsPage() {
       return ta - tb || (a.match_no || 9999) - (b.match_no || 9999) || a.round - b.round;
     });
 
+  const queuedIds = new Set(tCourts.flatMap((c) => c.queue || []));
+  const addable = readyQueue.filter((m) => !m.court && !queuedIds.has(m.id));
+  const matchById = new Map(tMatches.map((m) => [m.id, m]));
   const freeCount = tCourts.filter(
     (c) => c.status === 'available' && !liveMatches.some((m) => m.court === c.no),
   ).length;
@@ -205,6 +214,58 @@ export function CourtsPage() {
                 )}
               </div>
 
+              {isManager && kind !== 'off' && (() => {
+                const q = (court.queue || []).filter((id) => matchById.get(id)?.status === 'scheduled');
+                const open = !!openQ[court.id];
+                const move = (i: number, d: number) => {
+                  const a = [...q];
+                  const j = i + d;
+                  if (j < 0 || j >= a.length) return;
+                  [a[i], a[j]] = [a[j], a[i]];
+                  setCourtQueue(court.id, a);
+                };
+                return (
+                  <div className="rounded-xl border border-slate-200">
+                    <button type="button" aria-expanded={open} onClick={() => setOpenQ((o) => ({ ...o, [court.id]: !o[court.id] }))} className="w-full flex items-center gap-2 min-h-[40px] px-3 text-xs font-bold text-slate-700">
+                      คิวแมตช์ถัดไป
+                      {q.length > 0 && <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-blue-600 text-white text-[11px] grid place-items-center tabular-nums">{q.length}</span>}
+                      <ChevronDown className={`w-4 h-4 ml-auto text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} />
+                    </button>
+                    {open && (
+                      <div className="px-3 pb-3 space-y-2">
+                        <p className="text-[11px] text-slate-400">แมตช์ในคิวจะถูกเรียกลงสนามนี้อัตโนมัติเมื่อสนามว่าง (ตามลำดับ)</p>
+                        {q.map((id, i) => {
+                          const qm = matchById.get(id)!;
+                          const ra = qm.reg_a ? regMap[qm.reg_a] : null;
+                          const rb = qm.reg_b ? regMap[qm.reg_b] : null;
+                          return (
+                            <div key={id} className="flex items-center gap-1.5 rounded-lg bg-slate-50 px-2 py-1.5">
+                              <span className="w-5 text-center text-xs font-bold text-slate-400 tabular-nums">{i + 1}</span>
+                              <div className="min-w-0 flex-1 leading-tight">
+                                <div className="text-xs font-semibold text-slate-800 truncate">{qm.match_no ? `แมตช์ #${qm.match_no} · ` : ''}{ra ? playersNick(ra) : '-'} vs {rb ? playersNick(rb) : '-'}</div>
+                                <div className="text-[11px] text-slate-500 truncate">{qm.round_label}</div>
+                              </div>
+                              <button type="button" aria-label="เลื่อนขึ้น" disabled={i === 0} onClick={() => move(i, -1)} className="w-8 h-8 grid place-items-center rounded-lg hover:bg-slate-200 disabled:opacity-30"><ArrowUp className="w-4 h-4" /></button>
+                              <button type="button" aria-label="เลื่อนลง" disabled={i === q.length - 1} onClick={() => move(i, 1)} className="w-8 h-8 grid place-items-center rounded-lg hover:bg-slate-200 disabled:opacity-30"><ArrowDown className="w-4 h-4" /></button>
+                              <button type="button" aria-label="เอาออกจากคิว" onClick={() => setCourtQueue(court.id, q.filter((x) => x !== id))} className="w-8 h-8 grid place-items-center rounded-lg hover:bg-red-50 text-red-600"><X className="w-4 h-4" /></button>
+                            </div>
+                          );
+                        })}
+                        {!q.length && <div className="text-xs text-slate-400 text-center py-1">ยังไม่มีแมตช์ในคิว</div>}
+                        <div className="flex gap-2">
+                          <select value={addSel[court.id] || ''} onChange={(e) => setAddSel((o) => ({ ...o, [court.id]: e.target.value }))} className="flex-1 min-w-0 min-h-[38px] px-2 rounded-lg border border-slate-200 bg-white text-xs">
+                            <option value="">เพิ่มแมตช์เข้าคิว…</option>
+                            {addable.map((am) => (
+                              <option key={am.id} value={am.id}>{am.match_no ? `#${am.match_no} ` : ''}{am.reg_a && regMap[am.reg_a] ? playersNick(regMap[am.reg_a]) : '-'} vs {am.reg_b && regMap[am.reg_b] ? playersNick(regMap[am.reg_b]) : '-'}</option>
+                            ))}
+                          </select>
+                          <button type="button" disabled={!addSel[court.id]} onClick={() => { setCourtQueue(court.id, [...q, addSel[court.id]]); setAddSel((o) => ({ ...o, [court.id]: '' })); }} className="min-h-[38px] px-3 rounded-lg bg-blue-600 disabled:bg-slate-300 text-white text-xs font-semibold">เพิ่ม</button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
               {isManager && (
                 <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100">
                   {kind !== 'off' && (<>

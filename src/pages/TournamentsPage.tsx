@@ -805,7 +805,7 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
                     <div className="text-sm font-bold text-slate-900">{c.name} <span className="text-xs font-semibold text-blue-700">· รับ {c.max_teams} ทีม</span></div>
                     <div className="text-xs text-slate-600">{KIND_TH[c.kind]} · {GENDER_TH[c.gender]}</div>
                     <div className="text-xs text-slate-600">ระบบสาย: {FORMAT_TH[c.format]}</div>
-                    <div className="text-xs text-slate-600 tabular-nums">กติกา: {c.best_of === 1 ? '1 เซต' : `ชนะ ${Math.ceil(c.best_of / 2)} ใน ${c.best_of} เซต`} · {c.points} แต้ม{c.deuce ? ` · ดิวซ์ (สูงสุด ${c.cap})` : ' · ไม่มีดิวซ์'}</div>
+                    <div className="text-xs text-slate-600 tabular-nums">กติกา: {c.best_of === 1 ? '1 เซต' : `${Math.ceil(c.best_of / 2)} ใน ${c.best_of} เซต`} · {c.points} แต้ม{c.deuce ? ` · ดิวซ์ (สูงสุด ${c.cap})` : ' · ไม่มีดิวซ์'}</div>
                     <button
                       type="button"
                       onClick={() => { setRuleCat(c); setRuleForm({ best_of: c.best_of, points: c.points, cap: c.cap, deuce: c.deuce }); }}
@@ -1022,7 +1022,7 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
             <div className="text-xs font-semibold text-slate-500">จำนวนเซต</div>
             <div className="flex gap-1.5">
               {[1, 3, 5].map((n) => (
-                <button key={n} type="button" onClick={() => setRuleForm({ ...ruleForm, best_of: n })} className={`flex-1 min-h-[42px] rounded-xl text-xs font-semibold border ${ruleForm.best_of === n ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-200 text-slate-700'}`}>{n === 1 ? '1 เซต' : `ชนะ ${Math.ceil(n / 2)} ใน ${n}`}</button>
+                <button key={n} type="button" onClick={() => setRuleForm({ ...ruleForm, best_of: n })} className={`flex-1 min-h-[42px] rounded-xl text-xs font-semibold border ${ruleForm.best_of === n ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-200 text-slate-700'}`}>{n === 1 ? '1 เซต' : `${Math.ceil(n / 2)} ใน ${n} เซต`}</button>
               ))}
             </div>
           </div>

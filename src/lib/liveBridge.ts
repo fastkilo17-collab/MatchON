@@ -224,17 +224,17 @@ export function useLiveBridge(a: Args) {
     }
   }, [matches, fb, bridgeOn, fbLoaded, courts]);
 
-  // สนามที่ถูกลบในแอป -> ซ่อนบนจอใหญ่/หน้ากรรมการ (ไม่ค้างอยู่ใน Firebase)
+  // สนามที่ถูกลบในแอป -> ลบออกจาก Firebase ด้วย (จอใหญ่/หน้ากรรมการจะไม่เห็น)
   useEffect(() => {
     if (!bridgeOn || !fbLoaded || !cfg.current || !FB.current || !canWrite || !courts.length) return;
     const known = new Set(courts.map((c) => c.no));
-    for (const key of Object.keys(fb)) {
-      const no = Number(key);
-      const f = fb[no];
-      if (!f || known.has(no) || f.hidden) continue;
-      FB.current.updateCourt(cfg.current.live_id, no, (c: any) => { c.hidden = true; c.status = 'READY'; }).catch(() => { /* retry on next change */ });
-      delete lastSig.current[no];
-    }
+    const gone = Object.keys(fb).map(Number).filter((no) => fb[no] && !known.has(no));
+    if (!gone.length) return;
+    gone.forEach((no) => { delete lastSig.current[no]; });
+    const done = FB.current.removeCourts
+      ? FB.current.removeCourts(cfg.current.live_id, gone)
+      : Promise.all(gone.map((no) => FB.current.updateCourt(cfg.current.live_id, no, (c: any) => { c.hidden = true; c.status = 'READY'; })));
+    Promise.resolve(done).catch(() => { /* retry on next change */ });
   }, [courts, fb, bridgeOn, fbLoaded, canWrite]);
 
   // put the court's current match on the referee page when it changes

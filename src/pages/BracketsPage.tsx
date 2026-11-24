@@ -107,7 +107,7 @@ export function BracketsPage() {
       >
         <div className="flex items-center justify-between text-[11px] text-slate-500">
           <span className="flex items-center gap-1.5 font-semibold tabular-nums">
-            {m.match_no ? <MatchNo n={m.match_no} className="text-sm px-2 py-1" /> : 'แมตช์'}
+            {m.match_no ? <MatchNo n={m.match_no} /> : 'แมตช์'}
             {m.scheduled_at ? <span className="text-slate-700">{fmtTime(m.scheduled_at)}</span> : null}
             {m.court ? <span>· สนาม {m.court}</span> : null}
           </span>
@@ -407,6 +407,10 @@ export function BracketsPage() {
             );
           })}
         </div>
+      )}
+
+      {catMatches.length > 0 && !catMatches.some((m) => m.scheduled_at) && (
+        <div className="text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 w-fit">รอประกาศตารางแข่ง</div>
       )}
 
       {/* Bracket Visualization */}
@@ -950,7 +954,8 @@ function GroupEditSheet({
   const [ids, setIds] = useState<string[]>([]);
   const [add, setAdd] = useState('');
   const [showMatches, setShowMatches] = useState(true);
-  useEffect(() => { if (open) { setIds(current); setAdd(''); setShowMatches(true); } /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [open, groupNo]);
+  const [showTeamList, setShowTeamList] = useState(false);
+  useEffect(() => { if (open) { setIds(current); setAdd(''); setShowMatches(true); setShowTeamList(false); } /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [open, groupNo]);
   const byId = regs;
   const free = teams.filter((t) => !assigned.has(t.id) && !ids.includes(t.id));
   const changed = ids.length !== current.length || ids.some((x) => !current.includes(x));
@@ -958,8 +963,11 @@ function GroupEditSheet({
     <ResponsiveSheet open={open} onClose={onClose} title={`กลุ่ม ${String.fromCharCode(65 + groupNo)} • ${catName}`} subtitle={canEdit ? 'ลบ/เพิ่มทีม แล้วกด บันทึก (แก้ได้เฉพาะกลุ่มที่ยังไม่มีผลแข่ง)' : `${ids.length} ทีม · ${matches.length} แมตช์`}>
       <div className="space-y-4">
         {showTeams && <div className="space-y-2">
-          <div className="text-xs font-semibold text-slate-700">ทีมในกลุ่ม ({ids.length})</div>
-          {ids.map((id, ti) => (
+          <button type="button" aria-expanded={showTeamList} onClick={() => setShowTeamList(!showTeamList)} className="w-full flex items-center justify-between min-h-[40px] px-3 rounded-xl bg-slate-100 text-xs font-bold text-slate-700">
+            <span>ทีมในกลุ่ม ({ids.length})</span>
+            <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform ${showTeamList ? 'rotate-180' : ''}`} />
+          </button>
+          {showTeamList && ids.map((id, ti) => (
             <div key={id} className="flex items-center gap-2 rounded-xl border border-slate-200 p-2">
               <span className="w-8 shrink-0 text-center text-xs font-bold text-slate-500">{String.fromCharCode(65 + groupNo)}{ti + 1}</span>
               <TeamAvatars reg={byId[id]} size={26} flat />
@@ -969,7 +977,7 @@ function GroupEditSheet({
               )}
             </div>
           ))}
-          {canEdit && (
+          {showTeamList && canEdit && (
             <div className="flex gap-2">
               <select value={add} onChange={(e) => setAdd(e.target.value)} className="flex-1 min-w-0 min-h-[42px] px-3 rounded-xl border border-slate-200 bg-white text-sm">
                 <option value="">เพิ่มทีม (ที่ยังไม่อยู่ในกลุ่มใด)…</option>
@@ -983,7 +991,7 @@ function GroupEditSheet({
         <div className="space-y-2">
           {showTeams && (          <button type="button" onClick={() => setShowMatches(!showMatches)} className="w-full flex items-center justify-between min-h-[40px] px-3 rounded-xl bg-slate-100 text-xs font-bold text-slate-700">
             <span>การจับคู่แมตช์ ({matches.length})</span>
-            <span>{showMatches ? 'ย่อ ▲' : 'ขยาย ▼'}</span>
+            <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform ${showMatches ? 'rotate-180' : ''}`} />
           </button>)}
           {(showMatches || !showTeams) && (
             <div className="space-y-2">
