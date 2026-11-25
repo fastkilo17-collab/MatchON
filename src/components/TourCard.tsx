@@ -56,6 +56,7 @@ export function CatLine({ t }: { t: Tournament }) {
   return (
     <div className="flex flex-wrap items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
       <ModelButton t={t} small />
+      <span className="text-xs text-slate-600 tabular-nums mr-0.5">{cats.length} รุ่น</span>
       {cats.map((c) => <span key={c.id} className="rounded-md bg-slate-100 text-slate-700 px-2 py-0.5 text-[11px] font-semibold">{c.name}</span>)}
     </div>
   );
@@ -105,5 +106,5 @@ export function TourButtons({ t, extra }: { t: Tournament; extra?: React.ReactNo
 }
 
 export function VenueLine({ t }: { t: Tournament }) {
-  return <div className="flex items-center gap-2 text-xs text-slate-600 min-w-0"><MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" /><span className="truncate">{t.venue || 'ไม่ระบุสนาม'} · <span className="tabular-nums">{t.courts} สนาม</span></span></div>;
+  return <div className="flex items-center gap-2 text-xs text-slate-600 min-w-0"><MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" /><span className="truncate">{t.venue || 'ไม่ระบุสนาม'} · <span className="tabular-nums">{t.courts} สนาม</span>{t.shuttle ? ` | ลูก ${t.shuttle}` : ''}</span></div>;
 }

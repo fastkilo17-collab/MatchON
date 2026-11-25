@@ -417,12 +417,6 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
                   <div className="space-y-1.5 text-xs text-slate-600">
                     <div><StageBadge t={t} /></div>
                     <VenueLine t={t} />
-                    <div className="flex items-center gap-2">
-                      <Users className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                      <span className="tabular-nums">
-                        {cats.length} รุ่น{t.shuttle ? ` | ลูก ${t.shuttle}` : ''}
-                      </span>
-                    </div>
                     <CatLine t={t} />
                   </div>
 

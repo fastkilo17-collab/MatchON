@@ -2,6 +2,7 @@ import React from 'react';
 import { Camera, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useMatchON } from '../context/MatchONContext';
 import { PhotoThumb } from './UiKit';
+import { avatarDataUri, photoUrl } from '../lib/supabase';
 import { deleteModel, saveModel, uploadModelPhoto, useModels, type AthleteModel } from '../lib/models';
 import type { Tournament } from '../types/matchon';
 
@@ -63,19 +64,18 @@ export function ModelsView({ tournament, editable }: { tournament: Tournament; e
               )}
             </div>
             {list.length ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+              <div className="grid grid-cols-4 gap-2">
                 {list.map((m) => (
-                  <div key={m.id} className="rounded-2xl border border-slate-200/80 bg-white p-3 flex flex-col items-center text-center gap-1.5 min-w-0">
-                    <PhotoThumb photo={m.photo} name={m.name} size={64} />
-                    <div className="min-w-0 w-full leading-tight">
-                      <div className="text-sm font-semibold text-slate-900 truncate">{m.name}</div>
-                      <div className="text-xs text-slate-500 truncate">{m.nick || '-'}</div>
-                      {m.note && <div className="text-[11px] text-amber-700 bg-amber-50 rounded-md px-1.5 py-0.5 mt-1 line-clamp-2">{m.note}</div>}
+                  <div key={m.id} className="relative aspect-square self-start w-full rounded-2xl overflow-hidden bg-slate-200 min-w-0">
+                    <img src={m.photo ? photoUrl(m.photo) : avatarDataUri(m.name)} alt={m.name} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
+                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-1.5 pt-5 pb-1.5 leading-tight text-center">
+                      <div className="text-[11px] font-semibold text-white truncate">{m.nick || m.name}</div>
+                      {m.note && <div className="text-[9px] text-amber-200 truncate">{m.note}</div>}
                     </div>
                     {editable && (
-                      <div className="flex gap-1.5">
-                        <button type="button" aria-label="แก้ไข" onClick={() => setForm(m)} className="min-h-[36px] min-w-[36px] grid place-items-center rounded-lg border border-slate-200 text-slate-600"><Pencil className="w-3.5 h-3.5" /></button>
-                        <button type="button" aria-label="ลบ" onClick={() => void remove(m)} className="min-h-[36px] min-w-[36px] grid place-items-center rounded-lg border border-red-200 text-red-600"><Trash2 className="w-3.5 h-3.5" /></button>
+                      <div className="absolute top-1 right-1 flex flex-col gap-1">
+                        <button type="button" aria-label="แก้ไข" onClick={() => setForm(m)} className="w-7 h-7 grid place-items-center rounded-full bg-white/90 text-slate-700"><Pencil className="w-3.5 h-3.5" /></button>
+                        <button type="button" aria-label="ลบ" onClick={() => void remove(m)} className="w-7 h-7 grid place-items-center rounded-full bg-white/90 text-red-600"><Trash2 className="w-3.5 h-3.5" /></button>
                       </div>
                     )}
                   </div>
