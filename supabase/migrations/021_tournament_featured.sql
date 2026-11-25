@@ -1,0 +1,1 @@
+-- applied via MCP: tournaments.featured + is_super_admin() + admin update policy + guard trigger (021_tournament_featured)

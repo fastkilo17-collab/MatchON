@@ -138,6 +138,16 @@ export function fmtRange(start?: string | null, end?: string | null): string {
   return `${a.d} ${TH_MON[a.m]} ${yy(a.y)} - ${b.d} ${TH_MON[b.m]} ${yy(b.y)}`;
 }
 
+/** เรียงรายการตามวันแข่งใกล้สุดก่อน: รายการที่ยังไม่จบ (เริ่มเร็วสุดก่อน) ตามด้วยรายการที่จบแล้ว (ล่าสุดก่อน) */
+export function byNearestDate(a: Tournament, b: Tournament): number {
+  const today = new Date(Date.now() + 7 * 3600e3).toISOString().slice(0, 10);
+  const sd = (t: Tournament) => (t.start_date || '9999-12-31').slice(0, 10);
+  const ed = (t: Tournament) => (t.end_date || t.start_date || '9999-12-31').slice(0, 10);
+  const pa = ed(a) < today, pb = ed(b) < today;
+  if (pa !== pb) return pa ? 1 : -1;
+  return pa ? sd(b).localeCompare(sd(a)) : sd(a).localeCompare(sd(b));
+}
+
 /** สถานะรายการที่แสดงจริง (คำนวณอัตโนมัติ): เปิดรับ → ปิดรับ → ประกาศสายแข่ง → กำลังแข่งขัน → จบ */
 export function tourStage(t: Tournament, matches: Match[]): TournamentStatus {
   if (t.status === 'draft') return 'draft';

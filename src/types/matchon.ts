@@ -59,6 +59,8 @@ export interface Tournament {
   shuttle?: string;
   /** ช่องทางติดต่อสอบถาม */
   contact?: string;
+  /** รายการแนะนำ (ติดดาวโดยผู้ดูแลเว็บ) */
+  featured?: boolean;
 }
 
 export interface Category {

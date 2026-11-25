@@ -101,6 +101,7 @@ export const tournamentFromDb = (r: any): Tournament & { organizer_id: string; l
   notice: r.notice || '',
   shuttle: r.shuttle || '',
   contact: r.contact || '',
+  featured: !!r.featured,
 });
 
 const tournamentToDb = (t: Tournament & { organizer_id?: string }, uid: string) => ({
@@ -649,6 +650,11 @@ export async function rpcUpdateRegistration(args: {
     p_video: args.video ?? '',
   });
   if (error) throw error;
+}
+
+export async function setTournamentFeatured(id: string, featured: boolean): Promise<void> {
+  const { error } = await sb.from('tournaments').update({ featured }).eq('id', id);
+  if (error) throw new Error(error.message);
 }
 
 export async function rpcSubmitSlip(id: string, token: string, path: string): Promise<void> {

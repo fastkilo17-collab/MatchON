@@ -1,9 +1,9 @@
 import React from 'react';
 import { ArrowRight, CalendarDays, MapPin, Radio, Trophy, Users, QrCode, Network, ClipboardList, Search } from 'lucide-react';
 import { useMatchON } from '../context/MatchONContext';
-import { isByeMatch, tourStage } from '../utils/bracket';
+import { isByeMatch, tourStage, byNearestDate } from '../utils/bracket';
 import type { Tournament } from '../types/matchon';
-import { DateChip, RegMeter, StageBadge, TourButtons, VenueLine } from '../components/TourCard';
+import { CatLine, DateChip, RegMeter, StageBadge, TourButtons, VenueLine } from '../components/TourCard';
 
 /** สไลด์โชว์รายการแนะนำ: เลื่อนอัตโนมัติทุก 5 วินาที, ปัด/กดจุดเพื่อเปลี่ยน */
 function Slideshow({ items, onOpen }: { items: Tournament[]; onOpen: (t: Tournament) => void }) {
@@ -73,11 +73,13 @@ export function SiteHomePage() {
   const matches = state.matches.filter((m) => !isByeMatch(m));
   const liveNow = matches.filter((m) => m.status === 'live').length;
   const stage = (t: Tournament) => tourStage(t, state.matches);
-  const rank = (t: Tournament) => ({ live: 0, open: 1, announced: 2, closed: 3, finished: 4, draft: 5 }[stage(t)]);
-  const sorted = [...ts].filter((t) => t.status !== 'draft').sort((a, b) => rank(a) - rank(b));
+  const sorted = [...ts].filter((t) => t.status !== 'draft').sort(byNearestDate);
   const featured = sorted.slice(0, 6);
-  // รายการแนะนำ: เฉพาะที่ยังไม่จบ มีรูปโปสเตอร์ก่อน
-  const recommended = sorted.filter((t) => stage(t) !== 'finished').sort((a, b) => Number(!!(b.posters?.length || b.poster)) - Number(!!(a.posters?.length || a.poster))).slice(0, 5);
+  // รายการแนะนำ: เฉพาะรายการที่ผู้ดูแลเว็บติดดาวไว้
+  const recommended = sorted.filter((t) => t.featured).slice(0, 8);
+  // รายการที่กำลังแข่งสด (มีแมตช์ live หรืออยู่ในช่วงวันแข่ง)
+  const liveTours = sorted.filter((t) => stage(t) === 'live' || state.matches.some((m) => m.tournament_id === t.id && m.status === 'live'));
+  const [livePop, setLivePop] = React.useState(false);
 
   const openT = (t: Tournament) => {
     setActiveTid(t.id);
@@ -94,9 +96,11 @@ export function SiteHomePage() {
   return (
     <div className="space-y-10 pb-6">
       {/* Hero */}
-      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-700 via-blue-800 to-slate-900 text-white px-6 py-10 sm:px-12 sm:py-16">
-        <div className="absolute -right-24 -top-24 w-80 h-80 rounded-full bg-white/10 blur-3xl" aria-hidden="true" />
-        <div className="absolute -left-16 -bottom-24 w-72 h-72 rounded-full bg-blue-400/20 blur-3xl" aria-hidden="true" />
+      <section className="relative rounded-3xl bg-gradient-to-br from-blue-700 via-blue-800 to-slate-900 text-white px-6 py-10 sm:px-12 sm:py-16">
+        <div className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none" aria-hidden="true">
+          <div className="absolute -right-24 -top-24 w-80 h-80 rounded-full bg-white/10 blur-3xl" />
+          <div className="absolute -left-16 -bottom-24 w-72 h-72 rounded-full bg-blue-400/20 blur-3xl" />
+        </div>
         <div className="relative max-w-2xl space-y-5">
           <span className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold tracking-wide">
             <Trophy className="w-3.5 h-3.5" /> แพลตฟอร์มแข่งขันแบดมินตัน
@@ -107,13 +111,29 @@ export function SiteHomePage() {
           <p className="text-sm sm:text-base text-white/80 leading-relaxed">
             ตั้งแต่เปิดรับสมัคร จัดสาย จัดตารางแข่ง ไปจนถึงกรรมการนับคะแนนผ่านมือถือ — ใช้งานง่ายสำหรับทั้งผู้จัด นักกีฬา และผู้ชม
           </p>
-          <div className="flex flex-wrap gap-2.5 pt-1">
+          <div className="relative flex flex-wrap gap-2.5 pt-1">
             <button type="button" onClick={() => navigate('tournaments')} className="inline-flex items-center gap-2 min-h-[48px] px-5 rounded-xl bg-white text-blue-800 font-bold text-sm hover:bg-blue-50 transition-colors">
               <Search className="w-4 h-4" /> ดูรายการแข่งขัน
             </button>
-            <button type="button" onClick={() => navigate('live')} className="inline-flex items-center gap-2 min-h-[48px] px-5 rounded-xl bg-white/15 text-white font-bold text-sm hover:bg-white/25 transition-colors">
-              <Radio className="w-4 h-4" /> ดูคะแนนสด{liveNow > 0 ? ` (${liveNow})` : ''}
-            </button>
+            <div>
+              <button type="button" onClick={() => setLivePop((v) => !v)} aria-expanded={livePop} className="inline-flex items-center gap-2 min-h-[48px] px-5 rounded-xl bg-white/15 text-white font-bold text-sm hover:bg-white/25 transition-colors">
+                <Radio className="w-4 h-4" /> ดูคะแนนสด{liveNow > 0 ? ` (${liveNow})` : ''}
+              </button>
+              {livePop && (
+                <>
+                  <button type="button" aria-label="ปิด" className="fixed inset-0 z-30 cursor-default" onClick={() => setLivePop(false)} />
+                  <div className="absolute left-0 top-full mt-2 z-40 w-72 max-w-[85vw] rounded-2xl bg-white text-slate-900 shadow-xl border border-slate-200 p-2">
+                    <div className="px-3 py-1.5 text-[11px] font-bold text-slate-500">รายการที่แข่งสดอยู่</div>
+                    {liveTours.length ? liveTours.map((t) => (
+                      <button key={t.id} type="button" onClick={() => { setLivePop(false); setActiveTid(t.id); navigate('live'); }} className="w-full min-h-[44px] flex items-center gap-2 text-left px-3 rounded-xl hover:bg-slate-50">
+                        <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse shrink-0" />
+                        <span className="text-sm font-semibold truncate">{t.name}</span>
+                      </button>
+                    )) : <div className="px-3 py-3 text-sm text-slate-400">ยังไม่มีรายการที่แข่งสดอยู่</div>}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </section>
@@ -160,6 +180,7 @@ export function SiteHomePage() {
                   <div className="p-4 space-y-2.5 flex-1">
                     <div className="font-display font-bold text-slate-900 leading-snug">{t.name}</div>
                     <div className="space-y-1.5"><div><StageBadge t={t} /></div><VenueLine t={t} /></div>
+                    <CatLine t={t} />
                     <RegMeter t={t} />
                   </div>
                   <div className="px-4 pb-4"><TourButtons t={t} /></div>
@@ -175,7 +196,7 @@ export function SiteHomePage() {
       {/* Features */}
       <section className="space-y-4">
         <h3 className="font-display text-xl font-bold text-slate-900">ทำอะไรได้บ้าง</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           {FEATURES.map((f) => (
             <div key={f.title} className="rounded-2xl bg-white border border-slate-200/80 p-5 space-y-2.5">
               <span className="w-10 h-10 grid place-items-center rounded-xl bg-blue-50 text-blue-700"><f.icon className="w-5 h-5" /></span>

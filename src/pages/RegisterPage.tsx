@@ -576,6 +576,7 @@ export function MyRegistrationsPage() {
   const { state, navigate } = useMatchON();
   const myRegs = state.registrations.filter((r) => r.is_mine);
   const [openNotes, setOpenNotes] = useState<Record<string, boolean>>({});
+  const [viewReg, setViewReg] = useState<Registration | null>(null);
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -603,7 +604,7 @@ export function MyRegistrationsPage() {
             const cat = state.categories.find((c) => c.id === r.category_id);
             const myMatches = state.matches.filter((m) => m.reg_a === r.id || m.reg_b === r.id);
             return (
-              <div key={r.id} className="bg-white border border-slate-200/80 rounded-2xl p-5 space-y-3">
+              <div key={r.id} role="button" tabIndex={0} onClick={() => setViewReg(r)} onKeyDown={(e) => { if (e.key === 'Enter') setViewReg(r); }} className="bg-white border border-slate-200/80 rounded-2xl p-5 space-y-3 cursor-pointer hover:border-blue-300 transition-colors">
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
                     <div className="text-xs text-slate-500">{t?.name || ''}</div>
@@ -626,14 +627,14 @@ export function MyRegistrationsPage() {
                   </div>
                 )}
 
-                <RegActions r={r} />
+                <div onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}><RegActions r={r} /></div>
 
                 {(() => {
                   const notes = state.notifications.filter((n) => n.registration_id === r.id);
                   if (!notes.length) return null;
                   const open = !!openNotes[r.id];
                   return (
-                    <div className="pt-3 border-t border-slate-100">
+                    <div className="pt-3 border-t border-slate-100" onClick={(e) => e.stopPropagation()}>
                       <button type="button" onClick={() => setOpenNotes((o) => ({ ...o, [r.id]: !o[r.id] }))} className="w-full flex items-center gap-2 text-xs font-semibold text-slate-700 min-h-[36px]">
                         <Bell className="w-4 h-4 text-blue-600" />
                         แจ้งเตือน
@@ -710,6 +711,7 @@ export function MyRegistrationsPage() {
           </button>
         </div>
       )}
+      {viewReg && <AthleteSheet reg={viewReg} onClose={() => setViewReg(null)} />}
     </div>
   );
 }

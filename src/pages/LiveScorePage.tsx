@@ -300,7 +300,7 @@ export function LiveScorePage() {
                       <div className="min-w-0 flex flex-col items-center gap-1 text-center">
                         <TeamAvatars reg={r} size={av} flat={compact} />
                         <div className="min-w-0 max-w-full leading-tight">
-                          <div className={`font-extrabold text-slate-900 line-clamp-2 ${compact ? 'text-sm' : 'text-lg'}`}>{r ? playersNick(r) : 'รอผลการแข่ง'}</div>
+                          <div className={`text-slate-900 line-clamp-2 ${compact ? 'text-sm font-extrabold' : 'text-lg font-semibold'}`}>{r ? playersNick(r) : 'รอผลการแข่ง'}</div>
                           {r?.club && <div className={`font-medium text-slate-500 truncate ${compact ? 'text-[11px]' : 'text-sm'}`}>{r.club}</div>}
                         </div>
                         <div className={`font-display font-extrabold tabular-nums leading-none ${compact ? 'text-4xl' : 'text-6xl'} ${side === 'a' ? 'text-blue-600' : 'text-slate-900'}`}>{side === 'a' ? shownCur[0] : shownCur[1]}</div>
@@ -314,7 +314,7 @@ export function LiveScorePage() {
                               <span className="flex items-center gap-2 min-w-0">
                                 <TeamAvatars reg={r} size={30} />
                                 <span className="min-w-0 leading-tight">
-                                  <span className="block text-sm font-semibold text-slate-900 truncate">{r ? r.club || teamName(r) : 'รอผลการแข่ง'}</span>
+                                  <span className="block text-[13px] font-medium text-slate-900 truncate">{r ? r.club || teamName(r) : 'รอผลการแข่ง'}</span>
                                   {r && <span className="block text-[11px] font-normal text-slate-500 truncate">{playersNick(r)}</span>}
                                 </span>
                               </span>
@@ -322,7 +322,7 @@ export function LiveScorePage() {
                                 {shownSets.map((x, i) => (
                                   <span key={i} className={`w-6 text-center text-xs ${x[k] > x[1 - k] ? 'font-bold text-emerald-600' : 'font-medium text-slate-400'}`}>{x[k]}</span>
                                 ))}
-                                {started && <span className="w-10 text-center font-display text-2xl font-extrabold text-blue-700">{cur}</span>}
+                                {started && <span className="w-9 text-center font-display text-xl font-extrabold text-blue-700">{cur}</span>}
                               </span>
                             </div>
                           ))}

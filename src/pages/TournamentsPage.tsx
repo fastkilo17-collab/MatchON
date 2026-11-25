@@ -5,6 +5,7 @@ import {
   Edit3,
   MapPin,
   Plus,
+  Star,
   Trash2,
   Trophy,
   Users,
@@ -24,8 +25,8 @@ import {
   prizeText,
   prizeLines,
 } from '../utils/bracket';
-import { tourStage } from '../utils/bracket';
-import { StageBadge, DateChip, RegMeter, TourButtons, VenueLine } from '../components/TourCard';
+import { tourStage, byNearestDate } from '../utils/bracket';
+import { StageBadge, DateChip, RegMeter, TourButtons, VenueLine, CatLine } from '../components/TourCard';
 import { ResponsiveSheet, ShareButton } from '../components/UiKit';
 import { resizeImage } from '../lib/supabase';
 
@@ -37,6 +38,7 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
     profile,
     isAdmin,
     isManagerOf,
+    toggleFeatured,
     activeTournament,
     setActiveTid,
     navigate,
@@ -104,7 +106,7 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
   });
 
   const myList = state.tournaments.filter((t) => isAdmin || (t as any).organizer_id === profile?.id || isManagerOf(t.id));
-  const baseList = mode === 'list' ? state.tournaments : myList;
+  const baseList = [...(mode === 'list' ? state.tournaments : myList)].sort(byNearestDate);
   const shownTournaments = baseList.filter((t) => {
     if (stFilter !== 'all' && tourStage(t, state.matches) !== stFilter) return false;
     if (kindFilter !== 'all' && !state.categories.some((c) => c.tournament_id === t.id && c.kind === kindFilter)) return false;
@@ -415,6 +417,7 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
                   <div className="space-y-1.5 text-xs text-slate-600">
                     <div><StageBadge t={t} /></div>
                     <VenueLine t={t} />
+                    <CatLine t={t} />
                     <div className="flex items-center gap-2">
                       <Users className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                       <span className="tabular-nums">
@@ -434,8 +437,21 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
                   <TourButtons t={t} />
                   <div className="flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
                     <ShareButton tid={t.id} name={t.name} compact onDone={(m) => toast(m)} />
+                    {isAdmin && (
+                      <button type="button" onClick={() => toggleFeatured(t.id)} aria-label={t.featured ? 'เอาออกจากรายการแนะนำ' : 'ตั้งเป็นรายการแนะนำ'} aria-pressed={!!t.featured} className={`min-h-[42px] min-w-[42px] flex items-center justify-center rounded-xl border transition-colors ${t.featured ? 'bg-amber-50 border-amber-300 text-amber-500' : 'border-slate-200 text-slate-400 hover:bg-slate-50'}`}>
+                        <Star className={`w-4 h-4 ${t.featured ? 'fill-amber-400' : ''}`} />
+                      </button>
+                    )}
                     {isOrganizer && (
-                      <>
+                      <div className="ml-auto flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => openEditT(t)}
+                          aria-label={`แก้ไข ${t.name}`}
+                          className="min-h-[42px] min-w-[42px] flex items-center justify-center rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 transition-colors"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                        </button>
                         <button
                           type="button"
                           onClick={() => openCategoryManager(t.id)}
@@ -443,15 +459,7 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
                         >
                           รุ่น ({cats.length})
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => openEditT(t)}
-                          aria-label={`แก้ไข ${t.name}`}
-                          className="min-h-[42px] min-w-[42px] flex items-center justify-center rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 transition-colors ml-auto"
-                        >
-                          <Edit3 className="w-4 h-4" />
-                        </button>
-                      </>
+                      </div>
                     )}
                   </div>
                 </div>

@@ -43,6 +43,7 @@ import {
   rpcRegister,
   type Data,
   type Profile,
+  setTournamentFeatured,
 } from '../lib/db';
 
 interface ToastMessage {
@@ -82,6 +83,7 @@ interface MatchONContextValue {
 
   // Actions
   saveTournament: (data: Omit<Tournament, 'id' | 'slug'> & { id?: string }) => string;
+  toggleFeatured: (id: string) => void;
   toggleTournamentStatus: (id: string) => void;
   deleteTournament: (id: string) => void;
   saveCategory: (data: Omit<Category, 'id'> & { id?: string }) => void;
@@ -159,6 +161,8 @@ const INITIAL_STATE: MatchONState = { role: 'player', activeTid: '', ...EMPTY_DA
 
 export function MatchONProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<MatchONState>(INITIAL_STATE);
+  const stateRef = useRef(state);
+  stateRef.current = state;
   const [route, setRoute] = useState<NavRoute>(() => {
     try {
       // ลิงก์แชร์: ?t=<id รายการ>&p=<หน้า>
@@ -391,6 +395,21 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
   const catMap = useMemo(
     () => Object.fromEntries(tCategories.map((c) => [c.id, c])),
     [tCategories],
+  );
+
+  // ติดดาวรายการแนะนำ (เฉพาะผู้ดูแลเว็บ)
+  const toggleFeatured = useCallback(
+    (id: string) => {
+      const cur = stateRef.current.tournaments.find((t) => t.id === id);
+      if (!cur) return;
+      const next = !cur.featured;
+      const apply = (v: boolean) => setState((prev) => ({ ...prev, tournaments: prev.tournaments.map((t) => (t.id === id ? { ...t, featured: v } : t)) }));
+      apply(next);
+      setTournamentFeatured(id, next)
+        .then(() => toast(next ? 'ตั้งเป็นรายการแนะนำแล้ว' : 'เอาออกจากรายการแนะนำแล้ว'))
+        .catch((e) => { apply(!next); toast(e?.message || 'ตั้งรายการแนะนำไม่สำเร็จ', 'err'); });
+    },
+    [toast],
   );
 
   const saveTournament = useCallback(
@@ -1443,6 +1462,7 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
     regMap,
     catMap,
     saveTournament,
+    toggleFeatured,
     toggleTournamentStatus,
     deleteTournament,
     saveCategory,
