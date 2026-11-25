@@ -99,6 +99,8 @@ export const tournamentFromDb = (r: any): Tournament & { organizer_id: string; l
   format_text: r.format_text || '',
   rules_text: r.rules_text || '',
   notice: r.notice || '',
+  shuttle: r.shuttle || '',
+  contact: r.contact || '',
 });
 
 const tournamentToDb = (t: Tournament & { organizer_id?: string }, uid: string) => ({
@@ -121,6 +123,8 @@ const tournamentToDb = (t: Tournament & { organizer_id?: string }, uid: string) 
   format_text: t.format_text || null,
   rules_text: t.rules_text || null,
   notice: t.notice || null,
+  shuttle: t.shuttle || null,
+  contact: t.contact || null,
 });
 
 const categoryFromDb = (r: any): Category => ({

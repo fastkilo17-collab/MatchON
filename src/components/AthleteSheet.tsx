@@ -85,6 +85,16 @@ const toDraft = (r: Registration): Draft => ({
  * Popup ข้อมูลนักกีฬา — ผู้จัดแก้ได้ทุกช่อง, เจ้าของใบสมัครแก้ข้อมูลส่วนตัว/คลิปได้ (ตอนเปิดรับสมัคร),
  * คนอื่นดูได้อย่างเดียว (ไม่เห็นเบอร์โทร/สลิป)
  */
+/** อายุจากปีเกิด (พ.ศ. หรือ ค.ศ. ก็ได้) */
+const ageOf = (yr: number | string): number | null => {
+  const y = Number(yr);
+  if (!y || y < 1000) return null;
+  const be = new Date().getFullYear() + 543;
+  const born = y > 2400 ? y : y + 543;
+  const a = be - born;
+  return a >= 0 && a < 120 ? a : null;
+};
+
 export function AthleteSheet({ reg, onClose, seq, startEdit }: { reg: Registration | null; onClose: () => void; seq?: number; startEdit?: boolean }) {
   const { state, isManagerOf, updateRegistration, deleteRegistration, toast, reload } = useMatchON();
   const [edit, setEdit] = useState(false);
@@ -201,20 +211,23 @@ export function AthleteSheet({ reg, onClose, seq, startEdit }: { reg: Registrati
             <PhotoThumb photo={photo} name={nm} size={52} />
             <div className="min-w-0 space-y-0.5">
               <div className="text-base font-bold text-slate-900 break-words">{nm}</div>
-              {nk && nk !== nm && <div className="text-xs text-slate-500">ชื่อเล่น {nk}</div>}
-              {canSee && ph ? (
-                <div className={`flex items-center gap-1.5 text-xs text-slate-600 ${doubles ? 'justify-center' : ''}`}><Phone className="w-3.5 h-3.5" /> {ph}</div>
+              <div className="text-xs text-slate-500">ชื่อเล่น {nk && nk !== nm ? nk : nk || '-'}</div>
+              {canSee ? (
+                <div className={`flex items-center gap-1.5 text-xs text-slate-600 ${doubles ? 'justify-center' : ''}`}><Phone className="w-3.5 h-3.5" /> {ph || '-'}</div>
               ) : !canSee ? (
                 <div className={`flex items-center gap-1.5 text-[11px] text-slate-400 ${doubles ? 'justify-center' : ''}`}><Lock className="w-3 h-3" /> เบอร์โทรเห็นเฉพาะผู้จัด</div>
               ) : null}
-              {yr ? <div className="text-xs text-slate-500">ปีเกิด {yr}</div> : null}
+              <div className="text-xs text-slate-500">
+                ปีเกิด {yr || '-'}
+                {yr && ageOf(yr) != null ? <span className="font-semibold text-slate-700"> · อายุ {ageOf(yr)} ปี</span> : <span> · อายุ -</span>}
+              </div>
             </div>
           </div>
         )}
         {!edit && (
           <div className="rounded-xl bg-slate-50 px-3 py-2">
             <div className="text-[11px] font-bold text-slate-500 mb-0.5">ประวัติการแข่ง</div>
-            <div className="text-sm text-slate-800 whitespace-pre-wrap break-words">{hist || <span className="text-slate-400 text-xs">ไม่ได้ระบุ</span>}</div>
+            <div className="text-sm text-slate-800 whitespace-pre-wrap break-words">{hist || <span className="text-slate-400">-</span>}</div>
           </div>
         )}
       </Section>
@@ -263,7 +276,7 @@ export function AthleteSheet({ reg, onClose, seq, startEdit }: { reg: Registrati
               {edit && d ? (
                 <input className={inp} value={d.club} onChange={(e) => set({ club: e.target.value })} placeholder="ชื่อทีม / ก๊วน" />
               ) : (
-                <div className="text-base font-extrabold text-slate-900">{live.club || 'ไม่ระบุทีม'}</div>
+                <div className="text-base font-extrabold text-slate-900">{live.club || '-'}</div>
               )}
             </Section>}
             {doubles ? (
@@ -333,7 +346,7 @@ export function AthleteSheet({ reg, onClose, seq, startEdit }: { reg: Registrati
                   <ExternalLink className="w-4 h-4 shrink-0" />
                 </a>
               ) : (
-                <div className="text-xs text-slate-400">ยังไม่มีคลิป</div>
+                <div className="text-sm text-slate-400">-</div>
               )}
             </Section>
 
@@ -349,9 +362,9 @@ export function AthleteSheet({ reg, onClose, seq, startEdit }: { reg: Registrati
               ) : edit && isMgr ? (
                 <textarea rows={3} maxLength={300} value={d.note} onChange={(e) => set({ note: e.target.value })} placeholder="เช่น เหตุผลที่ไม่ผ่าน / สิ่งที่ต้องแก้ไข (ทุกคนเห็น)" className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm" />
               ) : live.note ? (
-                <div className="text-sm text-slate-800 whitespace-pre-wrap break-words">{live.note}</div>
+                <div className="text-sm font-medium text-amber-900 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 whitespace-pre-wrap break-words">{live.note}</div>
               ) : (
-                <div className="text-xs text-slate-400">ไม่มีหมายเหตุ</div>
+                <div className="text-sm text-slate-400">-</div>
               )}
               {isMgr && !edit && !noteEdit && (
                 <button type="button" onClick={() => { setNoteDraft(live.note || ''); setNoteEdit(true); }} className="inline-flex items-center gap-1.5 min-h-[36px] px-3 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold">

@@ -1,8 +1,57 @@
 import React from 'react';
 import { ArrowRight, CalendarDays, MapPin, Radio, Trophy, Users, QrCode, Network, ClipboardList, Search } from 'lucide-react';
 import { useMatchON } from '../context/MatchONContext';
-import { fmtRange, STATUS_TH, isByeMatch } from '../utils/bracket';
+import { isByeMatch, tourStage } from '../utils/bracket';
 import type { Tournament } from '../types/matchon';
+import { DateChip, RegMeter, StageBadge, TourButtons, VenueLine } from '../components/TourCard';
+
+/** สไลด์โชว์รายการแนะนำ: เลื่อนอัตโนมัติทุก 5 วินาที, ปัด/กดจุดเพื่อเปลี่ยน */
+function Slideshow({ items, onOpen }: { items: Tournament[]; onOpen: (t: Tournament) => void }) {
+  const [i, setI] = React.useState(0);
+  const [hold, setHold] = React.useState(false);
+  const n = items.length;
+  React.useEffect(() => {
+    if (n < 2 || hold) return;
+    const id = window.setInterval(() => setI((x) => (x + 1) % n), 5000);
+    return () => window.clearInterval(id);
+  }, [n, hold]);
+  const cur = Math.min(i, n - 1);
+  const touch = React.useRef(0);
+  return (
+    <div
+      className="relative overflow-hidden rounded-3xl bg-slate-900"
+      onMouseEnter={() => setHold(true)}
+      onMouseLeave={() => setHold(false)}
+      onTouchStart={(e) => { touch.current = e.touches[0].clientX; }}
+      onTouchEnd={(e) => { const dx = e.changedTouches[0].clientX - touch.current; if (Math.abs(dx) > 40 && n > 1) setI((x) => (x + (dx < 0 ? 1 : n - 1)) % n); }}
+    >
+      <div className="flex transition-transform duration-500 ease-out" style={{ transform: `translateX(-${cur * 100}%)` }}>
+        {items.map((t) => {
+          const img = t.posters?.[0] || t.poster;
+          return (
+            <button key={t.id} type="button" onClick={() => onOpen(t)} className="relative shrink-0 w-full h-56 sm:h-72 text-left" aria-label={t.name}>
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-600 to-blue-900" />
+              {img && <img src={img} alt="" className="absolute inset-0 w-full h-full object-cover opacity-90" />}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
+              <div className="absolute left-4 top-4"><DateChip t={t} /></div>
+              <div className="absolute left-0 right-0 bottom-0 p-4 sm:p-6 space-y-1.5">
+                <div className="font-display text-xl sm:text-3xl font-extrabold text-white leading-tight line-clamp-2">{t.name}</div>
+                <div className="flex flex-wrap items-center gap-2"><StageBadge t={t} /><span className="text-xs text-white/85 truncate">{t.venue}</span></div>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+      {n > 1 && (
+        <div className="absolute bottom-2.5 right-4 flex gap-1.5">
+          {items.map((t, k) => (
+            <button key={t.id} type="button" aria-label={`สไลด์ ${k + 1}`} onClick={() => setI(k)} className={`h-2 rounded-full transition-all ${k === cur ? 'w-5 bg-white' : 'w-2 bg-white/50'}`} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 const FEATURES: Array<{ icon: React.ComponentType<{ className?: string }>; title: string; desc: string }> = [
   { icon: Network, title: 'จัดสายอัตโนมัติ', desc: 'แบ่งกลุ่ม น็อคเอาท์ สายบน-สายล่าง พร้อมตัวเลือกจับสายแบบเลี่ยงทีมเดียวกัน' },
@@ -23,8 +72,12 @@ export function SiteHomePage() {
   const regs = state.registrations.filter((r) => r.status !== 'cancelled' && r.status !== 'rejected');
   const matches = state.matches.filter((m) => !isByeMatch(m));
   const liveNow = matches.filter((m) => m.status === 'live').length;
-  const rank = (t: Tournament) => (t.status === 'live' ? 0 : t.status === 'open' ? 1 : t.status === 'closed' ? 2 : 3);
-  const featured = [...ts].filter((t) => t.status !== 'draft').sort((a, b) => rank(a) - rank(b)).slice(0, 3);
+  const stage = (t: Tournament) => tourStage(t, state.matches);
+  const rank = (t: Tournament) => ({ live: 0, open: 1, announced: 2, closed: 3, finished: 4, draft: 5 }[stage(t)]);
+  const sorted = [...ts].filter((t) => t.status !== 'draft').sort((a, b) => rank(a) - rank(b));
+  const featured = sorted.slice(0, 6);
+  // รายการแนะนำ: เฉพาะที่ยังไม่จบ มีรูปโปสเตอร์ก่อน
+  const recommended = sorted.filter((t) => stage(t) !== 'finished').sort((a, b) => Number(!!(b.posters?.length || b.poster)) - Number(!!(a.posters?.length || a.poster))).slice(0, 5);
 
   const openT = (t: Tournament) => {
     setActiveTid(t.id);
@@ -75,11 +128,19 @@ export function SiteHomePage() {
         ))}
       </section>
 
-      {/* Featured tournaments */}
+      {/* Recommended slideshow */}
+      {recommended.length > 0 && (
+        <section className="space-y-3">
+          <h3 className="font-display text-xl font-bold text-slate-900">รายการแนะนำ</h3>
+          <Slideshow items={recommended} onOpen={openT} />
+        </section>
+      )}
+
+      {/* Tournaments */}
       <section className="space-y-4">
         <div className="flex items-end justify-between gap-3">
           <div>
-            <h3 className="font-display text-xl font-bold text-slate-900">รายการแข่งขันแนะนำ</h3>
+            <h3 className="font-display text-xl font-bold text-slate-900">รายการแข่ง</h3>
             <p className="text-xs text-slate-500 mt-0.5">รายการที่กำลังแข่งและเปิดรับสมัคร</p>
           </div>
           <button type="button" onClick={() => navigate('tournaments')} className="inline-flex items-center gap-1 text-xs font-bold text-blue-700 min-h-[40px]">
@@ -91,19 +152,18 @@ export function SiteHomePage() {
             {featured.map((t) => {
               const img = t.posters?.[0] || t.poster;
               return (
-                <button key={t.id} type="button" onClick={() => openT(t)} className="text-left rounded-2xl bg-white border border-slate-200/80 overflow-hidden hover:border-blue-300 transition-colors flex flex-col">
+                <article key={t.id} role="link" tabIndex={0} onClick={() => openT(t)} onKeyDown={(e) => { if (e.key === 'Enter') openT(t); }} className="cursor-pointer text-left rounded-2xl bg-white border border-slate-200/80 overflow-hidden hover:border-blue-300 transition-colors flex flex-col">
                   <div className="relative h-36 bg-gradient-to-br from-blue-600 to-blue-800">
                     {img && <img src={img} alt={t.name} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />}
-                    <span className={`absolute left-3 top-3 rounded-md px-2 py-0.5 text-[11px] font-bold ${t.status === 'live' ? 'bg-red-600 text-white' : t.status === 'open' ? 'bg-emerald-500 text-white' : 'bg-white/90 text-slate-700'}`}>
-                      {STATUS_TH[t.status]}
-                    </span>
+                    <DateChip t={t} className="absolute left-3 top-3" />
                   </div>
-                  <div className="p-4 space-y-1.5">
+                  <div className="p-4 space-y-2.5 flex-1">
                     <div className="font-display font-bold text-slate-900 leading-snug">{t.name}</div>
-                    <div className="flex items-center gap-1.5 text-xs text-slate-600"><CalendarDays className="w-3.5 h-3.5 text-slate-400" />{fmtRange(t.start_date, t.end_date)}</div>
-                    <div className="flex items-center gap-1.5 text-xs text-slate-600 min-w-0"><MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" /><span className="truncate">{t.venue || 'ไม่ระบุสถานที่'}</span></div>
+                    <div className="space-y-1.5"><div><StageBadge t={t} /></div><VenueLine t={t} /></div>
+                    <RegMeter t={t} />
                   </div>
-                </button>
+                  <div className="px-4 pb-4"><TourButtons t={t} /></div>
+                </article>
               );
             })}
           </div>

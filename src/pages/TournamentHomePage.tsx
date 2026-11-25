@@ -5,7 +5,8 @@ import {
 import { useMatchON } from '../context/MatchONContext';
 import { PosterSlider, PhotoLightbox, ShareButton } from '../components/UiKit';
 import type { NavRoute } from '../types/matchon';
-import { isByeMatch, baht, shuttleText, fmtRange, FORMAT_TH, KIND_TH, STATUS_TH } from '../utils/bracket';
+import { isByeMatch } from '../utils/bracket';
+import { DateChip, StageBadge } from '../components/TourCard';
 
 function Kpi({ label, value, sub, tone = 'slate' }: { label: string; value: React.ReactNode; sub?: string; tone?: 'slate' | 'blue' | 'emerald' | 'amber' | 'red' }) {
   const c = { slate: 'text-slate-900', blue: 'text-blue-600', emerald: 'text-emerald-600', amber: 'text-amber-600', red: 'text-red-600' }[tone];
@@ -55,11 +56,12 @@ export function TournamentHomePage() {
           </div>
         )}
         <div className={`${posters.length ? 'md:col-span-3' : 'md:col-span-5'} p-5 sm:p-7 space-y-3`}>
-          <div className="text-xs font-bold text-blue-600">{STATUS_TH[t.status]}</div>
+          <div className="flex flex-wrap items-center gap-2"><DateChip t={t} /><StageBadge t={t} /></div>
           <h2 className="font-display text-2xl sm:text-3xl font-bold text-slate-900 leading-tight">{t.name}</h2>
           <div className="space-y-1.5 text-sm text-slate-600">
-            <div className="flex items-center gap-2"><CalendarDays className="w-4 h-4 text-slate-400" />{fmtRange(t.start_date, t.end_date)}</div>
             <div className="flex items-center gap-2"><MapPin className="w-4 h-4 text-slate-400" /><span>{t.venue || 'ไม่ระบุสนาม'} · {t.courts} สนาม</span></div>
+            {t.shuttle && <div className="flex items-center gap-2"><Trophy className="w-4 h-4 text-slate-400" />ลูกที่ใช้แข่ง: {t.shuttle}</div>}
+            {t.contact && <div className="flex items-start gap-2"><Users className="w-4 h-4 text-slate-400 mt-0.5" /><span>ติดต่อสอบถาม: {t.contact}</span></div>}
             {t.reg_deadline && <div className="flex items-center gap-2"><ClipboardCheck className="w-4 h-4 text-slate-400" />ปิดรับสมัคร {fmtRange(t.reg_deadline.slice(0, 10), t.reg_deadline.slice(0, 10))}{t.reg_deadline.length > 10 ? ` ${t.reg_deadline.slice(11, 16)} น.` : ''}</div>}
           </div>
           {t.description && <p className="text-sm text-slate-600 whitespace-pre-line">{t.description}</p>}

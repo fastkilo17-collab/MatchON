@@ -24,6 +24,8 @@ import {
   prizeText,
   prizeLines,
 } from '../utils/bracket';
+import { tourStage } from '../utils/bracket';
+import { StageBadge, DateChip, RegMeter, TourButtons, VenueLine } from '../components/TourCard';
 import { ResponsiveSheet, ShareButton } from '../components/UiKit';
 import { resizeImage } from '../lib/supabase';
 
@@ -47,7 +49,6 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
   } = useMatchON();
 
   const isOrganizer = state.role === 'organizer';
-  const [heroImgErr, setHeroImgErr] = useState(false);
   const [q, setQ] = useState('');
   const [ruleCat, setRuleCat] = useState<Category | null>(null);
   const [ruleForm, setRuleForm] = useState({ best_of: 3, points: 21, cap: 30, deuce: true });
@@ -69,6 +70,8 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
     promptpay_id: '',
     match_minutes: 30,
     rest_minutes: 15,
+    shuttle: '',
+    contact: '',
     poster: '' as string,
     posters: [] as string[],
     format_text: '',
@@ -103,7 +106,7 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
   const myList = state.tournaments.filter((t) => isAdmin || (t as any).organizer_id === profile?.id || isManagerOf(t.id));
   const baseList = mode === 'list' ? state.tournaments : myList;
   const shownTournaments = baseList.filter((t) => {
-    if (stFilter !== 'all' && t.status !== stFilter) return false;
+    if (stFilter !== 'all' && tourStage(t, state.matches) !== stFilter) return false;
     if (kindFilter !== 'all' && !state.categories.some((c) => c.tournament_id === t.id && c.kind === kindFilter)) return false;
     const kw = q.trim().toLowerCase();
     if (kw && !`${t.name} ${t.venue || ''} ${t.description || ''}`.toLowerCase().includes(kw)) return false;
@@ -142,6 +145,8 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
       promptpay_id: '081-234-5678',
       match_minutes: 30,
       rest_minutes: 15,
+      shuttle: '',
+      contact: '',
       poster: '',
       posters: [],
       format_text: '',
@@ -165,6 +170,8 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
       promptpay_id: t.promptpay_id,
       match_minutes: t.match_minutes,
       rest_minutes: t.rest_minutes,
+      shuttle: t.shuttle || '',
+      contact: t.contact || '',
       poster: t.poster || '',
       posters: t.posters && t.posters.length ? t.posters : t.poster ? [t.poster] : [],
       format_text: t.format_text || '',
@@ -327,68 +334,7 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
         </div>
       )}
       {/* Bright Airy Arena Hero Banner */}
-      {mode === 'list' && <section className="relative overflow-hidden rounded-3xl bg-white border border-slate-200/80">
-        <div className="grid grid-cols-1 lg:grid-cols-12 items-stretch">
-          <div className="lg:col-span-7 p-6 sm:p-8 flex flex-col justify-between gap-5">
-            <div className="space-y-2.5 max-w-xl">
-              <div className="text-xs font-semibold text-blue-600">
-                MatchON · แพลตฟอร์มจัดแข่งแบดมินตัน
-              </div>
-              <h2 className="font-display text-2xl sm:text-3xl font-bold text-slate-900 leading-tight">
-                จัดการแข่งขันแบดมินตันครบวงจรในหน้าเดียว
-              </h2>
-              <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
-                เปิดรับสมัครนักกีฬา จัดสายอัตโนมัติ วางตารางสนามแบบไม่ชนกัน และอัปเดต Live Score
-                แบบเรียลไทม์จากมือถือได้ทันที
-              </p>
-            </div>
 
-            <div className="flex flex-wrap items-center gap-3">
-              {isOrganizer ? (
-                <button
-                  type="button"
-                  onClick={openCreateT}
-                  className="inline-flex items-center gap-2 min-h-[46px] px-5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition-colors shadow-sm shadow-blue-600/15"
-                >
-                  <Plus className="w-4 h-4" />
-                  สร้างรายการแข่งขันใหม่
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => navigate('register')}
-                  className="inline-flex items-center gap-2 min-h-[46px] px-5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition-colors shadow-sm shadow-blue-600/15"
-                >
-                  สมัครแข่งขันเลย
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={() => navigate('live')}
-                className="inline-flex items-center gap-2 min-h-[46px] px-5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-sm font-semibold transition-colors"
-              >
-                ดูคะแนนสด (Live Score)
-              </button>
-            </div>
-          </div>
-
-          <div className="lg:col-span-5 min-h-[190px] lg:min-h-[260px] bg-slate-100 relative overflow-hidden">
-            {!heroImgErr ? (
-              <img
-                src={`${import.meta.env.BASE_URL}src/assets/images/hero_badminton_court_1794832771334.jpg`}
-                alt="สนามแบดมินตันในร่มโทนสว่าง"
-                referrerPolicy="no-referrer"
-                onError={() => setHeroImgErr(true)}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="w-full h-full bg-gradient-to-br from-blue-50 via-white to-emerald-50 flex items-center justify-center">
-                <Trophy className="w-12 h-12 text-blue-600/40" />
-              </div>
-            )}
-          </div>
-        </div>
-      </section>}
 
       {/* Tournaments Grid */}
       <section className="space-y-4">
@@ -419,7 +365,7 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
             />
           </div>
           <div className="flex flex-wrap gap-1.5">
-            {([['all', 'ทั้งหมด'], ['open', 'เปิดรับสมัคร'], ['live', 'กำลังแข่งขัน'], ['closed', 'ปิดรับสมัคร']] as Array<['all' | TournamentStatus, string]>).map(([k, l]) => (
+            {([['all', 'ทั้งหมด'], ['open', 'เปิดรับสมัคร'], ['closed', 'ปิดรับสมัคร'], ['announced', 'ประกาศสายแข่ง'], ['live', 'กำลังแข่งขัน'], ['finished', 'จบรายการ']] as Array<['all' | TournamentStatus, string]>).map(([k, l]) => (
               <button key={k} type="button" onClick={() => setStFilter(k)} className={`min-h-[36px] px-3 rounded-full text-xs font-semibold border transition-colors ${stFilter === k ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-200 text-slate-700 hover:border-blue-300'}`}>{l}</button>
             ))}
             <span className="w-px bg-slate-200 mx-1" aria-hidden="true" />
@@ -432,9 +378,6 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {shownTournaments.map((t) => {
             const cats = state.categories.filter((c) => c.tournament_id === t.id);
-            const regs = state.registrations.filter(
-              (r) => r.tournament_id === t.id && r.status !== 'cancelled' && r.status !== 'rejected',
-            );
             const isSelected = activeTournament?.id === t.id;
 
             return (
@@ -456,26 +399,11 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
                   ) : (
                     <div className="absolute inset-0 grid place-items-center text-white/80 font-display font-extrabold text-2xl tracking-tight px-4 text-center">{t.name}</div>
                   )}
+                  <DateChip t={t} className="absolute left-3 top-3" />
                 </div>
                 <div className="p-5 space-y-3">
                   <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2 text-xs font-semibold">
-                        <span
-                          className={
-                            t.status === 'live'
-                              ? 'text-red-600'
-                              : t.status === 'open'
-                                ? 'text-emerald-700'
-                                : 'text-slate-500'
-                          }
-                        >
-                          {STATUS_TH[t.status]}
-                        </span>
-                      </div>
-                      <h4 className="font-display text-lg font-bold text-slate-900 mt-1">{t.name}</h4>
-                    </div>
-
+                    <h4 className="font-display text-lg font-bold text-slate-900 min-w-0">{t.name}</h4>
                     {isSelected && (
                       <span className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 shrink-0">
                         <Check className="w-3.5 h-3.5" />
@@ -484,19 +412,13 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
                     )}
                   </div>
 
-                  <div className="space-y-1 text-xs text-slate-600">
-                    <div className="flex items-center gap-2">
-                      <CalendarDays className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                      <span>{fmtRange(t.start_date, t.end_date)}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                      <span className="truncate">{t.venue || 'ไม่ระบุสนาม'} · <span className="tabular-nums">{t.courts} สนาม</span></span>
-                    </div>
+                  <div className="space-y-1.5 text-xs text-slate-600">
+                    <div><StageBadge t={t} /></div>
+                    <VenueLine t={t} />
                     <div className="flex items-center gap-2">
                       <Users className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                       <span className="tabular-nums">
-                        {cats.length} รุ่น{cats.length ? ` (${cats.map((c) => c.name).join(', ')})` : ''} • {regs.length} ทีมที่สมัคร
+                        {cats.length} รุ่น{cats.length ? ` (${cats.map((c) => c.name).join(', ')})` : ''}
                       </span>
                     </div>
                   </div>
@@ -504,60 +426,34 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
                   {t.description && (
                     <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">{t.description}</p>
                   )}
+                  <RegMeter t={t} />
                 </div>
 
                 {/* Action Row */}
-                <div className="mx-5 mb-5 pt-3 border-t border-slate-100 flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                  <ShareButton tid={t.id} name={t.name} compact onDone={(m) => toast(m)} />
-                  {t.status === 'open' && (
-                    <button
-                      type="button"
-                      onClick={() => navigate('register', { regTid: t.id })}
-                      className="min-h-[42px] px-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition-colors whitespace-nowrap"
-                    >
-                      สมัครแข่งขัน
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveTid(t.id);
-                      navigate('schedule');
-                    }}
-                    className="min-h-[42px] px-3.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold transition-colors whitespace-nowrap"
-                  >
-                    ตารางแข่ง
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveTid(t.id);
-                      navigate('results');
-                    }}
-                    className="min-h-[42px] px-3.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold transition-colors whitespace-nowrap"
-                  >
-                    ผลการแข่งขัน
-                  </button>
-
-                  {isOrganizer && (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => openCategoryManager(t.id)}
-                        className="min-h-[42px] px-3.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-800 text-xs font-semibold transition-colors whitespace-nowrap"
-                      >
-                        รุ่น ({cats.length})
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => openEditT(t)}
-                        aria-label={`แก้ไข ${t.name}`}
-                        className="min-h-[42px] min-w-[42px] flex items-center justify-center rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 transition-colors ml-auto"
-                      >
-                        <Edit3 className="w-4 h-4" />
-                      </button>
-                    </>
-                  )}
+                <div className="mx-5 mb-5 pt-3 border-t border-slate-100 space-y-2">
+                  <TourButtons t={t} />
+                  <div className="flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                    <ShareButton tid={t.id} name={t.name} compact onDone={(m) => toast(m)} />
+                    {isOrganizer && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => openCategoryManager(t.id)}
+                          className="min-h-[42px] px-3.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-800 text-xs font-semibold transition-colors whitespace-nowrap"
+                        >
+                          รุ่น ({cats.length})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => openEditT(t)}
+                          aria-label={`แก้ไข ${t.name}`}
+                          className="min-h-[42px] min-w-[42px] flex items-center justify-center rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 transition-colors ml-auto"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
               </article>
             );
@@ -665,7 +561,7 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
               />
             </label>
             <label className="block space-y-1">
-              <span className="text-xs font-semibold text-slate-700">เวลา/แมตช์ (นาที)</span>
+              <span className="text-xs font-semibold text-slate-700">รันแมตช์ (ทุกกี่นาที)</span>
               <input
                 type="number"
                 min={10}
@@ -676,7 +572,7 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
               />
             </label>
             <label className="block space-y-1">
-              <span className="text-xs font-semibold text-slate-700">เวลาพัก (นาที)</span>
+              <span className="text-xs font-semibold text-slate-700">เวลาพักเหนื่อย (นาที)</span>
               <input
                 type="number"
                 min={0}
@@ -687,6 +583,15 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
               />
             </label>
           </div>
+          <label className="block space-y-1">
+            <span className="text-xs font-semibold text-slate-700">ลูกที่ใช้แข่ง</span>
+            <input
+              value={tForm.shuttle}
+              onChange={(e) => setTForm({ ...tForm, shuttle: e.target.value })}
+              placeholder="เช่น ลูกขนไก่ RSL Classic / Yonex AS-50"
+              className="w-full min-h-[44px] px-3.5 rounded-xl border border-slate-200 text-sm focus:border-blue-500 focus:outline-none"
+            />
+          </label>
           <div className="grid grid-cols-2 gap-3">
             <label className="block space-y-1">
               <span className="text-xs font-semibold text-slate-700">สถานะรายการ</span>
@@ -696,8 +601,8 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
                 className="w-full min-h-[44px] px-3 rounded-xl border border-slate-200 text-sm bg-white"
               >
                 <option value="open">เปิดรับสมัคร</option>
+                <option value="closed">ปิดรับสมัคร (เป็น "ประกาศสายแข่ง" อัตโนมัติเมื่อสร้างสายแล้ว)</option>
                 <option value="live">กำลังแข่งขัน</option>
-                <option value="closed">ปิดรับสมัคร</option>
                 <option value="draft">ฉบับร่าง</option>
               </select>
             </label>
@@ -711,6 +616,15 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
               />
             </label>
           </div>
+          <label className="block space-y-1">
+            <span className="text-xs font-semibold text-slate-700">ช่องทางติดต่อสอบถาม</span>
+            <input
+              value={tForm.contact}
+              onChange={(e) => setTForm({ ...tForm, contact: e.target.value })}
+              placeholder="เช่น โทร 081-xxx-xxxx / LINE @matchon / Facebook"
+              className="w-full min-h-[44px] px-3.5 rounded-xl border border-slate-200 text-sm focus:border-blue-500 focus:outline-none"
+            />
+          </label>
           <label className="block space-y-1">
             <span className="text-xs font-semibold text-slate-700">รายละเอียดเพิ่มเติม</span>
             <textarea

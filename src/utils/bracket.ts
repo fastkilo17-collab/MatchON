@@ -18,6 +18,8 @@ export const STATUS_TH: Record<TournamentStatus, string> = {
   live: 'กำลังแข่งขัน',
   closed: 'ปิดรับสมัคร',
   draft: 'ฉบับร่าง',
+  announced: 'ประกาศสายแข่ง',
+  finished: 'จบรายการแข่ง',
 };
 
 export const KIND_TH: Record<CategoryKind, string> = {
@@ -118,10 +120,35 @@ export function fmtDate(iso?: string | null): string {
   return d.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' });
 }
 
+const TH_MON = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+/** ช่วงวันที่แบบย่อ: เดือน/ปีเดียวกันรวมกัน เช่น 30-31 ม.ค. 70 */
 export function fmtRange(start?: string | null, end?: string | null): string {
   if (!start) return '';
-  if (!end || start === end) return fmtDate(start);
-  return `${fmtDate(start)} – ${fmtDate(end)}`;
+  const p = (s: string) => {
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s);
+    return m ? { y: +m[1], m: +m[2] - 1, d: +m[3] } : null;
+  };
+  const a = p(start);
+  const b = end ? p(end) : null;
+  if (!a) return fmtDate(start);
+  const yy = (y: number) => String((y + 543) % 100).padStart(2, '0');
+  if (!b || (a.y === b.y && a.m === b.m && a.d === b.d)) return `${a.d} ${TH_MON[a.m]} ${yy(a.y)}`;
+  if (a.y === b.y && a.m === b.m) return `${a.d}-${b.d} ${TH_MON[a.m]} ${yy(a.y)}`;
+  if (a.y === b.y) return `${a.d} ${TH_MON[a.m]} - ${b.d} ${TH_MON[b.m]} ${yy(a.y)}`;
+  return `${a.d} ${TH_MON[a.m]} ${yy(a.y)} - ${b.d} ${TH_MON[b.m]} ${yy(b.y)}`;
+}
+
+/** สถานะรายการที่แสดงจริง (คำนวณอัตโนมัติ): เปิดรับ → ปิดรับ → ประกาศสายแข่ง → กำลังแข่งขัน → จบ */
+export function tourStage(t: Tournament, matches: Match[]): TournamentStatus {
+  if (t.status === 'draft') return 'draft';
+  const today = new Date(Date.now() + 7 * 3600e3).toISOString().slice(0, 10);
+  const mine = matches.filter((m) => m.tournament_id === t.id && !isByeMatch(m));
+  if (t.status === 'live') return 'live';
+  if (t.end_date && today > t.end_date.slice(0, 10) && t.status !== 'open') return 'finished';
+  if (mine.length && mine.every((m) => m.status === 'finished')) return 'finished';
+  if (t.status === 'open') return 'open';
+  if (t.start_date && t.end_date && today >= t.start_date.slice(0, 10) && today <= t.end_date.slice(0, 10)) return 'live';
+  return mine.length ? 'announced' : 'closed';
 }
 
 export function fmtTime(iso?: string | null): string {

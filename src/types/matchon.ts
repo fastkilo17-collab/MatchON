@@ -1,6 +1,6 @@
 export type UserRole = 'organizer' | 'player' | 'referee';
 
-export type TournamentStatus = 'open' | 'live' | 'closed' | 'draft';
+export type TournamentStatus = 'open' | 'live' | 'closed' | 'draft' | 'announced' | 'finished';
 export type CategoryKind = 'singles' | 'doubles';
 export type CategoryGender = 'male' | 'female' | 'mixed' | 'open';
 export type BracketFormat = 'knockout' | 'round_robin' | 'group_stage' | 'group_knockout' | 'swiss';
@@ -55,6 +55,10 @@ export interface Tournament {
   format_text?: string;
   rules_text?: string;
   notice?: string;
+  /** ลูกขนไก่ที่ใช้แข่ง */
+  shuttle?: string;
+  /** ช่องทางติดต่อสอบถาม */
+  contact?: string;
 }
 
 export interface Category {

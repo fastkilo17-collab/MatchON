@@ -65,6 +65,7 @@ interface MatchONContextValue {
   routeParam: string | null;
   activeTournament: Tournament | null;
   setActiveTid: (id: string) => void;
+  clearActiveTid: () => void;
   toast: (text: string, tone?: 'ok' | 'err' | 'info') => void;
   toasts: ToastMessage[];
 
@@ -202,6 +203,7 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
   const isAdmin = profile?.role === 'super_admin';
   const role = canCreate || manageable.current.size > 0 ? 'organizer' : 'player';
 
+  const firstLoad = useRef(true);
   const applyLoaded = useCallback((l: Awaited<ReturnType<typeof loadAll>>) => {
     manageable.current = l.manageable;
     profileRef.current = l.profile;
@@ -218,14 +220,17 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
     setProfile(l.profile);
     setState((prev) => {
       let activeTid = prev.activeTid;
-      if (!activeTid) {
+      const first = firstLoad.current;
+      firstLoad.current = false;
+      if (!activeTid && first) {
         try {
           activeTid = localStorage.getItem(ACTIVE_KEY) || '';
         } catch {
           /* ignore */
         }
       }
-      if (!l.data.tournaments.some((t) => t.id === activeTid)) activeTid = l.data.tournaments[0]?.id || '';
+      // หลังโหลดครั้งแรก ถ้าผู้ใช้ล้างการเลือกไว้ (activeTid ว่าง) ให้คงว่างไว้
+      if ((first || activeTid) && !l.data.tournaments.some((t) => t.id === activeTid)) activeTid = l.data.tournaments[0]?.id || '';
       return { ...prev, ...data2, activeTid };
     });
   }, []);
@@ -316,6 +321,10 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
       if (opts?.regTid) {
         setState((prev) => ({ ...prev, activeTid: opts.regTid! }));
       }
+      // ไปหน้าที่ต้องใช้รายการแข่ง แต่ยังไม่ได้เลือก -> เลือกรายการแรกให้
+      if (!opts?.regTid && next !== 'site' && next !== 'tournaments' && next !== 'me') {
+        setState((prev) => (prev.activeTid || !prev.tournaments.length ? prev : { ...prev, activeTid: prev.tournaments[0].id }));
+      }
       setRouteParam(opts?.filter ?? null);
       setRoute(next);
       try { localStorage.setItem(ROUTE_KEY, next); } catch { /* ignore */ }
@@ -333,8 +342,14 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
     setState((prev) => ({ ...prev, activeTid: id }));
   }, []);
 
+  // กดโลโก้ MatchON -> หน้าเว็บหลัก และล้างรายการแข่งที่เลือกอยู่
+  const clearActiveTid = useCallback(() => {
+    try { localStorage.removeItem(ACTIVE_KEY); } catch { /* ignore */ }
+    setState((prev) => (prev.activeTid ? { ...prev, activeTid: '' } : prev));
+  }, []);
+
   const activeTournament = useMemo(
-    () => state.tournaments.find((t) => t.id === state.activeTid) || state.tournaments[0] || null,
+    () => (state.activeTid ? state.tournaments.find((t) => t.id === state.activeTid) || state.tournaments[0] || null : null),
     [state.tournaments, state.activeTid],
   );
 
@@ -1415,6 +1430,7 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
     routeParam,
     activeTournament,
     setActiveTid,
+    clearActiveTid,
     toast,
     toasts,
     tCategories,
