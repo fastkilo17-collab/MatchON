@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Camera, ExternalLink, Film, Lock, MessageSquare, Pencil, Phone, ReceiptText, Trash2, Trophy, Users } from 'lucide-react';
 import { useMatchON } from '../context/MatchONContext';
 import { ResponsiveSheet, PhotoThumb, PhotoLightbox, TeamAvatars } from './UiKit';
-import { rpcUpdateRegistration, slipSignedUrl } from '../lib/db';
+import { rpcSubmitSlip, rpcUpdateRegistration, slipSignedUrl } from '../lib/db';
 import { uploadPhoto } from '../lib/supabase';
 import { PAY_TH, REG_STATUS_TH, baht, catTotal, fmtDate, shuttleText, teamName } from '../utils/bracket';
 import type { Category, PayStatus, Registration, RegStatus } from '../types/matchon';
@@ -114,7 +114,9 @@ export function AthleteSheet({ reg, onClose, seq, startEdit }: { reg: Registrati
   const live = state.registrations.find((x) => x.id === reg.id) || reg;
   const cat = state.categories.find((c) => c.id === live.category_id);
   const isMgr = isManagerOf(live.tournament_id);
-  const isOwner = !isMgr && !!live.is_mine && !!live.edit_token && live.reg_open !== false;
+  // ประเมินผ่านแล้ว (confirmed) เจ้าของแก้ไข/ลบ/ยกเลิกเองไม่ได้ ทำได้เฉพาะผู้จัด
+  const isOwner = !isMgr && !!live.is_mine && !!live.edit_token && live.reg_open !== false && live.status !== 'confirmed';
+  const canSlip = !isMgr && !!live.is_mine && !!live.edit_token && live.pay_status !== 'paid' && live.status !== 'waitlist' && live.status !== 'cancelled' && catTotal(cat) > 0;
   const canSee = isMgr || !!live.is_mine; // เบอร์โทร/การเงินเห็นเฉพาะผู้จัดและเจ้าของ
   const canEdit = isMgr || isOwner;
   const doubles = !!live.p2_name || cat?.kind === 'doubles';
@@ -130,6 +132,20 @@ export function AthleteSheet({ reg, onClose, seq, startEdit }: { reg: Registrati
       set(who === 1 ? { p1_photo: path } : { p2_photo: path });
     } catch (e: any) {
       toast(e?.message || 'อัปโหลดรูปไม่สำเร็จ', 'err');
+    } finally {
+      setBusy(false);
+    }
+  };
+  const sendSlip = async (file?: File) => {
+    if (!file || !live.edit_token) return;
+    setBusy(true);
+    try {
+      const path = await uploadPhoto('slips', `${live.tournament_id}/${live.id}`, file);
+      await rpcSubmitSlip(live.id, live.edit_token, path);
+      toast('ส่งสลิปแล้ว รอผู้จัดตรวจสอบ');
+      await reload();
+    } catch (e: any) {
+      toast(e?.message || 'ส่งสลิปไม่สำเร็จ', 'err');
     } finally {
       setBusy(false);
     }
@@ -328,6 +344,12 @@ export function AthleteSheet({ reg, onClose, seq, startEdit }: { reg: Registrati
                     <Row label="สถานะ"><span className={`text-sm font-bold px-2.5 py-1 rounded-lg ${pay.tone}`}>{pay.label}</span></Row>
                     <Row label="ค่าสมัคร">{catTotal(cat) ? `${baht(catTotal(cat))}${cat?.shuttle_fee ? ` (รวม ${shuttleText(cat)})` : ''}` : 'ฟรี'}</Row>
                   </div>
+                )}
+                {canSlip && (
+                  <label className="w-full min-h-[44px] inline-flex items-center justify-center gap-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold cursor-pointer">
+                    <Camera className="w-4 h-4" /> {busy ? 'กำลังส่ง…' : live.slip_path ? 'แนบสลิปใหม่' : 'แนบสลิปโอนเงิน'}
+                    <input type="file" accept="image/*" className="hidden" disabled={busy} onChange={(e) => { void sendSlip(e.target.files?.[0]); e.target.value = ''; }} />
+                  </label>
                 )}
                 {live.slip_path && isMgr && (
                   <button type="button" onClick={() => void openSlip()} className="w-full min-h-[40px] rounded-xl bg-violet-50 text-violet-700 text-xs font-semibold">ดูสลิปโอนเงิน</button>

@@ -473,6 +473,7 @@ function RegActions({ r }: { r: Registration }) {
   const [f, setF] = useState({ club: r.club || '', n1: r.p1_name, k1: r.p1_nick || '', ph1: r.p1_phone || '', n2: r.p2_name || '', k2: r.p2_nick || '' });
   const token = r.edit_token;
   const canSlip = !!token && r.pay_status !== 'paid';
+  const locked = r.status === 'confirmed'; // ประเมินผ่านแล้ว: แก้ไข/ยกเลิก/ลบได้เฉพาะผู้จัด
   const sendSlip = async (file: File | undefined) => {
     if (!file || !token) return;
     setBusy(true);
@@ -547,13 +548,14 @@ function RegActions({ r }: { r: Registration }) {
             <input type="file" accept="image/*" className="hidden" disabled={busy} onChange={(e) => void sendSlip(e.target.files?.[0])} />
           </label>
         )}
-        {token && r.reg_open !== false && (
+        {token && r.reg_open !== false && !locked && (
           <button type="button" onClick={() => setEdit(true)} className="text-xs font-semibold text-slate-600">
             ✏️ แก้ไขข้อมูล
           </button>
         )}
       </div>
-      {token && (
+      {token && locked && <div className="text-[11px] text-slate-500">ประเมินผ่านแล้ว — แก้ไข ลบ หรือยกเลิกได้เฉพาะผู้จัด</div>}
+      {token && !locked && (
         <div className="flex flex-wrap gap-2 pt-1">
           {r.status !== 'cancelled' && (
             <button type="button" disabled={busy} onClick={() => void cancelReg()} className="min-h-[36px] px-3 rounded-lg border border-amber-300 text-amber-700 text-xs font-semibold hover:bg-amber-50">

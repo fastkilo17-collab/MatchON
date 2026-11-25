@@ -317,8 +317,15 @@ export function SchedulePage() {
                           <span aria-hidden="true">·</span>
                           <span className="truncate">{m.round_label}</span>
                         </div>
-                        <span className="shrink-0 text-[13px] font-light tabular-nums text-slate-600">
-                          {m.scheduled_at ? fmtTime(m.scheduled_at) : '--:--'}
+                        <span className="shrink-0 flex items-center gap-1.5">
+                          {m.status === 'live' && (
+                            <span className="inline-flex items-center gap-1 rounded-md bg-red-600 text-white px-1.5 py-0.5 text-[11px] font-extrabold shrink-0">
+                              <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />LIVE
+                            </span>
+                          )}
+                          <span className="text-[13px] font-light tabular-nums text-slate-600">
+                            {m.scheduled_at ? fmtTime(m.scheduled_at) : '--:--'}
+                          </span>
                         </span>
                       </div>
                       <div className="grid grid-cols-[auto_minmax(0,1fr)_auto_minmax(0,1fr)_auto] items-center gap-x-2">
@@ -332,11 +339,6 @@ export function SchedulePage() {
                         <span className="flex items-center gap-1.5 justify-self-start min-w-0">
                           {m.court && m.status !== 'finished' && (
                             <span className="shrink-0 rounded-md bg-blue-50 text-blue-700 px-1.5 py-0.5 text-[11px] font-bold">สนาม {m.court}</span>
-                          )}
-                          {m.status === 'live' && (
-                            <span className="inline-flex items-center gap-1 rounded-md bg-red-600 text-white px-1.5 py-0.5 text-[11px] font-extrabold shrink-0">
-                              <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />LIVE
-                            </span>
                           )}
                         </span>
                         <span className={`font-mono font-bold tabular-nums text-center ${m.status === 'live' ? 'text-red-600' : 'text-slate-500'}`}>

@@ -1,0 +1,1 @@
+-- applied via MCP: update/cancel/delete_my_registration reject when status='confirmed' (see Supabase migration 020_confirmed_locks_owner_edits)

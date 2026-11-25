@@ -312,17 +312,17 @@ export function LiveScorePage() {
                           {([['a', ra, shownCur[0], 0], ['b', rb, shownCur[1], 1]] as const).map(([side, r, cur, k]) => (
                             <div key={side} className="flex items-center justify-between gap-2">
                               <span className="flex items-center gap-2 min-w-0">
-                                <TeamAvatars reg={r} size={36} />
+                                <TeamAvatars reg={r} size={30} />
                                 <span className="min-w-0 leading-tight">
-                                  <span className="block text-base font-semibold text-slate-900 truncate">{r ? r.club || teamName(r) : 'รอผลการแข่ง'}</span>
-                                  {r && <span className="block text-xs font-normal text-slate-500 truncate">{playersNick(r)}</span>}
+                                  <span className="block text-sm font-semibold text-slate-900 truncate">{r ? r.club || teamName(r) : 'รอผลการแข่ง'}</span>
+                                  {r && <span className="block text-[11px] font-normal text-slate-500 truncate">{playersNick(r)}</span>}
                                 </span>
                               </span>
                               <span className="flex items-center gap-1 shrink-0 tabular-nums">
                                 {shownSets.map((x, i) => (
-                                  <span key={i} className={`w-7 text-center text-sm ${x[k] > x[1 - k] ? 'font-bold text-emerald-600' : 'font-medium text-slate-400'}`}>{x[k]}</span>
+                                  <span key={i} className={`w-6 text-center text-xs ${x[k] > x[1 - k] ? 'font-bold text-emerald-600' : 'font-medium text-slate-400'}`}>{x[k]}</span>
                                 ))}
-                                {started && <span className="w-12 text-center font-display text-3xl font-extrabold text-blue-700">{cur}</span>}
+                                {started && <span className="w-10 text-center font-display text-2xl font-extrabold text-blue-700">{cur}</span>}
                               </span>
                             </div>
                           ))}
