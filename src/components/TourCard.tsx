@@ -1,8 +1,9 @@
 import React from 'react';
 import { CalendarDays, Flag, MapPin, Users } from 'lucide-react';
-import { ResponsiveSheet, TeamAvatars } from './UiKit';
+import { ResponsiveSheet } from './UiKit';
+import { ModelsView, useCanEditModels } from './ModelsView';
 import { useMatchON } from '../context/MatchONContext';
-import { STATUS_TH, fmtRange, tourStage, teamName, playersNick } from '../utils/bracket';
+import { STATUS_TH, fmtRange, tourStage } from '../utils/bracket';
 import type { Tournament, TournamentStatus } from '../types/matchon';
 
 export const STAGE_TONE: Record<TournamentStatus, string> = {
@@ -52,51 +53,26 @@ export function RegMeter({ t }: { t: Tournament }) {
 export function CatLine({ t }: { t: Tournament }) {
   const { state } = useMatchON();
   const cats = state.categories.filter((c) => c.tournament_id === t.id);
-  if (!cats.length) return null;
   return (
-    <div className="flex flex-wrap gap-1.5">
+    <div className="flex flex-wrap items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+      <ModelButton t={t} small />
       {cats.map((c) => <span key={c.id} className="rounded-md bg-slate-100 text-slate-700 px-2 py-0.5 text-[11px] font-semibold">{c.name}</span>)}
     </div>
   );
 }
 
-/** popup นักกีฬา: แยกตามรุ่น แสดงรูปและชื่อทีม */
-export function RosterButton({ t }: { t: Tournament }) {
-  const { state } = useMatchON();
+/** ปุ่มโมเดลนักกีฬา (ขนาดเล็ก): popup ตัวอย่างรูป-ชื่อนักกีฬาในแต่ละรุ่น */
+export function ModelButton({ t, small = false }: { t: Tournament; small?: boolean }) {
   const [open, setOpen] = React.useState(false);
-  const cats = state.categories.filter((c) => c.tournament_id === t.id);
-  const regs = state.registrations.filter((r) => r.tournament_id === t.id && r.status === 'confirmed');
+  const canEdit = useCanEditModels(t);
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)} className={`${BTN} bg-white border border-slate-200 hover:bg-slate-50 text-slate-800 inline-flex items-center gap-1.5`}>
-        <Users className="w-3.5 h-3.5" /> นักกีฬา
+      <button type="button" onClick={(e) => { e.stopPropagation(); setOpen(true); }} className={`${small ? 'min-h-[30px] px-2.5 text-[11px]' : 'min-h-[40px] px-3.5 text-xs'} rounded-lg bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold inline-flex items-center gap-1 whitespace-nowrap`}>
+        <Users className="w-3.5 h-3.5" /> โมเดล
       </button>
       {open && (
-        <ResponsiveSheet open onClose={() => setOpen(false)} title="นักกีฬา" subtitle={t.name}>
-          <div className="space-y-5" onClick={(e) => e.stopPropagation()}>
-            {cats.map((c) => {
-              const rs = regs.filter((r) => r.category_id === c.id);
-              return (
-                <div key={c.id} className="space-y-2">
-                  <div className="flex items-center justify-between"><h4 className="font-display font-bold text-slate-900">{c.name}</h4><span className="text-xs text-slate-500 tabular-nums">{rs.length} ทีม</span></div>
-                  {rs.length ? (
-                    <div className="grid grid-cols-2 gap-2">
-                      {rs.map((r) => (
-                        <div key={r.id} className="flex items-center gap-2 rounded-xl border border-slate-200/80 bg-white p-2 min-w-0">
-                          <TeamAvatars reg={r} size={36} />
-                          <div className="min-w-0 leading-tight">
-                            <div className="text-xs font-semibold text-slate-900 truncate">{r.club || teamName(r)}</div>
-                            <div className="text-[11px] text-slate-500 truncate">{playersNick(r)}</div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : <div className="text-sm text-slate-400">-</div>}
-                </div>
-              );
-            })}
-            {!cats.length && <div className="text-sm text-slate-400">-</div>}
-          </div>
+        <ResponsiveSheet open onClose={() => setOpen(false)} title="โมเดลนักกีฬา" subtitle={t.name}>
+          <div onClick={(e) => e.stopPropagation()}><ModelsView tournament={t} editable={canEdit} /></div>
         </ResponsiveSheet>
       )}
     </>
@@ -123,7 +99,6 @@ export function TourButtons({ t, extra }: { t: Tournament; extra?: React.ReactNo
       )}
       {st === 'live' && <button type="button" onClick={go('live')} className={`${BTN} bg-red-600 hover:bg-red-700 text-white`}>คะแนนสด</button>}
       {st === 'finished' && <button type="button" onClick={go('results')} className={`${BTN} bg-slate-900 hover:bg-slate-800 text-white`}>ผลการแข่งขัน</button>}
-      <RosterButton t={t} />
       {extra}
     </div>
   );

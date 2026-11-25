@@ -1,0 +1,1 @@
+-- applied via MCP: athlete_models table + RLS + posters storage policy for managers (022_athlete_models)

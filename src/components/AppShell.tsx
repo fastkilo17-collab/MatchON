@@ -21,6 +21,7 @@ import {
   Users,
   UserRound,
   X,
+  Sparkles,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useMatchON } from '../context/MatchONContext';
@@ -50,6 +51,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'info', label: 'ข้อมูลรายการ', shortLabel: 'ข้อมูล', icon: Edit3, group: 'manage', roles: ['organizer'] },
   { id: 'cats', label: 'จัดการรุ่นการแข่งขัน', shortLabel: 'รุ่น', icon: ListChecks, group: 'manage', roles: ['organizer'] },
   { id: 'athletes', label: 'นักกีฬา', shortLabel: 'นักกีฬา', icon: Users, group: 'main', roles: ['organizer', 'player', 'referee'] },
+  { id: 'models', label: 'โมเดลนักกีฬา', shortLabel: 'โมเดล', icon: Sparkles, group: 'main', roles: ['organizer', 'player', 'referee'] },
   { id: 'brackets', label: 'สายแข่งขัน', shortLabel: 'สายแข่งขัน', icon: GitBranch, group: 'manage', roles: ['organizer', 'player', 'referee'] },
   { id: 'schedule', label: 'ตารางการแข่งขัน', shortLabel: 'ตารางแข่งขัน', icon: CalendarDays, group: 'manage', roles: ['organizer', 'player', 'referee'] },
 

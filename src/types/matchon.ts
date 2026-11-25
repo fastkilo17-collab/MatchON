@@ -32,6 +32,7 @@ export type NavRoute =
   | 'cats'
   | 'info'
   | 'roster'
+  | 'models'
   | 'admin';
 
 export interface Tournament {
