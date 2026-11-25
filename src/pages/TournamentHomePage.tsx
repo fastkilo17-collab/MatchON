@@ -5,7 +5,7 @@ import {
 import { useMatchON } from '../context/MatchONContext';
 import { PosterSlider, PhotoLightbox, ShareButton } from '../components/UiKit';
 import type { NavRoute } from '../types/matchon';
-import { isByeMatch } from '../utils/bracket';
+import { isByeMatch, fmtRange } from '../utils/bracket';
 import { DateChip, StageBadge } from '../components/TourCard';
 
 function Kpi({ label, value, sub, tone = 'slate' }: { label: string; value: React.ReactNode; sub?: string; tone?: 'slate' | 'blue' | 'emerald' | 'amber' | 'red' }) {
