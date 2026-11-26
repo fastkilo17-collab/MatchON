@@ -25,7 +25,7 @@ import {
   prizeText,
   prizeLines,
 } from '../utils/bracket';
-import { tourStage, byNearestDate, fmtRange, fmtDate, STATUS_TH as STAGE_TH } from '../utils/bracket';
+import { tourStage, byNearestDate, fmtDate } from '../utils/bracket';
 import { StageBadge, DateChip, RegMeter, TourButtons, VenueLine, CatLine } from '../components/TourCard';
 import { ResponsiveSheet, ShareButton } from '../components/UiKit';
 import { resizeImage, photoUrl } from '../lib/supabase';
@@ -490,7 +490,7 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
                   <div className="flex gap-2 overflow-x-auto pb-2">{(it.posters && it.posters.length ? it.posters : [it.poster as string]).map((u, i) => <img key={i} src={photoUrl(u)} alt="" className="h-40 w-auto rounded-xl object-cover shrink-0" />)}</div>
                 )}
                 {row('ชื่อรายการ', it.name)}
-                {row('สถานะ', STAGE_TH[tourStage(it, state.matches)])}
+                {row('สถานะ', STATUS_TH[tourStage(it, state.matches)])}
                 {row('วันที่แข่ง', fmtRange(it.start_date, it.end_date))}
                 {row('ปิดรับสมัคร', it.reg_deadline ? fmtDate(it.reg_deadline) : '')}
                 {row('สถานที่', it.venue)}
