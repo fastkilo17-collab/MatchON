@@ -51,6 +51,8 @@ export function useLiveBridge(a: Args) {
   const [fbLoaded, setFbLoaded] = useState(false);
   const lastPushed = useRef<Record<string, string>>({});
   const sbSeen = useRef<Record<string, string>>({});
+  const fbSeen = useRef<Record<string, string>>({});
+  const sumSets = (a: ArrayLike<number[]> | undefined) => Array.from(a || []).reduce((t, x) => t + (x?.[0] || 0) + (x?.[1] || 0), 0);
   const latest = useRef({ matches, regMap, catMap, courts, recordSets, rules, categories });
   latest.current = { matches, regMap, catMap, courts, recordSets, rules, categories };
   const tid = tournament?.id || '';
@@ -192,6 +194,10 @@ export function useLiveBridge(a: Args) {
       const sets = c.scores.slice(0, act).filter((s) => s[0] || s[1]) as [number, number][];
       const cur = (c.scores[act] || [0, 0]) as [number, number];
       const sig = JSON.stringify([sets, cur]);
+      // เปิดหน้าคะแนนสดครั้งแรก: ถ้าใน Firebase ยังตามหลังคะแนนที่บันทึกในแอป (เช่น กรอกเอง) ห้ามเอา 0-0 มาทับ
+      const firstLook = fbSeen.current[m.id] === undefined;
+      fbSeen.current[m.id] = sig;
+      if (firstLook && sumSets(c.scores) < sumSets(m.sets) + (m.cur_a || 0) + (m.cur_b || 0)) continue;
       if (lastPushed.current[m.id] === sig) continue;
       lastPushed.current[m.id] = sig;
       latest.current.recordSets(m.id, sets, cur, true);
@@ -211,7 +217,7 @@ export function useLiveBridge(a: Args) {
       const prevSeen = sbSeen.current[m.id];
       sbSeen.current[m.id] = sig;
       if (prevSeen === sig) continue; // the app's score did not change (e.g. only the referee page moved)
-      if (prevSeen === undefined && (f.startedAt || f.scores.some((x) => x[0] || x[1]))) continue; // first look: never overwrite a running referee score
+      if (prevSeen === undefined && (f.startedAt || f.scores.some((x) => x[0] || x[1])) && sumSets(f.scores) >= sumSets(sets) + cur[0] + cur[1]) continue; // first look: never overwrite a running referee score (แต่ถ้าแอปมีคะแนนมากกว่า ให้ส่งขึ้นไป)
       if (lastPushed.current[m.id] === sig) continue; // already in sync (came from the referee page)
       lastPushed.current[m.id] = sig;
       const scores: [number, number][] = [[0, 0], [0, 0], [0, 0]];

@@ -668,12 +668,13 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
           startMatchNo: nextNo,
           stage: 'main',
         });
-      } else if (opts.format === 'round_robin') {
+      } else if (opts.format === 'round_robin' || opts.format === 'league') {
         rows = buildRoundRobin(ids, {
           tournamentId: cat.tournament_id,
           categoryId,
           startMatchNo: nextNo,
           stage: 'main',
+          legs: opts.format === 'league' ? 2 : 1,
         });
       } else if (opts.format === 'group_stage' || opts.format === 'group_knockout') {
         const G = Math.max(1, opts.manualGroups ? opts.manualGroups.length : opts.groups || 2);

@@ -91,10 +91,19 @@ export function ResultsPage() {
       const lo = finalOf(lowList);
       return { cat, first: up.first, second: up.second, lFirst: lo.first, lSecond: lo.second, hasLower: lowList.length > 0 };
     }
-    if (ms.length && ms.every((m) => m.status === 'finished') && fmt === 'round_robin') {
+    if (ms.length && ms.every((m) => m.status === 'finished') && (fmt === 'round_robin' || fmt === 'league')) {
       const ids = [...new Set(ms.flatMap((m) => [m.reg_a, m.reg_b]).filter(Boolean) as string[])];
       const st = computeStandings(ids, ms, standingPtsFor(cat.id, tCategories, tRules));
       return { cat, first: st[0]?.id || null, second: st[1]?.id || null, lFirst: null, lSecond: null, hasLower: false };
+    }
+    if (fmt === 'swiss') {
+      const sw = ms.filter((m) => m.stage === 'swiss');
+      const n = new Set(sw.flatMap((m) => [m.reg_a, m.reg_b]).filter(Boolean)).size;
+      const total = Math.max(2, Math.ceil(Math.log2(Math.max(2, n))));
+      if (sw.length && sw.every((m) => m.status === 'finished') && Math.max(...sw.map((m) => m.round)) >= total) {
+        const st = computeStandings([...new Set(sw.flatMap((m) => [m.reg_a, m.reg_b]).filter(Boolean) as string[])], sw, standingPtsFor(cat.id, tCategories, tRules));
+        return { cat, first: st[0]?.id || null, second: st[1]?.id || null, lFirst: null, lSecond: null, hasLower: false };
+      }
     }
     return { cat, first: null, second: null, lFirst: null, lSecond: null, hasLower: false };
   });
@@ -391,7 +400,7 @@ export function RulesStaffPage() {
                       ))}
                     </select>
                     <select
-                      disabled={fmt === 'group_stage' || fmt === 'round_robin' || fmt === 'swiss'}
+                      disabled={fmt === 'group_stage' || fmt === 'round_robin' || fmt === 'league' || fmt === 'swiss'}
                       value={c.rule_ko || ''}
                       onChange={(e) => assignCategoryRule(c.id, 'ko', e.target.value || null)}
                       className="min-h-[40px] px-2.5 rounded-xl border border-slate-200 bg-white disabled:bg-slate-100 disabled:text-slate-400 text-xs"

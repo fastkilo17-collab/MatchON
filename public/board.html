@@ -75,8 +75,9 @@ body.scroll header{position:sticky;top:0;background:var(--b0);z-index:5}
 .qe{flex:1;display:grid;place-items:center;color:var(--mu3);font-size:.9em}
 #ads{height:clamp(40px,9vh,130px);padding:.8vh 1vw 1vh;overflow:hidden;border-top:1px solid var(--b2);background:var(--b1)}
 @media (max-height:520px){#ads{height:12vh}}
+@media (orientation:portrait){#ads{height:clamp(32px,6vh,90px)}}
 #ads[hidden]{display:none}
-.trk{display:flex;gap:2vw;height:100%;width:max-content;align-items:center}
+.trk{display:flex;gap:2vw;padding-right:2vw;height:100%;width:max-content;align-items:center}
 .trk img{height:100%;width:auto;max-width:none;border-radius:.6vh;object-fit:contain}
 .trk.run{animation:slide var(--dur,30s) linear infinite}
 @keyframes slide{to{transform:translateX(-50%)}}

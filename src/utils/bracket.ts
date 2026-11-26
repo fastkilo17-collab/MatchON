@@ -36,7 +36,8 @@ export const GENDER_TH: Record<CategoryGender, string> = {
 
 export const FORMAT_TH: Record<BracketFormat, string> = {
   knockout: 'น็อคเอาท์',
-  round_robin: 'พบกันหมด',
+  round_robin: 'พบกันหมด (นัดเดียว)',
+  league: 'ลีก เหย้า-เยือน (พบกัน 2 นัด)',
   group_stage: 'แบ่งกลุ่ม',
   group_knockout: 'แบ่งกลุ่ม+น็อคเอาท์',
   swiss: 'Swiss',
@@ -192,7 +193,7 @@ export function ruleForMatch(
     // a fixed 2-set game can end 1-1, so it only applies where draws make sense (groups / round robin / swiss)
     play_two:
       !!(preset ? preset.play_two : cat?.play_two) &&
-      (match.stage === 'group' || match.stage === 'swiss' || cat?.format === 'round_robin' || cat?.format === 'group_stage'),
+      (match.stage === 'group' || match.stage === 'swiss' || cat?.format === 'round_robin' || cat?.format === 'league' || cat?.format === 'group_stage'),
   };
 }
 
@@ -368,6 +369,28 @@ export function buildRoundRobin(
     startMatchNo: number;
     stage?: 'main' | 'group';
     groupNo?: number;
+    legs?: 1 | 2;
+  },
+): Match[] {
+  const first = buildRoundRobinLeg(teams, { ...opts, leg: 1 });
+  if (opts.legs !== 2) return first;
+  const nRounds = Math.max(...first.map((m) => m.round));
+  const second = buildRoundRobinLeg(teams, { ...opts, leg: 2, roundOffset: nRounds });
+  return [...first, ...second];
+}
+
+function buildRoundRobinLeg(
+  teams: string[],
+  opts: {
+    tournamentId: string;
+    categoryId: string;
+    startMatchNo: number;
+    stage?: 'main' | 'group';
+    groupNo?: number;
+    /** 2 = ลีกเหย้า-เยือน (นัดที่สองสลับเจ้าบ้าน) */
+    legs?: 1 | 2;
+    leg?: 1 | 2;
+    roundOffset?: number;
   },
 ): Match[] {
   if (teams.length < 2) throw new Error('ต้องมีอย่างน้อย 2 ทีม');
@@ -389,13 +412,13 @@ export function buildRoundRobin(
           tournament_id: opts.tournamentId,
           category_id: opts.categoryId,
           match_no: null,
-          round: r + 1,
-          round_label: groupLetter ? `กลุ่ม ${groupLetter} · นัดที่ ${r + 1}` : `นัดที่ ${r + 1}`,
+          round: (opts.roundOffset || 0) + r + 1,
+          round_label: groupLetter ? `กลุ่ม ${groupLetter} · นัดที่ ${r + 1}` : `นัดที่ ${(opts.roundOffset || 0) + r + 1}${opts.legs === 2 ? (opts.leg === 2 ? ' (เยือน)' : ' (เหย้า)') : ''}`,
           slot: i,
           stage: opts.stage || 'main',
           group_no: opts.groupNo,
-          reg_a: a,
-          reg_b: b,
+          reg_a: opts.leg === 2 ? b : a,
+          reg_b: opts.leg === 2 ? a : b,
           status: 'scheduled',
           court: null,
           scheduled_at: null,

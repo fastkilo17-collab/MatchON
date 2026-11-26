@@ -90,7 +90,9 @@ export function BracketsPage() {
   const sections = meta?.format === 'knockout' && groupMatches.length === 0 ? allSections.filter((x) => x.k !== 'groups') : allSections;
   const firstOn = sections.find((x) => x.n > 0)?.k;
   const effView = sections.some((x) => x.k === view && x.n > 0) ? view : firstOn;
-  const isRoundRobinMain = meta?.format === 'round_robin';
+  const swissTotal = Math.min(Math.max(1, confirmedTeams.length - 1), Math.max(2, Math.ceil(Math.log2(Math.max(2, confirmedTeams.length)))));
+  const swissDone = swissMatches.length ? Math.max(...swissMatches.map((m) => m.round)) : 0;
+  const isRoundRobinMain = meta?.format === 'round_robin' || meta?.format === 'league';
   const plan = groupPlan(confirmedTeams.length, gMode, gVal);
   const isGroupFmt = format === 'group_stage' || format === 'group_knockout';
 
@@ -367,13 +369,13 @@ export function BracketsPage() {
                       </span>
                     </label>
                   )}
-                {meta?.format === 'swiss' && (
+                {meta?.format === 'swiss' && swissDone < swissTotal && (
                   <button
                     type="button"
                     onClick={() => generateNextSwissRound(activeCat.id)}
                     className="min-h-[40px] px-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold"
                   >
-                    + สร้างรอบ Swiss ถัดไป
+                    + สร้างรอบ Swiss ถัดไป ({Math.min(swissDone + 1, swissTotal)}/{swissTotal})
                   </button>
                 )}
                 <button
@@ -527,6 +529,38 @@ export function BracketsPage() {
           {/* Swiss Rounds */}
           {swissMatches.length > 0 && (
             <div className="space-y-4">
+              <div className="bg-white border border-slate-200/80 rounded-2xl p-5 space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <h3 className="font-display text-base font-bold text-slate-900">ตารางคะแนน Swiss</h3>
+                  <span className="text-[11px] font-semibold text-slate-500 tabular-nums">แข่งแล้ว {swissDone}/{swissTotal} รอบ{swissDone >= swissTotal && swissMatches.every((m) => m.status === 'finished') ? ' · ครบแล้ว' : ''}</span>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead><tr className="border-b border-slate-200 text-slate-500">
+                      <th className="py-2 text-left font-semibold">#</th><th className="py-2 text-left font-semibold">ทีม</th>
+                      <th className="py-2 text-right font-semibold">แข่ง</th><th className="py-2 text-right font-semibold">ชนะ</th><th className="py-2 text-right font-semibold">แพ้</th>
+                      <th className="py-2 text-right font-semibold">เกม+/-</th><th className="py-2 text-right font-semibold">แต้ม+/-</th>
+                    </tr></thead>
+                    <tbody className="divide-y divide-slate-100 tabular-nums font-mono">
+                      {computeStandings(
+                        [...new Set(swissMatches.flatMap((m) => [m.reg_a, m.reg_b]).filter(Boolean) as string[])],
+                        swissMatches,
+                        standingPtsFor(activeCat.id, tCategories, tRules),
+                      ).map((r, idx) => (
+                        <tr key={r.id}>
+                          <td className="py-2 text-slate-500">{idx + 1}</td>
+                          <td className="py-2 font-sans font-semibold text-slate-900">{teamName(regMap[r.id])}</td>
+                          <td className="py-2 text-right">{r.played}</td>
+                          <td className="py-2 text-right font-bold text-blue-700">{r.won}</td>
+                          <td className="py-2 text-right">{r.lost}</td>
+                          <td className="py-2 text-right">{r.gf - r.ga}</td>
+                          <td className="py-2 text-right">{r.pf - r.pa}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
               {[...new Set(swissMatches.map((m) => m.round))]
                 .sort((a, b) => a - b)
                 .map((r) => (

@@ -116,8 +116,11 @@ export function SiteHomePage() {
               <Search className="w-4 h-4" /> ดูรายการแข่งขัน
             </button>
             <div>
-              <button type="button" onClick={() => setLivePop((v) => !v)} aria-expanded={livePop} className="inline-flex items-center gap-2 min-h-[48px] px-5 rounded-xl bg-white/15 text-white font-bold text-sm hover:bg-white/25 transition-colors">
-                <Radio className="w-4 h-4" /> ดูคะแนนสด{liveNow > 0 ? ` (${liveNow})` : ''}
+              <button type="button" onClick={() => setLivePop((v) => !v)} aria-expanded={livePop} className="relative inline-flex items-center gap-2 min-h-[48px] px-5 rounded-xl bg-white/15 text-white font-bold text-sm hover:bg-white/25 transition-colors">
+                <Radio className="w-4 h-4" /> ดูคะแนนสด
+                {liveTours.length > 0 && (
+                  <span aria-label={`${liveTours.length} รายการกำลังแข่ง`} className="absolute -top-2 -right-2 min-w-[22px] h-[22px] px-1.5 rounded-full bg-red-500 text-white text-[11px] font-extrabold grid place-items-center ring-2 ring-white tabular-nums shadow">{liveTours.length}</span>
+                )}
               </button>
               {livePop && (
                 <>

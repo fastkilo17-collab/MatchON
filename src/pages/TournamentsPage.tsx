@@ -880,7 +880,8 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
                 className="w-full min-h-[44px] px-2.5 rounded-xl border border-slate-200 text-sm bg-white"
               >
                 <option value="knockout">น็อคเอาท์</option>
-                <option value="round_robin">พบกันหมด</option>
+                <option value="round_robin">พบกันหมด (นัดเดียว)</option>
+                <option value="league">ลีก เหย้า-เยือน</option>
                 <option value="group_stage">แบ่งกลุ่ม</option>
                 <option value="group_knockout">แบ่งกลุ่ม+น็อคเอาท์</option>
                 <option value="swiss">Swiss</option>
