@@ -53,7 +53,7 @@ body.scroll header{position:sticky;top:0;background:var(--b0);z-index:5}
 .st{font:800 .85em 'Prompt';color:var(--mu);white-space:nowrap}.st.l{color:#ff6b6b}.st.w{color:var(--wait)}
 .st.l::before{content:'';display:inline-block;width:.6em;height:.6em;border-radius:50%;background:var(--live);margin-right:.4em;animation:pulse 1.2s infinite}
 @keyframes pulse{50%{opacity:.25}}
-.cat{font-size:.82em;color:var(--mu2);line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tl{min-width:0;display:flex;flex-direction:column;gap:.05em}.cat{font-size:.72em;color:var(--mu2);line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tms{display:flex;flex-direction:column;justify-content:space-evenly;flex:1;min-height:0;gap:.2em}
 .row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:.6em;padding:.25em 0;border-top:1px solid var(--b2)}
 .who{display:flex;align-items:center;gap:.6em;min-width:0}
@@ -73,8 +73,8 @@ body.scroll header{position:sticky;top:0;background:var(--b0);z-index:5}
 .q3{font:400 .95em 'Noto Sans Thai';white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.q3 i{font-style:normal;color:var(--mu3);font-weight:500;padding:0 .35em}
 .ql{flex:1;min-height:0;display:flex;flex-direction:column}
 .qe{flex:1;display:grid;place-items:center;color:var(--mu3);font-size:.9em}
-#ads{height:clamp(56px,13vh,200px);padding:.8vh 1vw 1vh;overflow:hidden;border-top:1px solid var(--b2);background:var(--b1)}
-@media (max-height:520px){#ads{height:18vh}}
+#ads{height:clamp(40px,9vh,130px);padding:.8vh 1vw 1vh;overflow:hidden;border-top:1px solid var(--b2);background:var(--b1)}
+@media (max-height:520px){#ads{height:12vh}}
 #ads[hidden]{display:none}
 .trk{display:flex;gap:2vw;height:100%;width:max-content;align-items:center}
 .trk img{height:100%;width:auto;max-width:none;border-radius:.6vh;object-fit:contain}
@@ -82,7 +82,7 @@ body.scroll header{position:sticky;top:0;background:var(--b0);z-index:5}
 @keyframes slide{to{transform:translateX(-50%)}}
 .empty{color:var(--mu3);text-align:center;padding:1.2em 0;font-size:1.1em;grid-column:1/-1}
 #g.cp .card{padding:.35em .6em;gap:.1em;border-radius:.7em}
-#g.cp .ph,#g.cp .cat,#g.cp .tn small{display:none}
+#g.cp .ph,#g.cp .tn small{display:none}#g.cp .cat{font-size:.68em}
 #g.cp .court{font-size:1.25em}#g.cp .tag{font-size:.75em}#g.cp .top{flex:0 0 auto}
 #g.cp .row{padding:.08em 0}#g.cp .tn b{font-size:1.05em}#g.cp .cur{font-size:1.7em}#g.cp .card{line-height:1.1}#g.cp .ps{font-size:.95em}
 #g.cp .idle{font-size:.8em}
@@ -123,7 +123,8 @@ function card(c) {
   const hasM = c.status === 'LIVE';
   const started = hasM && (c.activeSet >= 0 || c.startedAt > 0);
   const act = c.activeSet >= 0 ? c.activeSet : 0;
-  const head = `<div class="top"><div class="ti"><span class="court">สนาม ${c.courtNo}</span>${hasM && c.matchNo ? `<span class="tag">แมตช์ #${c.matchNo}</span>` : ''}${hasM && c.schedAt ? `<span class="tm">${hm(c.schedAt)}</span>` : ''}</div><div class="st${started ? ' l' : hasM ? ' w' : ''}">${started ? 'LIVE' : hasM ? 'รอเริ่ม' : 'ว่าง'}</div></div>`;
+  const catTxt = esc([c.catName, c.roundLabel].filter(Boolean).join(' · ') || c.round || '');
+  const head = `<div class="top"><div class="tl"><div class="ti"><span class="court">สนาม ${c.courtNo}</span>${hasM && c.matchNo ? `<span class="tag">แมตช์ #${c.matchNo}</span>` : ''}${hasM && c.schedAt ? `<span class="tm">${hm(c.schedAt)}</span>` : ''}</div>${hasM && catTxt ? `<div class="cat">${catTxt}</div>` : ''}</div><div class="st${started ? ' l' : hasM ? ' w' : ''}">${started ? 'LIVE' : hasM ? 'รอเริ่ม' : 'ว่าง'}</div></div>`;
   if (!hasM) return `<div class="card">${head}<div class="idle">รอเรียกคู่แข่งขัน</div></div>`;
   const rows = [['A', 0], ['B', 1]].map(([L, k]) => {
     const prev = [0, 1, 2].filter((i) => i < act).map((i) => {
@@ -133,7 +134,7 @@ function card(c) {
     const club = c['club' + L], nick = c['team' + L];
     return `<div class="row"><div class="who"><div class="ph">${photos(c, L)}</div><div class="tn"><b>${esc(nick)}</b>${club ? `<small>${esc(club)}</small>` : ''}</div></div><div class="sc">${prev}<span class="cur">${c.scores[act][k]}</span></div></div>`;
   }).join('');
-  return `<div class="card ${started ? 'live' : 'wait'}">${head}<div class="cat">${esc([c.catName, c.roundLabel].filter(Boolean).join(' · ') || c.round)}</div><div class="tms">${rows}</div></div>`;
+  return `<div class="card ${started ? 'live' : 'wait'}">${head}<div class="tms">${rows}</div></div>`;
 }
 function queue() {
   const q = arr(meta && meta.queue).slice(0, 5);
@@ -160,7 +161,7 @@ function fitCourts() {
     return best;
   };
   // การ์ดเต็ม (รูป/ชื่อชมรม/รุ่น) หรือแบบย่อเมื่อสนามเยอะ — เลือกแบบที่ตัวอักษรอ่านง่ายกว่า
-  const full = tryFit(25, 16.5), cp = tryFit(17, 8.4);
+  const full = tryFit(25, 16.5), cp = tryFit(17, 8.8);
   const useCp = N > 1 && cp.u * 0.8 > full.u;
   const best = useCp ? cp : full;
   g.classList.toggle('cp', useCp);

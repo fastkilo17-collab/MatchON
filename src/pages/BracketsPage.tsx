@@ -1,3 +1,4 @@
+import { ScrollLock } from '../lib/scrollLock';
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronDown, GitBranch, Hand, Lock, Printer, Shuffle, Sparkles, Trash2, Unlock, X } from 'lucide-react';
@@ -68,7 +69,8 @@ export function BracketsPage() {
   const isManager = state.role === 'organizer';
 
   const groupMatches = catMatches.filter((m) => m.stage === 'group');
-  const wildMap = groupMatches.length > 0 && meta?.format === 'group_knockout' ? wildcardMap(groupMatches, activeCat.id, tCategories, tRules, meta?.advance || 2) : ({} as Record<string, number>);
+  const wc = groupMatches.length > 0 && meta?.format === 'group_knockout' ? wildcardMap(groupMatches, activeCat.id, tCategories, tRules, meta?.advance || 2) : { wild: {} as Record<string, number>, pos: {} as Record<string, string> };
+  const wildMap = wc.wild;
   const swissMatches = catMatches.filter((m) => m.stage === 'swiss');
   const koMatches = catMatches.filter((m) => m.stage === 'knockout' || m.stage === 'main');
   const lowMatches = catMatches.filter((m) => m.stage === 'lower');
@@ -95,6 +97,11 @@ export function BracketsPage() {
   const renderMatchCard = (m: Match) => {
     const aWon = m.status === 'finished' && m.winner === m.reg_a;
     const bWon = m.status === 'finished' && m.winner === m.reg_b;
+    const isKo = m.stage === 'knockout' || m.stage === 'main';
+    const aOut = isKo && m.status === 'finished' && !!m.reg_a && !!m.winner && !aWon;
+    const bOut = isKo && m.status === 'finished' && !!m.reg_b && !!m.winner && !bWon;
+    const firstRound = isKo && koMatches.length > 0 && m.round === Math.min(...koMatches.map((x) => x.round));
+    const gpos = (id?: string | null) => (firstRound && id ? wc.pos[id] : '');
     return (
       <button
         key={m.id}
@@ -128,8 +135,9 @@ export function BracketsPage() {
         <div className="space-y-1 text-sm">
           <div className="flex items-center justify-between gap-2">
             <span className="min-w-0 leading-tight">
-              {regMap[m.reg_a || '']?.club && <span className="block truncate text-[10px] font-light text-slate-500">{regMap[m.reg_a || ''].club}</span>}
-              <span className="flex items-center gap-1.5 min-w-0">
+              {regMap[m.reg_a || '']?.club && <span className={`block truncate text-[10px] font-light text-slate-500 ${aOut ? 'opacity-40' : ''}`}>{regMap[m.reg_a || ''].club}</span>}
+              <span className={`flex items-center gap-1.5 min-w-0 ${aOut ? 'opacity-40' : ''}`}>
+                {gpos(m.reg_a) && <span className="shrink-0 text-sm font-normal text-blue-700">{gpos(m.reg_a)}</span>}
                 {m.reg_a && <TeamAvatars reg={regMap[m.reg_a]} size={26} flat />}
                 <span className={`truncate text-sm font-normal ${aWon ? 'text-emerald-700 font-semibold' : 'text-slate-900'}`}>{m.reg_a && regMap[m.reg_a] ? playersNick(regMap[m.reg_a]) : 'รอผลการแข่ง'}</span>
               </span>
@@ -144,8 +152,9 @@ export function BracketsPage() {
           <div className="h-px bg-slate-100" />
           <div className="flex items-center justify-between gap-2">
             <span className="min-w-0 leading-tight">
-              {regMap[m.reg_b || '']?.club && <span className="block truncate text-[10px] font-light text-slate-500">{regMap[m.reg_b || ''].club}</span>}
-              <span className="flex items-center gap-1.5 min-w-0">
+              {regMap[m.reg_b || '']?.club && <span className={`block truncate text-[10px] font-light text-slate-500 ${bOut ? 'opacity-40' : ''}`}>{regMap[m.reg_b || ''].club}</span>}
+              <span className={`flex items-center gap-1.5 min-w-0 ${bOut ? 'opacity-40' : ''}`}>
+                {gpos(m.reg_b) && <span className="shrink-0 text-sm font-normal text-blue-700">{gpos(m.reg_b)}</span>}
                 {m.reg_b && <TeamAvatars reg={regMap[m.reg_b]} size={26} flat />}
                 <span className={`truncate text-sm font-normal ${bWon ? 'text-emerald-700 font-semibold' : 'text-slate-900'}`}>{m.reg_b && regMap[m.reg_b] ? playersNick(regMap[m.reg_b]) : 'รอผลการแข่ง'}</span>
               </span>
@@ -658,7 +667,7 @@ function SideName({ reg, won }: { reg?: Registration | null; won?: boolean }) {
 
 /** ทีมอันดับถัดจากที่เข้ารอบตรง (เช่น ที่ 3 ที่ดีที่สุด) ที่ถูกเติมเข้าสายบนให้ครบ 2/4/8/16 → ลำดับ 1,2,… ในระดับอันดับเดียวกัน
  *  ไม่มีรายการ = อันดับ 1 2 ครบสายแล้ว หรือไม่ได้เข้าสายบน (ตรรกะเดียวกับการสร้างรอบน็อคเอาท์แบบเติมทีม) */
-function wildcardMap(grp: Match[], catId: string, cats: import('../types/matchon').Category[], rules: import('../types/matchon').RulePreset[], adv: number): Record<string, number> {
+function wildcardMap(grp: Match[], catId: string, cats: import('../types/matchon').Category[], rules: import('../types/matchon').RulePreset[], adv: number): { wild: Record<string, number>; pos: Record<string, string> } {
   const pts = standingPtsFor(catId, cats, rules);
   const nos = [...new Set(grp.map((m) => m.group_no ?? 0))].sort((a, b) => a - b);
   const tops = nos.map((g) => {
@@ -672,6 +681,8 @@ function wildcardMap(grp: Match[], catId: string, cats: import('../types/matchon
   const size = bracketSize(count);
   const maxLen = Math.max(0, ...tops.map((g) => g.length));
   const out: Record<string, number> = {};
+  const pos: Record<string, string> = {};
+  tops.forEach((g, gi) => g.forEach((r, ri) => { pos[r.id] = `${String.fromCharCode(65 + gi)}${ri + 1}`; }));
   let lvl = adv;
   while (count < size && lvl < maxLen && count >= 2) {
     const cand = tops.map((g) => g[lvl]).filter(Boolean).sort(byPerf);
@@ -681,7 +692,8 @@ function wildcardMap(grp: Match[], catId: string, cats: import('../types/matchon
     if (take.length < cand.length) break;
     lvl++;
   }
-  return out;
+  Object.keys(out).forEach((id) => { pos[id] = `${pos[id]}(${out[id]})`; });
+  return { wild: out, pos };
 }
 
 /* ---------- การ์ดทีมในกลุ่ม (ย่อ/ขยาย) ---------- */
@@ -931,6 +943,7 @@ function ManualDraw({
       {/* เลือกทีมเอง */}
       {pickFor !== null && createPortal(
         <div className="fixed inset-0 z-[300] bg-black/60 flex items-end sm:items-center justify-center p-3" onClick={() => setPickFor(null)}>
+          <ScrollLock />
           <div className="w-full max-w-md max-h-[75vh] overflow-y-auto rounded-2xl bg-white p-4 space-y-2" onClick={(e) => e.stopPropagation()}>
             <div className="font-bold text-sm text-slate-900">เลือกทีมเข้ากลุ่ม {String.fromCharCode(65 + pickFor)}</div>
             {pool.map((t) => {
@@ -958,6 +971,7 @@ function ManualDraw({
       {/* popup แอนิเมชันสุ่มกลางจอ */}
       {roll && createPortal(
         <div className="fixed inset-0 z-[320] bg-black/80 flex flex-col items-center justify-center gap-5 p-6">
+          <ScrollLock />
           <div className="text-white/80 text-lg font-semibold">กำลังสุ่มทีมเข้า กลุ่ม {String.fromCharCode(65 + roll.g)}</div>
           {roll.reg && <TeamAvatars reg={roll.reg} size={96} flat />}
           <div className={`w-full max-w-2xl rounded-3xl px-6 py-10 text-center font-display text-3xl sm:text-5xl font-extrabold leading-tight transition-colors ${roll.done ? 'bg-emerald-500 text-white' : 'bg-white text-slate-900'}`}>

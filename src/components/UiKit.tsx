@@ -1,3 +1,4 @@
+import { ScrollLock } from '../lib/scrollLock';
 import { createPortal } from 'react-dom';
 import React, { useEffect, useMemo } from 'react';
 import { Share2, X } from 'lucide-react';
@@ -36,7 +37,8 @@ export function ResponsiveSheet({
   const node = (
     <AnimatePresence>
       {open && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center overscroll-contain">
+          <ScrollLock />
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -75,7 +77,7 @@ export function ResponsiveSheet({
               </button>
             </div>
 
-            <div className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden px-5 py-4 space-y-4 break-words">{children}</div>
+            <div className="flex-1 min-w-0 overflow-y-auto overscroll-contain overflow-x-hidden px-5 py-4 space-y-4 break-words">{children}</div>
 
             {footer && (
               <div className="px-5 py-3.5 border-t border-slate-100 bg-slate-50/70 pb-safe shrink-0">
@@ -168,6 +170,7 @@ export function PhotoLightbox({ src, caption, onClose }: { src: string | null; c
       onClick={(e) => { e.stopPropagation(); onClose(); }}
       className="fixed inset-0 z-[200] bg-black/85 flex flex-col items-center justify-center p-4 gap-3"
     >
+      <ScrollLock />
       <button type="button" aria-label="ปิด" onClick={(e) => { e.stopPropagation(); onClose(); }} className="absolute top-3 right-3 w-11 h-11 rounded-full bg-white/15 text-white text-xl">✕</button>
       <img src={src} alt={caption || ''} className="max-w-full max-h-[80vh] object-contain rounded-xl" />
       {caption && <div className="text-white text-sm font-semibold">{caption}</div>}

@@ -1,3 +1,4 @@
+import { ScrollLock } from '../lib/scrollLock';
 import React from 'react';
 import { Camera, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useMatchON } from '../context/MatchONContext';
@@ -68,7 +69,8 @@ export function SponsorsPage() {
       </div>
 
       {canEdit && form && (
-        <div className="fixed inset-0 z-[80] bg-black/50 grid place-items-end sm:place-items-center" onClick={() => setForm(null)}>
+        <div className="fixed inset-0 z-[80] bg-black/50 grid place-items-end sm:place-items-center overscroll-contain" onClick={() => setForm(null)}>
+          <ScrollLock />
           <div className="w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-3xl p-5 space-y-3 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <h4 className="font-display font-bold text-lg">{form.id ? 'แก้ไขสปอนเซอร์' : 'เพิ่มสปอนเซอร์'}</h4>
             <div className="aspect-[16/9] rounded-xl bg-slate-100 grid place-items-center overflow-hidden">

@@ -27,6 +27,7 @@ import {
 import { AnimatePresence, motion } from 'motion/react';
 import { useMatchON } from '../context/MatchONContext';
 import { AccountBox } from './AuthDialog';
+import { ScrollLock } from '../lib/scrollLock';
 import type { NavRoute, UserRole } from '../types/matchon';
 import { ToastStack, ResponsiveSheet } from './UiKit';
 import { fmtDate, fmtTime } from '../utils/bracket';
@@ -151,6 +152,9 @@ function NotificationBell() {
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { state, route, navigate, activeTournament, toasts, profile, isAdmin } = useMatchON();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [acctOpen, setAcctOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => { try { return localStorage.getItem('matchon.side') === '1'; } catch { return false; } });
+  const toggleSide = () => setCollapsed((c) => { const n = !c; try { localStorage.setItem('matchon.side', n ? '1' : '0'); } catch { /* ignore */ } return n; });
 
   const role = state.role;
   const visibleItems = NAV_ITEMS.filter((item) => item.roles.includes(role) && (!item.adminOnly || isAdmin));
@@ -176,23 +180,26 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-dvh bg-slate-50 text-slate-900 flex flex-col md:flex-row">
       {/* Desktop Bright Light Sidebar */}
-      <aside className="hidden md:flex md:flex-col md:w-56 xl:w-64 md:shrink-0 side-dark bg-white border-r border-slate-200 sticky top-0 h-dvh noprint">
-        <div className="h-16 px-5 flex items-center gap-3 border-b border-slate-100 shrink-0">
-          <button type="button" onClick={() => handleNav('site')} className="flex items-center gap-2.5 min-w-0" aria-label="MatchON">
-            <img src={`${import.meta.env.BASE_URL}img/app-icon-192.png`} alt="" className="w-10 h-10 rounded-xl object-cover shrink-0" />
-            <img src={`${import.meta.env.BASE_URL}img/matchon-wordmark.png`} alt="MatchON Badminton Platform" className="h-9 w-auto object-contain" />
-          </button>
+      <aside className={`hidden md:flex md:flex-col ${collapsed ? 'md:w-[68px]' : 'md:w-56 xl:w-64'} transition-[width] duration-200 md:shrink-0 side-dark bg-white border-r border-slate-200 sticky top-0 h-dvh noprint overflow-hidden`}>
+        <div className={`h-16 flex items-center border-b border-slate-100 shrink-0 ${collapsed ? 'justify-center px-0' : 'justify-between px-4 gap-2'}`}>
+          {!collapsed && (
+            <button type="button" onClick={() => handleNav('site')} className="flex items-center gap-2.5 min-w-0" aria-label="MatchON">
+              <img src={`${import.meta.env.BASE_URL}img/app-icon-192.png`} alt="" className="w-10 h-10 rounded-xl object-cover shrink-0" />
+              <img src={`${import.meta.env.BASE_URL}img/matchon-wordmark.png`} alt="MatchON Badminton Platform" className="h-9 w-auto object-contain" />
+            </button>
+          )}
+          <button type="button" onClick={toggleSide} aria-label={collapsed ? 'ขยายเมนู' : 'ย่อเมนู'} title={collapsed ? 'ขยายเมนู' : 'ย่อเมนู'} className="shrink-0 w-9 h-9 rounded-xl grid place-items-center text-slate-500 hover:bg-slate-100"><Menu className="w-5 h-5" /></button>
         </div>
 
-        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
+        <nav className={`flex-1 overflow-y-auto overflow-x-hidden py-4 space-y-5 ${collapsed ? 'px-2' : 'px-3'}`}>
           {(['main', 'manage', 'arena', 'info'] as const).map((groupKey) => {
             const items = visibleItems.filter((i) => i.group === groupKey);
             if (!items.length) return null;
             return (
               <div key={groupKey}>
-                <div className="px-3 mb-1.5 text-[11px] font-semibold text-slate-400 tracking-wide">
+                {collapsed ? <div className="mx-3 mb-1.5 border-t border-slate-100" /> : <div className="px-3 mb-1.5 text-[11px] font-semibold text-slate-400 tracking-wide">
                   {GROUP_TITLES[groupKey]}
-                </div>
+                </div>}
                 <div className="space-y-0.5">
                   {items.map((item) => {
                     const Icon = item.icon;
@@ -202,14 +209,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                         key={item.id}
                         type="button"
                         onClick={() => handleNav(item.id)}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors whitespace-nowrap ${
+                        title={collapsed ? item.label : undefined}
+                        className={`w-full flex items-center ${collapsed ? 'justify-center px-0' : 'gap-3 px-3'} py-2.5 rounded-xl text-sm font-medium transition-colors whitespace-nowrap ${
                           active
                             ? 'bg-blue-50 text-blue-700 font-semibold'
                             : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                         }`}
                       >
                         <Icon className={`w-[18px] h-[18px] shrink-0 ${active ? 'text-blue-600' : 'text-slate-400'}`} />
-                        <span className="truncate">{item.label}</span>
+                        {!collapsed && <span className="truncate">{item.label}</span>}
                       </button>
                     );
                   })}
@@ -218,10 +226,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             );
           })}
         </nav>
-
-        <div className="p-3 border-t border-slate-100 bg-slate-50/70">
-          <AccountBox />
-        </div>
       </aside>
 
       {/* Main Content Area */}
@@ -254,13 +258,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
             {profile && <NotificationBell />}
             {profile && (
-              <button type="button" onClick={() => handleNav('settings')} aria-label="โปรไฟล์ของฉัน" title={profile.display_name || 'โปรไฟล์'} className="shrink-0 w-10 h-10 rounded-full overflow-hidden ring-2 ring-white shadow bg-blue-100 grid place-items-center text-sm font-bold text-blue-700">
+              <button type="button" onClick={() => { if (window.matchMedia('(min-width: 768px)').matches) setAcctOpen(true); else handleNav('settings'); }} aria-label="บัญชีของฉัน" title={profile.display_name || 'โปรไฟล์'} className="shrink-0 w-10 h-10 rounded-full overflow-hidden ring-2 ring-white shadow bg-blue-100 grid place-items-center text-sm font-bold text-blue-700">
                 {profile.avatar_url ? (
                   <img src={profile.avatar_url} alt="" referrerPolicy="no-referrer" className="w-full h-full object-cover" />
                 ) : (
                   <span>{[...(profile.display_name || profile.email || '?')][0]}</span>
                 )}
               </button>
+            )}
+
+            {!profile && (
+              <button type="button" onClick={() => setAcctOpen(true)} className="hidden md:inline-flex items-center min-h-[40px] px-3.5 rounded-xl bg-blue-50 text-blue-700 text-sm font-semibold hover:bg-blue-100 whitespace-nowrap shrink-0">เข้าสู่ระบบ</button>
             )}
 
             {/* Mobile Quick Role Switcher */}
@@ -342,10 +350,28 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </nav>
 
+      {/* ลิ้นชักบัญชีผู้ใช้ (เดสก์ท็อป/แท็บเล็ต) */}
+      <AnimatePresence>
+        {acctOpen && (
+          <div className="hidden md:block fixed inset-0 z-50 overscroll-contain">
+            <ScrollLock />
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.16 }} onClick={() => setAcctOpen(false)} className="absolute inset-0 bg-slate-900/35 backdrop-blur-[2px]" />
+            <motion.aside initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }} className="absolute right-0 top-0 h-full w-[340px] max-w-[90vw] bg-white shadow-2xl flex flex-col">
+              <div className="h-16 px-5 border-b border-slate-100 flex items-center justify-between shrink-0">
+                <h2 className="font-display font-bold text-base text-slate-900">บัญชีของฉัน</h2>
+                <button type="button" onClick={() => setAcctOpen(false)} aria-label="ปิด" className="w-10 h-10 grid place-items-center rounded-xl text-slate-500 hover:bg-slate-100"><X className="w-5 h-5" /></button>
+              </div>
+              <div className="p-5 overflow-y-auto overscroll-contain"><AccountBox onDone={() => setAcctOpen(false)} /></div>
+            </motion.aside>
+          </div>
+        )}
+      </AnimatePresence>
+
       {/* Mobile Full Menu Bottom Sheet */}
       <AnimatePresence>
         {menuOpen && (
-          <div className="md:hidden fixed inset-0 z-50 flex items-end">
+          <div className="md:hidden fixed inset-0 z-50 flex items-end overscroll-contain">
+            <ScrollLock />
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
