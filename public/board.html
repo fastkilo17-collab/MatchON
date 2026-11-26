@@ -69,8 +69,8 @@ body.scroll header{position:sticky;top:0;background:var(--b0);z-index:5}
 .qh{font:800 1.2em 'Prompt';color:var(--mu2)}
 .qi{line-height:1.25;flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;justify-content:center;gap:.1em;border-top:1px solid var(--b2);padding:.2em 0}
 .q1{display:flex;align-items:center;gap:.5em;font:700 .9em 'Prompt'}.q1 .cr{margin-left:auto;color:var(--wait);font:700 .85em 'Noto Sans Thai'}
-.q2{font-size:.72em;color:var(--mu);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.q3{font:700 .95em 'Noto Sans Thai';white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.q3 i{font-style:normal;color:var(--mu3);font-weight:500;padding:0 .35em}
+.q2{font:400 .78em 'Noto Sans Thai';color:var(--mu);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.q3{font:400 .95em 'Noto Sans Thai';white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.q3 i{font-style:normal;color:var(--mu3);font-weight:500;padding:0 .35em}
 .ql{flex:1;min-height:0;display:flex;flex-direction:column}
 .qe{flex:1;display:grid;place-items:center;color:var(--mu3);font-size:.9em}
 #ads{height:clamp(56px,13vh,200px);padding:.8vh 1vw 1vh;overflow:hidden;border-top:1px solid var(--b2);background:var(--b1)}
@@ -133,7 +133,7 @@ function queue() {
   const q = arr(meta && meta.queue).slice(0, 5);
   const items = q.map((m) => {
     const nm = (x) => esc((x && (x.c || x.n)) || '-');
-    return `<div class="qi"><div class="q1"><span>${m.no ? '#' + m.no : ''}</span><span>${hm(m.at)}</span>${m.court ? `<span class="cr">→ สนาม ${m.court}</span>` : ''}</div><div class="q2">${esc([m.cat, m.round].filter(Boolean).join(' · '))}</div><div class="q3">${nm(m.a)}<i>vs</i>${nm(m.b)}</div></div>`;
+    return `<div class="qi"><div class="q1"><span>${m.no ? '#' + m.no : ''}</span><span>${hm(m.at)}</span><span class="q2">${esc([m.cat, m.round].filter(Boolean).join(' · '))}</span>${m.court ? `<span class="cr">→ สนาม ${m.court}</span>` : ''}</div><div class="q3">${nm(m.a)}<i>vs</i>${nm(m.b)}</div></div>`;
   }).join('');
   return `<div class="qc"><div class="qh">แมตช์ถัดไป</div><div class="ql">${items || '<div class="qe">ยังไม่มีคิวแมตช์</div>'}</div></div>`;
 }
@@ -164,7 +164,7 @@ function layout() {
   if (u < 9 && shown.length) { b.classList.add('scroll'); return; }
   if (S.q) {
     const q = $('q'), row = b.hasAttribute('data-wide');
-    const f = row ? Math.min(q.clientWidth / 5 / 13, q.clientHeight / (3 + 4.8)) : Math.min(q.clientWidth / 19, q.clientHeight / (3 + 5 * 4.8));
+    const f = row ? Math.min(q.clientWidth / 5 / 13, q.clientHeight / (3 + 4)) : Math.min(q.clientWidth / 19, q.clientHeight / (3 + 5 * 4));
     q.style.fontSize = Math.max(8, Math.min(34, f)) + 'px';
   }
 }
