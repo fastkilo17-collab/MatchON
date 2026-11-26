@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { photoUrl, sb } from './supabase';
 import type { Category, Court, Match, Registration, Tournament } from '../types/matchon';
 import { ruleForMatch } from '../utils/bracket';
+import { listSponsors } from './sponsors';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // Firebase live layer lives in /public/js/live.js (shared with referee.html and courts.html).
@@ -226,6 +227,15 @@ export function useLiveBridge(a: Args) {
 
   // ข้อมูลเสริมสำหรับจอใหญ่: คิวแมตช์ถัดไป 5 คู่, รูปโฆษณา (โปสเตอร์รายการ), ชื่อรายการ
   const lastMeta = useRef('');
+  const [sponsorAds, setSponsorAds] = useState<string[]>([]);
+  useEffect(() => {
+    if (!tid) { setSponsorAds([]); return; }
+    let on = true;
+    const load = () => { listSponsors(tid).then((l) => { if (on) setSponsorAds(l.map((x) => x.image || '').filter(Boolean)); }).catch(() => {}); };
+    load();
+    window.addEventListener('matchon:sponsors', load);
+    return () => { on = false; window.removeEventListener('matchon:sponsors', load); };
+  }, [tid]);
   useEffect(() => {
     if (!canWrite || !bridgeOn || !FB.current?.writeBoardMeta || !cfg.current || !tournament) return;
     const R = regMap;
@@ -253,14 +263,14 @@ export function useLiveBridge(a: Args) {
         b: side(m.reg_b),
       }));
     const posters = (tournament.posters && tournament.posters.length ? tournament.posters : tournament.poster ? [tournament.poster] : []) as string[];
-    const ads = posters.filter((u) => u && (!u.startsWith('data:') || u.length < 3000)).map((u) => photoUrl(u));
+    const ads = (sponsorAds.length ? sponsorAds : posters).filter((u) => u && (!u.startsWith('data:') || u.length < 3000)).map((u) => photoUrl(u));
     const meta = { tname: tournament.name, queue, ads };
     const sig = JSON.stringify(meta);
     if (sig === lastMeta.current) return;
     lastMeta.current = sig;
     Promise.resolve(FB.current.writeBoardMeta(cfg.current.live_id, meta)).catch(() => { lastMeta.current = ''; });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [matches, regMap, catMap, courts, tournament, bridgeOn, canWrite]);
+  }, [matches, regMap, catMap, courts, tournament, bridgeOn, canWrite, sponsorAds]);
 
   // สนามที่ถูกลบในแอป -> ลบออกจาก Firebase ด้วย (จอใหญ่/หน้ากรรมการจะไม่เห็น)
   useEffect(() => {

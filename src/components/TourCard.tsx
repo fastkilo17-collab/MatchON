@@ -25,8 +25,8 @@ export function StageBadge({ t, className = '' }: { t: Tournament; className?: s
 /** แถบวันที่แข่ง: พื้นหลังขาว */
 export function DateChip({ t, className = '' }: { t: Tournament; className?: string }) {
   return (
-    <span className={`inline-flex items-center gap-2 rounded-xl bg-white border border-slate-200 px-3.5 py-2 text-base font-extrabold text-slate-900 shadow-md tabular-nums ${className}`}>
-      <CalendarDays className="w-5 h-5 text-blue-600" />{fmtRange(t.start_date, t.end_date) || 'ยังไม่กำหนดวัน'}
+    <span className={`inline-flex items-center gap-2 rounded-xl bg-white border border-slate-200 px-3 py-1.5 text-sm font-extrabold text-slate-900 shadow-md tabular-nums ${className}`}>
+      <CalendarDays className="w-4 h-4 text-blue-600" />{fmtRange(t.start_date, t.end_date) || 'ยังไม่กำหนดวัน'}
     </span>
   );
 }

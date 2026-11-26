@@ -22,6 +22,7 @@ import {
   UserRound,
   X,
   Sparkles,
+  Award,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useMatchON } from '../context/MatchONContext';
@@ -51,6 +52,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'info', label: 'ข้อมูลรายการ', shortLabel: 'ข้อมูล', icon: Edit3, group: 'manage', roles: ['organizer'] },
   { id: 'cats', label: 'จัดการรุ่นการแข่งขัน', shortLabel: 'รุ่น', icon: ListChecks, group: 'manage', roles: ['organizer'] },
   { id: 'athletes', label: 'นักกีฬา', shortLabel: 'นักกีฬา', icon: Users, group: 'main', roles: ['organizer', 'player', 'referee'] },
+  { id: 'sponsors', label: 'สปอนเซอร์', shortLabel: 'สปอนเซอร์', icon: Award, group: 'manage', roles: ['organizer'] },
   { id: 'models', label: 'โมเดลนักกีฬา', shortLabel: 'โมเดล', icon: Sparkles, group: 'main', roles: ['organizer', 'player', 'referee'] },
   { id: 'brackets', label: 'สายแข่งขัน', shortLabel: 'สายแข่งขัน', icon: GitBranch, group: 'manage', roles: ['organizer', 'player', 'referee'] },
   { id: 'schedule', label: 'ตารางการแข่งขัน', shortLabel: 'ตารางแข่งขัน', icon: CalendarDays, group: 'manage', roles: ['organizer', 'player', 'referee'] },
@@ -172,9 +174,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div className="min-h-dvh bg-slate-50 text-slate-900 flex flex-col lg:flex-row">
+    <div className="min-h-dvh bg-slate-50 text-slate-900 flex flex-col md:flex-row">
       {/* Desktop Bright Light Sidebar */}
-      <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:shrink-0 side-dark bg-white border-r border-slate-200 sticky top-0 h-dvh noprint">
+      <aside className="hidden md:flex md:flex-col md:w-56 xl:w-64 md:shrink-0 side-dark bg-white border-r border-slate-200 sticky top-0 h-dvh noprint">
         <div className="h-16 px-5 flex items-center gap-3 border-b border-slate-100 shrink-0">
           <button type="button" onClick={() => handleNav('site')} className="flex items-center gap-2.5 min-w-0" aria-label="MatchON">
             <img src={`${import.meta.env.BASE_URL}img/app-icon-192.png`} alt="" className="w-10 h-10 rounded-xl object-cover shrink-0" />
@@ -225,19 +227,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* Main Content Area */}
       <div className="flex-1 min-w-0 flex flex-col">
         {/* Compact Sticky Top Header (56px mobile, 64px desktop) */}
-        <header className="sticky top-0 z-30 h-14 lg:h-16 bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-4 lg:px-8 flex items-center justify-between gap-3 noprint">
+        <header className="sticky top-0 z-30 h-14 md:h-16 bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-4 md:px-8 flex items-center justify-between gap-3 noprint">
           {/* Left: Mobile Brand or Desktop Page Title */}
           <div className="flex items-center gap-2.5 min-w-0">
             <button
               type="button"
               onClick={() => handleNav('site')}
-              className="lg:hidden flex items-center gap-2 shrink-0 min-h-[40px]"
+              className="md:hidden flex items-center gap-2 shrink-0 min-h-[40px]"
             >
               <img src={`${import.meta.env.BASE_URL}img/app-icon-192.png`} alt="" className="w-9 h-9 rounded-xl object-cover" />
               <img src={`${import.meta.env.BASE_URL}img/matchon-wordmark.png`} alt="MatchON" className="h-8 w-auto object-contain" />
             </button>
 
-            <h1 className="hidden lg:block font-display font-bold text-lg text-slate-900 truncate">
+            <h1 className="hidden md:block font-display font-bold text-lg text-slate-900 truncate">
               {currentMeta?.label || 'MatchON'}
             </h1>
           </div>
@@ -266,7 +268,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               type="button"
               onClick={() => setMenuOpen(true)}
               title="บัญชีผู้ใช้"
-              className={`lg:hidden min-h-[40px] px-3 rounded-xl bg-blue-50 text-blue-700 text-xs font-semibold hover:bg-blue-100 transition-colors whitespace-nowrap shrink-0 ${profile ? 'hidden' : ''}`}
+              className={`md:hidden min-h-[40px] px-3 rounded-xl bg-blue-50 text-blue-700 text-xs font-semibold hover:bg-blue-100 transition-colors whitespace-nowrap shrink-0 ${profile ? 'hidden' : ''}`}
             >
               {profile ? '' : 'เข้าสู่ระบบ'}
             </button>
@@ -276,7 +278,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <button
                 type="button"
                 onClick={() => handleNav('tournaments')}
-                className="hidden lg:inline-flex items-center gap-1.5 px-4 py-2 min-h-[40px] rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition-colors whitespace-nowrap shrink-0 shadow-sm shadow-blue-600/15"
+                className="hidden md:inline-flex items-center gap-1.5 px-4 py-2 min-h-[40px] rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition-colors whitespace-nowrap shrink-0 shadow-sm shadow-blue-600/15"
               >
                 <Plus className="w-4 h-4" />
                 <span>จัดการรายการ</span>
@@ -285,7 +287,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <button
                 type="button"
                 onClick={() => handleNav('register')}
-                className="hidden lg:inline-flex items-center gap-1.5 px-4 py-2 min-h-[40px] rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition-colors whitespace-nowrap shrink-0 shadow-sm shadow-blue-600/15"
+                className="hidden md:inline-flex items-center gap-1.5 px-4 py-2 min-h-[40px] rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition-colors whitespace-nowrap shrink-0 shadow-sm shadow-blue-600/15"
               >
                 <ClipboardCheck className="w-4 h-4" />
                 <span>สมัครแข่งขัน</span>
@@ -295,7 +297,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </header>
 
         {/* Page Container */}
-        <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 pb-24 lg:pb-10">
+        <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 md:px-8 pt-4 sm:pt-6 pb-24 md:pb-10">
           {children}
         </main>
       </div>
@@ -303,7 +305,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* Mobile Bottom Navigation Bar (Fixed 64px + safe-area) */}
       <nav
         aria-label="เมนูหลักบนมือถือ"
-        className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 pb-safe noprint"
+        className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 pb-safe noprint"
       >
         <div className="grid grid-cols-5 items-center h-16 px-1">
           {bottomTabs.map((item) => {
@@ -343,7 +345,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* Mobile Full Menu Bottom Sheet */}
       <AnimatePresence>
         {menuOpen && (
-          <div className="lg:hidden fixed inset-0 z-50 flex items-end">
+          <div className="md:hidden fixed inset-0 z-50 flex items-end">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}

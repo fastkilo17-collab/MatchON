@@ -1,3 +1,4 @@
+import { ModelButton } from '../components/TourCard';
 import React, { useState } from 'react';
 import type { Registration } from '../types/matchon';
 import { useMatchON } from '../context/MatchONContext';
@@ -20,7 +21,7 @@ export function RosterPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="font-display text-xl font-bold text-slate-900">รายชื่อนักกีฬาที่สมัคร</h2>
+        <h2 className="font-display text-xl font-bold text-slate-900 flex items-center gap-2 flex-wrap">รายชื่อนักกีฬาที่สมัคร <ModelButton t={t} small /></h2>
         <p className="text-xs text-slate-500 mt-0.5">{t.name} · ทั้งหมด {tRegistrations.length} ใบสมัคร แยกตามรุ่น/มือ</p>
       </div>
 

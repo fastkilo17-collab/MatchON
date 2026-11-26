@@ -25,10 +25,10 @@ import {
   prizeText,
   prizeLines,
 } from '../utils/bracket';
-import { tourStage, byNearestDate } from '../utils/bracket';
+import { tourStage, byNearestDate, fmtRange, fmtDate, STATUS_TH as STAGE_TH } from '../utils/bracket';
 import { StageBadge, DateChip, RegMeter, TourButtons, VenueLine, CatLine } from '../components/TourCard';
 import { ResponsiveSheet, ShareButton } from '../components/UiKit';
-import { resizeImage } from '../lib/supabase';
+import { resizeImage, photoUrl } from '../lib/supabase';
 
 export type TournamentsMode = 'list' | 'mine' | 'cats' | 'info';
 
@@ -59,6 +59,7 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
 
   // Tournament modal state
   const [tSheetOpen, setTSheetOpen] = useState(false);
+  const [infoTid, setInfoTid] = useState<string | null>(null);
   const [editingT, setEditingT] = useState<Tournament | null>(null);
   const [tForm, setTForm] = useState({
     name: '',
@@ -117,18 +118,19 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
   const openCard = (t: Tournament) => {
     setActiveTid(t.id);
     if (mode === 'cats') openCategoryManager(t.id);
-    else if (mode === 'info') openEditT(t);
+    else if (mode === 'info') setInfoTid(t.id);
     else navigate('home');
   };
   const closeSheets = () => {
     setTSheetOpen(false);
     setCatManagerTid(null);
+    setInfoTid(null);
     if (mode === 'cats' || mode === 'info') navigate('home');
   };
   React.useEffect(() => {
     if (!activeTournament || !myList.some((x) => x.id === activeTournament.id)) return;
     if (mode === 'cats') openCategoryManager(activeTournament.id);
-    else if (mode === 'info') openEditT(activeTournament);
+    else if (mode === 'info') setInfoTid(activeTournament.id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, activeTournament?.id]);
 
@@ -462,6 +464,51 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
           })}
         </div>
       </section>
+
+      {/* ดูข้อมูลรายการ (อ่านอย่างเดียว) มีปุ่มแก้ไข */}
+      {(() => {
+        const it = infoTid ? state.tournaments.find((x) => x.id === infoTid) : null;
+        const row = (k: string, v?: React.ReactNode) => (v === undefined || v === null || v === '' ? null : (
+          <div className="flex gap-3 py-2 border-b border-slate-100 text-sm"><div className="w-28 shrink-0 text-slate-500">{k}</div><div className="min-w-0 flex-1 text-slate-900 whitespace-pre-line break-words">{v}</div></div>
+        ));
+        return (
+          <ResponsiveSheet
+            open={Boolean(it)}
+            onClose={closeSheets}
+            title="ข้อมูลรายการ"
+            subtitle={it?.name}
+            footer={it ? (
+              <div className="grid grid-cols-2 gap-2.5">
+                <button type="button" onClick={closeSheets} className="min-h-[46px] rounded-xl bg-slate-100 text-sm font-semibold">ปิด</button>
+                <button type="button" onClick={() => { setInfoTid(null); openEditT(it); }} className="min-h-[46px] rounded-xl bg-blue-600 text-white text-sm font-semibold inline-flex items-center justify-center gap-1.5"><Edit3 className="w-4 h-4" /> แก้ไข</button>
+              </div>
+            ) : undefined}
+          >
+            {it && (
+              <div>
+                {(it.posters && it.posters.length ? it.posters : it.poster ? [it.poster] : []).length > 0 && (
+                  <div className="flex gap-2 overflow-x-auto pb-2">{(it.posters && it.posters.length ? it.posters : [it.poster as string]).map((u, i) => <img key={i} src={photoUrl(u)} alt="" className="h-40 w-auto rounded-xl object-cover shrink-0" />)}</div>
+                )}
+                {row('ชื่อรายการ', it.name)}
+                {row('สถานะ', STAGE_TH[tourStage(it, state.matches)])}
+                {row('วันที่แข่ง', fmtRange(it.start_date, it.end_date))}
+                {row('ปิดรับสมัคร', it.reg_deadline ? fmtDate(it.reg_deadline) : '')}
+                {row('สถานที่', it.venue)}
+                {row('จำนวนสนาม', it.courts ? `${it.courts} สนาม` : '')}
+                {row('รันแมตช์', it.match_minutes ? `ทุก ${it.match_minutes} นาที` : '')}
+                {row('เวลาพักเหนื่อย', it.rest_minutes ? `${it.rest_minutes} นาที` : '')}
+                {row('ลูกที่ใช้แข่ง', it.shuttle)}
+                {row('ช่องทางติดต่อ', it.contact)}
+                {row('PromptPay', it.promptpay_id)}
+                {row('รายละเอียด', it.description)}
+                {row('รูปแบบการแข่ง', it.format_text)}
+                {row('กติกา', it.rules_text)}
+                {row('ประกาศ', it.notice)}
+              </div>
+            )}
+          </ResponsiveSheet>
+        );
+      })()}
 
       {/* Create / Edit Tournament Sheet */}
       <ResponsiveSheet

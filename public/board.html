@@ -81,6 +81,12 @@ body.scroll header{position:sticky;top:0;background:var(--b0);z-index:5}
 .trk.run{animation:slide var(--dur,30s) linear infinite}
 @keyframes slide{to{transform:translateX(-50%)}}
 .empty{color:var(--mu3);text-align:center;padding:1.2em 0;font-size:1.1em;grid-column:1/-1}
+#g.cp .card{padding:.35em .6em;gap:.1em;border-radius:.7em}
+#g.cp .ph,#g.cp .cat,#g.cp .tn small{display:none}
+#g.cp .court{font-size:1.25em}#g.cp .tag{font-size:.75em}#g.cp .top{flex:0 0 auto}
+#g.cp .row{padding:.08em 0}#g.cp .tn b{font-size:1.05em}#g.cp .cur{font-size:1.7em}#g.cp .card{line-height:1.1}#g.cp .ps{font-size:.95em}
+#g.cp .idle{font-size:.8em}
+#setc{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:0 10px}
 #set{position:fixed;inset:0;background:#000a;display:none;place-items:center;z-index:9}
 #set.on{display:grid}
 #setbox{background:var(--b1);border:1px solid var(--bd);border-radius:14px;padding:18px 20px;min-width:min(86vw,360px);max-height:86vh;overflow:auto;display:flex;flex-direction:column;gap:10px}
@@ -94,7 +100,7 @@ body.scroll header{position:sticky;top:0;background:var(--b0);z-index:5}
 <header><div class="logo">Match<b>ON</b></div><div id="tname">Live Score</div><div id="clock"></div><div id="conn">กำลังเชื่อมต่อ…</div><button id="setb" class="btn" type="button" aria-label="ตั้งค่า">⚙<span class="lb"> ตั้งค่า</span></button><button id="fs" class="btn" type="button" aria-label="เต็มจอ">⛶<span class="lb"> เต็มจอ</span></button></header>
 <main id="m"><div id="g"></div><div id="q"></div></main>
 <div id="ads" hidden><div class="trk" id="trk"></div></div>
-<div id="set"><div id="setbox"><h3>ตั้งค่าการแสดงผล</h3><div class="sub">การ์ดสนาม</div><div id="setc"></div><div class="sub">ส่วนอื่น</div><label><input type="checkbox" id="sq"> การ์ดแมตช์ถัดไป</label><label><input type="checkbox" id="sa"> แถบรูปโฆษณา</label><button class="btn" id="setx" type="button" style="margin-top:6px">เสร็จสิ้น</button></div></div>
+<div id="set"><div id="setbox"><h3>ตั้งค่าการแสดงผล</h3><label><input type="checkbox" id="so"> แสดงเฉพาะสนามที่เรียกนักกีฬาแล้ว</label><div class="sub">การ์ดสนาม</div><div id="setc"></div><div class="sub">ส่วนอื่น</div><label><input type="checkbox" id="sq"> การ์ดแมตช์ถัดไป</label><label><input type="checkbox" id="sa"> แถบรูปโฆษณา</label><button class="btn" id="setx" type="button" style="margin-top:6px">เสร็จสิ้น</button></div></div>
 <script type="module">
 import * as Live from './js/live.js';
 const liveId = new URLSearchParams(location.search).get('live');
@@ -104,7 +110,7 @@ const arr = (v) => (Array.isArray(v) ? v : v && typeof v === 'object' ? Object.v
 const hm = (t) => (t ? new Date(t).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', hour12: false }) : '');
 // ---- settings (per browser) ----
 const SK = 'matchon.board.' + liveId;
-let S = { hide: {}, q: true, a: true };
+let S = { hide: {}, q: true, a: true, only: false };
 try { S = Object.assign(S, JSON.parse(localStorage.getItem(SK) || '{}')); S.hide = S.hide || {}; } catch (e) {}
 const save = () => { try { localStorage.setItem(SK, JSON.stringify(S)); } catch (e) {} };
 let courts = [], meta = null;
@@ -139,20 +145,29 @@ function queue() {
 }
 // ---- layout: fit everything on one screen ----
 let shown = [];
+const isFs = () => !!document.fullscreenElement || !!document.webkitFullscreenElement || (innerHeight >= screen.height - 2 && innerWidth >= screen.width - 2);
 function fitCourts() {
   const g = $('g'), W = g.clientWidth, H = g.clientHeight, N = shown.length;
   if (!N) return 99;
   const gx = 0.01 * innerWidth, gy = 0.01 * innerHeight;
-  let best = null;
-  for (let cols = 1; cols <= N; cols++) {
-    const rows = Math.ceil(N / cols);
-    const u = Math.min((W - gx * (cols - 1)) / cols / 25, (H - gy * (rows - 1)) / rows / 16.5);
-    if (!best || u > best.u) best = { cols, rows, u };
-  }
+  const tryFit = (wU, hU) => {
+    let best = null;
+    for (let cols = 1; cols <= N; cols++) {
+      const rows = Math.ceil(N / cols);
+      const u = Math.min((W - gx * (cols - 1)) / cols / wU, (H - gy * (rows - 1)) / rows / hU);
+      if (!best || u > best.u) best = { cols, rows, u };
+    }
+    return best;
+  };
+  // การ์ดเต็ม (รูป/ชื่อชมรม/รุ่น) หรือแบบย่อเมื่อสนามเยอะ — เลือกแบบที่ตัวอักษรอ่านง่ายกว่า
+  const full = tryFit(25, 16.5), cp = tryFit(17, 8.4);
+  const useCp = N > 1 && cp.u * 0.8 > full.u;
+  const best = useCp ? cp : full;
+  g.classList.toggle('cp', useCp);
   g.style.gridTemplateColumns = `repeat(${best.cols},minmax(0,1fr))`;
   g.style.gridTemplateRows = `repeat(${best.rows},minmax(0,1fr))`;
-  g.style.fontSize = Math.max(8, Math.min(46, best.u)) + 'px';
-  return best.u;
+  g.style.fontSize = Math.max(5, Math.min(46, best.u)) + 'px';
+  return best.u * (useCp ? 0.8 : 1);
 }
 function layout() {
   const b = document.body, W = innerWidth, H = innerHeight;
@@ -161,7 +176,7 @@ function layout() {
   if (b.dataset.mode === 'bottom' && W >= 900) b.setAttribute('data-wide', ''); else b.removeAttribute('data-wide');
   let u = fitCourts();
   // too small to fit everything legibly on one screen (e.g. phones): fall back to a scrollable layout
-  if (u < 9 && shown.length) { b.classList.add('scroll'); return; }
+  if (u < 9 && shown.length && !isFs() && W < 900) { b.classList.add('scroll'); return; }
   if (S.q) {
     const q = $('q'), row = b.hasAttribute('data-wide');
     const f = row ? Math.min(q.clientWidth / 5 / 13, q.clientHeight / (3 + 4)) : Math.min(q.clientWidth / 19, q.clientHeight / (3 + 5 * 4));
@@ -169,8 +184,8 @@ function layout() {
   }
 }
 function render() {
-  shown = courts.filter((c) => !S.hide[c.courtNo]);
-  $('g').innerHTML = shown.length ? shown.map(card).join('') : `<div class="empty">${courts.length ? 'ซ่อนการ์ดสนามทั้งหมดอยู่ (ตั้งค่า ⚙)' : 'ยังไม่มีข้อมูลสนาม'}</div>`;
+  shown = courts.filter((c) => !S.hide[c.courtNo] && (!S.only || c.status === 'LIVE'));
+  $('g').innerHTML = shown.length ? shown.map(card).join('') : `<div class="empty">${courts.length ? (S.only ? 'ยังไม่มีสนามที่เรียกนักกีฬา' : 'ซ่อนการ์ดสนามทั้งหมดอยู่ (ตั้งค่า ⚙)') : 'ยังไม่มีข้อมูลสนาม'}</div>`;
   $('m').classList.toggle('noq', !S.q);
   $('q').style.display = S.q ? '' : 'none';
   if (S.q) $('q').innerHTML = queue();
@@ -203,7 +218,7 @@ function fitAds() {
 }
 function settings() {
   $('setc').innerHTML = courts.map((c) => `<label><input type="checkbox" data-c="${c.courtNo}" ${S.hide[c.courtNo] ? '' : 'checked'}> สนาม ${c.courtNo}</label>`).join('') || '<div class="sub">ยังไม่มีสนาม</div>';
-  $('sq').checked = !!S.q; $('sa').checked = !!S.a;
+  $('so').checked = !!S.only; $('sq').checked = !!S.q; $('sa').checked = !!S.a;
   $('set').classList.add('on');
 }
 $('setb').onclick = settings;
@@ -212,6 +227,7 @@ $('set').onclick = (e) => { if (e.target.id === 'set') $('set').classList.remove
 $('setbox').addEventListener('change', (e) => {
   const t = e.target;
   if (t.dataset.c) S.hide[t.dataset.c] = !t.checked;
+  else if (t.id === 'so') S.only = t.checked;
   else if (t.id === 'sq') S.q = t.checked;
   else if (t.id === 'sa') S.a = t.checked;
   save(); render(); ads();

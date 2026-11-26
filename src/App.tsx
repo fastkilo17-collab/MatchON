@@ -6,6 +6,7 @@
 import React from 'react';
 import { AppShell } from './components/AppShell';
 import { MatchONProvider, useMatchON } from './context/MatchONContext';
+import { SponsorsPage } from './pages/SponsorsPage';
 import { ModelsPage } from './pages/ModelsPage';
 import { AthletesPage } from './pages/AthletesPage';
 import { BracketsPage } from './pages/BracketsPage';
@@ -35,6 +36,8 @@ function RouteSwitch() {
       return <MyRegistrationsPage />;
     case 'athletes':
       return <AthletesPage />;
+    case 'sponsors':
+      return <SponsorsPage />;
     case 'models':
       return <ModelsPage />;
     case 'brackets':

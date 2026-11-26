@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { ChevronDown, GitBranch, Hand, Lock, Printer, Shuffle, Sparkles, Trash2, Unlock, X } from 'lucide-react';
 import { useMatchON } from '../context/MatchONContext';
 import type { BracketFormat, Match, Registration } from '../types/matchon';
-import { eligibleForBracket, isByeMatch, computeStandings, standingPtsFor, fmtTime, FORMAT_TH, teamName, playersNick, groupPlan, clubKey } from '../utils/bracket';
+import { bracketSize, eligibleForBracket, isByeMatch, computeStandings, standingPtsFor, fmtTime, FORMAT_TH, teamName, playersNick, groupPlan, clubKey } from '../utils/bracket';
 import type { StandingRow, StandingPts } from '../utils/bracket';
 import { MatchScoreSheet } from '../components/MatchScoreSheet';
 import { MatchNo, ResponsiveSheet, TeamAvatars } from '../components/UiKit';
@@ -68,6 +68,7 @@ export function BracketsPage() {
   const isManager = state.role === 'organizer';
 
   const groupMatches = catMatches.filter((m) => m.stage === 'group');
+  const wildMap = groupMatches.length > 0 && meta?.format === 'group_knockout' ? wildcardMap(groupMatches, activeCat.id, tCategories, tRules, meta?.advance || 2) : ({} as Record<string, number>);
   const swissMatches = catMatches.filter((m) => m.stage === 'swiss');
   const koMatches = catMatches.filter((m) => m.stage === 'knockout' || m.stage === 'main');
   const lowMatches = catMatches.filter((m) => m.stage === 'lower');
@@ -453,6 +454,8 @@ export function BracketsPage() {
                             key={r.id}
                             row={r}
                             rank={idx + 1}
+                            adv={meta?.advance || 2}
+                            wild={wildMap[r.id]}
                             reg={regMap[r.id]}
                             pts={sp}
                             matches={gm.filter((m) => m.reg_a === r.id || m.reg_b === r.id)}
@@ -653,11 +656,39 @@ function SideName({ reg, won }: { reg?: Registration | null; won?: boolean }) {
   );
 }
 
+/** ทีมอันดับถัดจากที่เข้ารอบตรง (เช่น ที่ 3 ที่ดีที่สุด) ที่ถูกเติมเข้าสายบนให้ครบ 2/4/8/16 → ลำดับ 1,2,… ในระดับอันดับเดียวกัน
+ *  ไม่มีรายการ = อันดับ 1 2 ครบสายแล้ว หรือไม่ได้เข้าสายบน (ตรรกะเดียวกับการสร้างรอบน็อคเอาท์แบบเติมทีม) */
+function wildcardMap(grp: Match[], catId: string, cats: import('../types/matchon').Category[], rules: import('../types/matchon').RulePreset[], adv: number): Record<string, number> {
+  const pts = standingPtsFor(catId, cats, rules);
+  const nos = [...new Set(grp.map((m) => m.group_no ?? 0))].sort((a, b) => a - b);
+  const tops = nos.map((g) => {
+    const gm = grp.filter((m) => (m.group_no ?? 0) === g);
+    return computeStandings([...new Set(gm.flatMap((m) => [m.reg_a, m.reg_b]).filter(Boolean) as string[])], gm, pts);
+  });
+  const perf = (r: StandingRow) => { const p = Math.max(1, r.played); return [r.pts / p, (r.pf - r.pa) / p, (r.gf - r.ga) / p]; };
+  const byPerf = (x: StandingRow, y: StandingRow) => { const a = perf(x), c = perf(y); for (let i = 0; i < 3; i++) if (c[i] !== a[i]) return c[i] - a[i]; return 0; };
+  let count = 0;
+  for (let k = 0; k < adv; k++) count += tops.filter((g) => g[k]).length;
+  const size = bracketSize(count);
+  const maxLen = Math.max(0, ...tops.map((g) => g.length));
+  const out: Record<string, number> = {};
+  let lvl = adv;
+  while (count < size && lvl < maxLen && count >= 2) {
+    const cand = tops.map((g) => g[lvl]).filter(Boolean).sort(byPerf);
+    const take = cand.slice(0, size - count);
+    take.forEach((r, i) => { out[r.id] = i + 1; });
+    count += take.length;
+    if (take.length < cand.length) break;
+    lvl++;
+  }
+  return out;
+}
+
 /* ---------- การ์ดทีมในกลุ่ม (ย่อ/ขยาย) ---------- */
 function TeamStandCard({
-  row, rank, reg, pts, matches, regMap, open, onToggle,
+  row, rank, adv, wild, reg, pts, matches, regMap, open, onToggle,
 }: {
-  row: StandingRow; rank: number; reg?: Registration; pts: StandingPts;
+  row: StandingRow; rank: number; adv: number; wild?: number; reg?: Registration; pts: StandingPts;
   matches: Match[]; regMap: Record<string, Registration>; open: boolean; onToggle: () => void;
 }) {
   const one = (n?: string, k?: string) => (n ? (k && k !== n ? `${n} (${k})` : n) : '');
@@ -675,7 +706,7 @@ function TeamStandCard({
         <span className="flex items-center gap-2.5">
           <span className="w-7 h-7 shrink-0 grid place-items-center text-xs font-bold text-blue-700 bg-blue-50 rounded-lg tabular-nums">{rank}</span>
           <span className="min-w-0 flex-1 truncate text-sm font-bold text-slate-900">{reg?.club || teamName(reg)}</span>
-          {row.played >= 1 && <span className={`shrink-0 text-[10px] font-bold rounded-md px-1.5 py-0.5 ${rank <= 2 ? 'text-blue-700 bg-blue-50' : 'text-amber-700 bg-amber-50'}`}>อันดับ {rank}</span>}
+          {row.played >= 1 && <span className={`shrink-0 text-[10px] font-bold rounded-md px-1.5 py-0.5 ${rank <= adv || wild ? 'text-blue-700 bg-blue-50' : 'text-amber-700 bg-amber-50'}`}>อันดับ {rank}{wild ? `(${wild})` : ''}</span>}
           <span className="shrink-0 text-right leading-tight">
             <span className="block text-base font-bold tabular-nums text-blue-700">{row.pts}</span>
             <span className="block text-[10px] text-slate-400">คะแนน</span>
