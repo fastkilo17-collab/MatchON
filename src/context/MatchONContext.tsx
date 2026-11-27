@@ -37,6 +37,7 @@ import {
   EMPTY_DATA,
   loadAll,
   loadPosters,
+  loadLive,
   cachePosters,
   loadProfile,
   deleteRegistrationDb,
@@ -210,6 +211,7 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
   const role = canCreate || manageable.current.size > 0 ? 'organizer' : 'player';
 
   const firstLoad = useRef(true);
+  const viewerTick = useRef(0);
   const applyLoaded = useCallback((l: Awaited<ReturnType<typeof loadAll>>) => {
     manageable.current = l.manageable;
     profileRef.current = l.profile;
@@ -323,6 +325,17 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const iv = window.setInterval(() => {
       if (document.hidden || busy.current || timer.current) return;
+      // ผู้ชม (ไม่ได้จัดการรายการใด): โหลดเฉพาะแมตช์+สนามทุก 20 วิ และโหลดเต็มทุก ~3 นาที เพื่อลดภาระเซิร์ฟเวอร์เวลาคนดูเยอะ
+      if (manageable.current.size === 0) {
+        viewerTick.current++;
+        if (viewerTick.current % 9 === 0) { void reload(); return; }
+        void loadLive().then((l) => {
+          synced.current = { ...synced.current, matches: l.matches, courts: l.courts };
+          latest.current = { ...latest.current, matches: l.matches, courts: l.courts };
+          setState((prev) => ({ ...prev, matches: l.matches, courts: l.courts }));
+        }).catch(() => {});
+        return;
+      }
       if (latest.current !== synced.current && JSON.stringify(latest.current) !== JSON.stringify(synced.current)) return;
       void reload();
     }, 20000);
