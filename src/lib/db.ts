@@ -78,7 +78,27 @@ const digits = (s?: string | null): string | null => {
 const NOTE_OUT: Record<string, string> = { approval: 'approved' };
 const NOTE_IN: Record<string, NotificationItem['kind']> = { approved: 'approval', info: 'approval' };
 
-export const tournamentFromDb = (r: any): Tournament & { organizer_id: string; live_id: string | null } => ({
+export const posterCache: Record<string, { poster: string | null; posters: string[] }> = {};
+const TOUR_COLS = 'id,organizer_id,slug,name,venue,description,start_date,end_date,reg_deadline,courts,status,promptpay_id,rules,created_at,match_minutes,rest_minutes,live_id,format_text,rules_text,notice,shuttle,contact,featured';
+
+/** ดึงโปสเตอร์ของรายการ (ไฟล์ใหญ่) เป็นขั้นตอนหลัง เพื่อไม่ให้หน้าแรกรอ */
+export async function loadPosters(ids: string[]): Promise<Record<string, { poster: string | null; posters: string[] }>> {
+  const need = ids.filter((id) => !posterCache[id]);
+  if (need.length) {
+    const { data } = await sb.from('tournaments').select('id,poster,posters').in('id', need);
+    (data || []).forEach((r: any) => {
+      const list: string[] = Array.isArray(r.posters) && r.posters.length ? r.posters : r.poster ? [r.poster] : [];
+      posterCache[r.id] = { poster: list[0] || null, posters: list };
+    });
+  }
+  return Object.fromEntries(ids.filter((id) => posterCache[id]).map((id) => [id, posterCache[id]]));
+}
+/** บันทึกโปสเตอร์ล่าสุดลงแคช (หลังผู้จัดแก้ไข) */
+export function cachePosters(id: string, posters: string[]): void {
+  posterCache[id] = { poster: posters[0] || null, posters };
+}
+
+const tournamentFromDb = (r: any): Tournament & { organizer_id: string; live_id: string | null } => ({
   id: r.id,
   slug: r.slug || r.id.slice(0, 8),
   name: r.name,
@@ -94,8 +114,13 @@ export const tournamentFromDb = (r: any): Tournament & { organizer_id: string; l
   rest_minutes: r.rest_minutes ?? 15,
   organizer_id: r.organizer_id,
   live_id: r.live_id || null,
-  poster: (Array.isArray(r.posters) && r.posters[0]) || r.poster || null,
-  posters: Array.isArray(r.posters) && r.posters.length ? r.posters : r.poster ? [r.poster] : [],
+  // โปสเตอร์หนักมาก (base64) จึงไม่ดึงพร้อมรายการหลัก: ไม่มีคีย์ = ยังไม่โหลด (undefined) แล้วค่อยเติมทีหลังด้วย loadPosters
+  ...('posters' in r || 'poster' in r
+    ? {
+        poster: (Array.isArray(r.posters) && r.posters[0]) || r.poster || null,
+        posters: Array.isArray(r.posters) && r.posters.length ? r.posters : r.poster ? [r.poster] : [],
+      }
+    : posterCache[r.id] || {}),
   format_text: r.format_text || '',
   rules_text: r.rules_text || '',
   notice: r.notice || '',
@@ -119,8 +144,13 @@ const tournamentToDb = (t: Tournament & { organizer_id?: string }, uid: string) 
   promptpay_id: digits(t.promptpay_id),
   match_minutes: Math.min(180, Math.max(5, t.match_minutes || 30)),
   rest_minutes: Math.min(120, Math.max(0, t.rest_minutes ?? 15)),
-  poster: (t.posters && t.posters[0]) || t.poster || null,
-  posters: t.posters && t.posters.length ? t.posters : t.poster ? [t.poster] : [],
+  // ยังโหลดโปสเตอร์ไม่เสร็จ (undefined) → ไม่เขียนทับคอลัมน์นี้
+  ...(t.posters === undefined && t.poster === undefined
+    ? {}
+    : {
+        poster: (t.posters && t.posters[0]) || t.poster || null,
+        posters: t.posters && t.posters.length ? t.posters : t.poster ? [t.poster] : [],
+      }),
   format_text: t.format_text || null,
   rules_text: t.rules_text || null,
   notice: t.notice || null,
@@ -316,13 +346,18 @@ export interface StaffRow {
 }
 
 export async function loadAll(profile: Profile | null): Promise<Loaded> {
-  const [tr, cr, mr, kr, br, rr] = await Promise.all([
-    sb.from('tournaments').select('*').order('created_at', { ascending: false }),
+  const tokens = loadTokens();
+  // ขั้นที่ 1: ยิงพร้อมกันทั้งหมด (ไม่รอกัน)
+  const [tr, cr, mr, kr, br, rr, st, own, tokRes] = await Promise.all([
+    sb.from('tournaments').select(TOUR_COLS).order('created_at', { ascending: false }),
     sb.from('categories').select('*').order('sort').order('created_at'),
     sb.from('matches').select('*').order('match_no'),
     sb.from('courts').select('*').order('no'),
     sb.from('brackets').select('*'),
     sb.from('tournament_rules').select('*').order('created_at'),
+    profile ? sb.from('tournament_staff').select('tournament_id').eq('user_id', profile.id) : Promise.resolve({ data: [] as any[] }),
+    profile ? sb.from('registrations').select('*').eq('user_id', profile.id) : Promise.resolve({ data: [] as any[] }),
+    Promise.all(Object.entries(tokens).map(async ([id, token]) => ({ id, token, res: await sb.rpc('my_registration', { p_reg: id, p_token: token }) }))),
   ]);
   const tournaments = (tr.data || []).map(tournamentFromDb);
 
@@ -331,41 +366,31 @@ export async function loadAll(profile: Profile | null): Promise<Loaded> {
   if (profile) {
     if (profile.role === 'super_admin') tournaments.forEach((t) => manageable.add(t.id));
     tournaments.filter((t) => t.organizer_id === profile.id).forEach((t) => manageable.add(t.id));
-    const st = await sb.from('tournament_staff').select('tournament_id').eq('user_id', profile.id);
     (st.data || []).forEach((x: any) => manageable.add(x.tournament_id));
   }
 
-  // registrations: full rows for managers, public listing for everyone else
+  // ขั้นที่ 2: รายชื่อผู้สมัคร — ผู้จัดได้แถวเต็ม คนอื่นได้รายชื่อสาธารณะ (ยิงพร้อมกัน)
   const regs = new Map<string, Registration>();
   const mine = new Set<string>();
-  if (manageable.size) {
-    const rg = await sb.from('registrations').select('*').order('created_at', { ascending: false });
-    (rg.data || []).forEach((r: any) => regs.set(r.id, registrationFromDb(r)));
-  }
   const publicTs = tournaments.filter((t) => !manageable.has(t.id));
-  await Promise.all(
-    publicTs.map(async (t) => {
-      const { data } = await sb.rpc('public_entries', { p_tournament: t.id });
-      (data || []).forEach((r: any) => {
-        if (!regs.has(r.id)) {
-          regs.set(r.id, registrationFromDb({ ...r, tournament_id: t.id, p1_phone: '' }));
-        }
-      });
-    }),
-  );
-  if (profile) {
-    const own = await sb.from('registrations').select('*').eq('user_id', profile.id);
-    (own.data || []).forEach((r: any) => {
-      regs.set(r.id, registrationFromDb(r));
-      mine.add(r.id);
+  const [rg, pubs] = await Promise.all([
+    manageable.size ? sb.from('registrations').select('*').order('created_at', { ascending: false }) : Promise.resolve({ data: [] as any[] }),
+    Promise.all(publicTs.map(async (t) => ({ t, res: await sb.rpc('public_entries', { p_tournament: t.id }) }))),
+  ]);
+  (rg.data || []).forEach((r: any) => regs.set(r.id, registrationFromDb(r)));
+  pubs.forEach(({ t, res }) => {
+    (res.data || []).forEach((r: any) => {
+      if (!regs.has(r.id)) regs.set(r.id, registrationFromDb({ ...r, tournament_id: t.id, p1_phone: '' }));
     });
-  }
-  const tokens = loadTokens();
-  await Promise.all(
-    Object.entries(tokens).map(async ([id, token]) => {
-      if (mine.has(id)) return;
-      const { data } = await sb.rpc('my_registration', { p_reg: id, p_token: token });
-      if (!data) return;
+  });
+  (own.data || []).forEach((r: any) => {
+    regs.set(r.id, registrationFromDb(r));
+    mine.add(r.id);
+  });
+  tokRes.forEach(({ id, token, res }) => {
+    const data: any = res.data;
+    if (mine.has(id) || !data) return;
+    {
       const base = regs.get(id);
       regs.set(id, {
         ...(base || registrationFromDb({ id, tournament_id: data.tournament_id, category_id: '', p1_name: data.p1_name })),
@@ -394,32 +419,32 @@ export async function loadAll(profile: Profile | null): Promise<Loaded> {
         reg_open: !!data.open,
       } as Registration);
       mine.add(id);
-    }),
-  );
+    }
+  });
   const registrations = [...regs.values()].map((r) => (mine.has(r.id) ? { ...r, is_mine: true } : r));
   // attach tokens to my own rows (needed for the edit/slip RPCs)
   registrations.forEach((r: any) => {
     if (r.is_mine && !r.edit_token && tokens[r.id]) r.edit_token = tokens[r.id];
   });
 
-  // notifications + referees
-  let notifications: NotificationItem[] = [];
+  // notifications + referees (ยิงพร้อมกัน)
+  const notifications: NotificationItem[] = [];
   let referees: Referee[] = [];
-  if (manageable.size) {
-    const [nr, rf] = await Promise.all([
-      sb.from('notifications').select('*').order('created_at', { ascending: false }).limit(300),
-      sb.from('referees').select('*').order('court_no'),
-    ]);
-    notifications = (nr.data || []).map(noteFromDb);
-    referees = (rf.data || []) as Referee[];
+  const mineToNotify = registrations.filter((r: any) => r.is_mine && !manageable.has(r.tournament_id) && r.edit_token);
+  const [mgr, mineN] = await Promise.all([
+    manageable.size
+      ? Promise.all([
+          sb.from('notifications').select('*').order('created_at', { ascending: false }).limit(300),
+          sb.from('referees').select('*').order('court_no'),
+        ])
+      : Promise.resolve(null),
+    Promise.all(mineToNotify.map((r: any) => sb.rpc('my_notifications', { p_reg: r.id, p_token: r.edit_token }))),
+  ]);
+  if (mgr) {
+    notifications.push(...(mgr[0].data || []).map(noteFromDb));
+    referees = (mgr[1].data || []) as Referee[];
   }
-  for (const r of registrations) {
-    if (!r.is_mine || manageable.has(r.tournament_id)) continue;
-    const tok = (r as any).edit_token;
-    if (!tok) continue;
-    const { data } = await sb.rpc('my_notifications', { p_reg: r.id, p_token: tok });
-    (data || []).forEach((n: any) => notifications.push(noteFromDb(n)));
-  }
+  mineN.forEach((res: any) => (res.data || []).forEach((n: any) => notifications.push(noteFromDb(n))));
 
   const rules = (rr.data || []) as RulePreset[];
   return {

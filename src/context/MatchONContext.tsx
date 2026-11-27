@@ -36,6 +36,8 @@ import { avatarDataUri, sb } from '../lib/supabase';
 import {
   EMPTY_DATA,
   loadAll,
+  loadPosters,
+  cachePosters,
   loadProfile,
   deleteRegistrationDb,
   pushDiff,
@@ -242,7 +244,21 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
   const reload = useCallback(async () => {
     try {
       const p = await loadProfile();
-      applyLoaded(await loadAll(p));
+      const l = await loadAll(p);
+      applyLoaded(l);
+      // โปสเตอร์ (ไฟล์ใหญ่) โหลดตามหลัง: เติมทั้งในสถานะและตัวเทียบ synced พร้อมกัน เพื่อไม่ให้ถูกมองเป็นการแก้ไข
+      const need = l.data.tournaments.filter((t) => t.posters === undefined).map((t) => t.id);
+      if (need.length) {
+        void loadPosters(need).then((pm) => {
+          const fill = <T extends { tournaments: typeof l.data.tournaments }>(d: T): T => ({
+            ...d,
+            tournaments: d.tournaments.map((t) => (t.posters === undefined && pm[t.id] ? { ...t, ...pm[t.id] } : t)),
+          });
+          if (synced.current) synced.current = fill(synced.current);
+          if (latest.current) latest.current = fill(latest.current);
+          setState((prev) => fill(prev));
+        }).catch(() => {});
+      }
     } catch (e) {
       console.error(e);
     }
@@ -415,6 +431,7 @@ export function MatchONProvider({ children }: { children: React.ReactNode }) {
   const saveTournament = useCallback(
     (data: Omit<Tournament, 'id' | 'slug'> & { id?: string }): string => {
       const id = data.id || uuid();
+      if (data.posters) cachePosters(id, data.posters);
       const slug =
         data.name
           .toLowerCase()

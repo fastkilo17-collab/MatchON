@@ -3,23 +3,45 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { AppShell } from './components/AppShell';
 import { MatchONProvider, useMatchON } from './context/MatchONContext';
-import { SponsorsPage } from './pages/SponsorsPage';
-import { ModelsPage } from './pages/ModelsPage';
-import { AthletesPage } from './pages/AthletesPage';
-import { BracketsPage } from './pages/BracketsPage';
-import { CourtsPage } from './pages/CourtsPage';
-import { DashboardPage } from './pages/DashboardPage';
-import { LiveScorePage } from './pages/LiveScorePage';
-import { MyRegistrationsPage, RegisterPage } from './pages/RegisterPage';
-import { SchedulePage } from './pages/SchedulePage';
-import { AdminRequestsPage, ReportsPage, ResultsPage, RulesStaffPage, SettingsPage, StaffPage } from './pages/SecondaryPages';
-import { SiteHomePage } from './pages/SiteHomePage';
-import { MePage } from './pages/MePage';
-import { TournamentHomePage } from './pages/TournamentHomePage';
-import { TournamentsPage } from './pages/TournamentsPage';
+
+const SponsorsPage = lazy(() => import('./pages/SponsorsPage').then((m) => ({ default: m.SponsorsPage })));
+const ModelsPage = lazy(() => import('./pages/ModelsPage').then((m) => ({ default: m.ModelsPage })));
+const AthletesPage = lazy(() => import('./pages/AthletesPage').then((m) => ({ default: m.AthletesPage })));
+const BracketsPage = lazy(() => import('./pages/BracketsPage').then((m) => ({ default: m.BracketsPage })));
+const CourtsPage = lazy(() => import('./pages/CourtsPage').then((m) => ({ default: m.CourtsPage })));
+const DashboardPage = lazy(() => import('./pages/DashboardPage').then((m) => ({ default: m.DashboardPage })));
+const LiveScorePage = lazy(() => import('./pages/LiveScorePage').then((m) => ({ default: m.LiveScorePage })));
+const SchedulePage = lazy(() => import('./pages/SchedulePage').then((m) => ({ default: m.SchedulePage })));
+const SiteHomePage = lazy(() => import('./pages/SiteHomePage').then((m) => ({ default: m.SiteHomePage })));
+const MePage = lazy(() => import('./pages/MePage').then((m) => ({ default: m.MePage })));
+const TournamentHomePage = lazy(() => import('./pages/TournamentHomePage').then((m) => ({ default: m.TournamentHomePage })));
+const TournamentsPage = lazy(() => import('./pages/TournamentsPage').then((m) => ({ default: m.TournamentsPage })));
+const MyRegistrationsPage = lazy(() => import('./pages/RegisterPage').then((m) => ({ default: m.MyRegistrationsPage })));
+const RegisterPage = lazy(() => import('./pages/RegisterPage').then((m) => ({ default: m.RegisterPage })));
+const AdminRequestsPage = lazy(() => import('./pages/SecondaryPages').then((m) => ({ default: m.AdminRequestsPage })));
+const ReportsPage = lazy(() => import('./pages/SecondaryPages').then((m) => ({ default: m.ReportsPage })));
+const ResultsPage = lazy(() => import('./pages/SecondaryPages').then((m) => ({ default: m.ResultsPage })));
+const RulesStaffPage = lazy(() => import('./pages/SecondaryPages').then((m) => ({ default: m.RulesStaffPage })));
+const SettingsPage = lazy(() => import('./pages/SecondaryPages').then((m) => ({ default: m.SettingsPage })));
+const StaffPage = lazy(() => import('./pages/SecondaryPages').then((m) => ({ default: m.StaffPage })));
+
+// เริ่มดาวน์โหลดหน้าแรกคู่ขนานกับการโหลดข้อมูล (ไม่รอข้อมูลเสร็จก่อน) และหน้าอื่นตอนว่าง
+void import('./pages/SiteHomePage');
+void import('./pages/TournamentHomePage');
+if (typeof window !== 'undefined') {
+  const idle = (window as any).requestIdleCallback || ((f: () => void) => setTimeout(f, 1500));
+  idle(() => {
+    void import('./pages/TournamentsPage');
+    void import('./pages/RegisterPage');
+    void import('./pages/BracketsPage');
+    void import('./pages/LiveScorePage');
+  });
+}
+
+const Fallback = () => <div className="p-10 text-center text-sm text-slate-500">กำลังโหลด…</div>;
 
 function RouteSwitch() {
   const { route, loading } = useMatchON();
@@ -83,7 +105,9 @@ export default function App() {
   return (
     <MatchONProvider>
       <AppShell>
-        <RouteSwitch />
+        <Suspense fallback={<Fallback />}>
+          <RouteSwitch />
+        </Suspense>
       </AppShell>
     </MatchONProvider>
   );
