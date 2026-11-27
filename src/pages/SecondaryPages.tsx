@@ -244,6 +244,7 @@ export function RulesStaffPage() {
   const [winPts, setWinPts] = useState(2);
   const [drawPts, setDrawPts] = useState(1);
   const [lossPts, setLossPts] = useState(0);
+  const [ptsMap, setPtsMap] = useState<Record<string, number>>({});
 
   const [refName, setRefName] = useState('');
   const [refPhone, setRefPhone] = useState('');
@@ -263,12 +264,16 @@ export function RulesStaffPage() {
 
   const isOrganizer = state.role === 'organizer';
 
+  // ผลเซตที่เป็นไปได้ของแต่ละรูปแบบ (เซตที่เราชนะ-เซตที่คู่แข่งชนะ)
+  const outcomeKeys = (md: string) => (md === 'one' ? ['1-0', '0-1'] : md === 'two' ? ['2-0', '1-1', '0-2'] : md === 'bo5' ? ['3-0', '3-1', '3-2', '2-3', '1-3', '0-3'] : ['2-0', '2-1', '1-2', '0-2']);
+  const defaultPts = (k: string) => { const [x, y] = k.split('-').map(Number); return x > y ? 2 : x === y ? 1 : 0; };
+
   const openNewRule = () => {
-    setEditRuleId(null); setRuleName(''); setMode('bo3'); setPoints(21); setCap(30); setDeuce(true); setWinPts(2); setDrawPts(1); setLossPts(0);
+    setPtsMap({}); setEditRuleId(null); setRuleName(''); setMode('bo3'); setPoints(21); setCap(30); setDeuce(true); setWinPts(2); setDrawPts(1); setLossPts(0);
     setRuleOpen(true);
   };
   const openEditRule = (r: (typeof tRules)[number]) => {
-    setEditRuleId(r.id); setRuleName(r.name);
+    setPtsMap(r.set_pts || {}); setEditRuleId(r.id); setRuleName(r.name);
     setMode(r.play_two ? 'two' : r.best_of === 1 ? 'one' : r.best_of === 5 ? 'bo5' : 'bo3');
     setPoints(r.points); setCap(r.cap); setDeuce(r.deuce);
     setWinPts(r.win_pts ?? 2); setDrawPts(r.draw_pts ?? 1); setLossPts(r.loss_pts ?? 0);
@@ -277,6 +282,8 @@ export function RulesStaffPage() {
   const handleAddRule = (e: React.FormEvent) => {
     e.preventDefault();
     if (!ruleName.trim()) return;
+    const setPtsOut: Record<string, number> = {};
+    outcomeKeys(mode).forEach((k) => { setPtsOut[k] = ptsMap[k] ?? defaultPts(k); });
     const body = {
       name: ruleName.trim(),
       best_of: mode === 'one' ? 1 : mode === 'bo5' ? 5 : 3,
@@ -284,9 +291,10 @@ export function RulesStaffPage() {
       points,
       cap,
       deuce,
-      win_pts: winPts,
-      draw_pts: drawPts,
-      loss_pts: lossPts,
+      win_pts: Object.keys(setPtsOut)[0] ? setPtsOut[Object.keys(setPtsOut)[0]] : winPts,
+      draw_pts: setPtsOut['1-1'] ?? drawPts,
+      loss_pts: setPtsOut[Object.keys(setPtsOut).slice(-1)[0]] ?? lossPts,
+      set_pts: setPtsOut,
     };
     if (editRuleId) updateRulePreset(editRuleId, body);
     else addRulePreset({ tournament_id: activeTournament.id, ...body });
@@ -452,12 +460,13 @@ export function RulesStaffPage() {
             <input type="checkbox" checked={deuce} onChange={(e) => setDeuce(e.target.checked)} className="w-4 h-4" /> ดิว (ต้องชนะห่าง 2 แต้ม)
           </label>
           <div className="rounded-xl bg-slate-50 border border-slate-200 p-3 space-y-2">
-            <div className="text-xs font-semibold text-slate-700">คะแนนผลแข่ง (เก็บแต้มตารางคะแนน)</div>
-            <div className="grid grid-cols-3 gap-2">
-              {([['ชนะ', winPts, setWinPts], ['เสมอ', drawPts, setDrawPts], ['แพ้', lossPts, setLossPts]] as const).map(([l, v, set]) => (
-                <label key={l} className="block space-y-1">
-                  <span className="text-xs text-slate-600">{l}</span>
-                  <input type="number" min={0} max={20} value={v} onChange={(e) => set(Math.max(0, Math.min(20, Number(e.target.value) || 0)))} className="w-full min-h-[44px] px-2 rounded-xl border border-slate-200 text-sm tabular-nums bg-white" />
+            <div className="text-xs font-semibold text-slate-700">คะแนนที่ได้หลังจบแมตช์ (แยกตามผลเซต)</div>
+            <div className="text-[11px] text-slate-500">ผลเซตนับจากมุมมองของทีมที่ได้คะแนน เช่น 2-1 = ชนะ 2 เซต แพ้ 1 เซต</div>
+            <div className="grid grid-cols-3 sm:grid-cols-3 gap-2">
+              {outcomeKeys(mode).map((k) => (
+                <label key={k} className="block space-y-1">
+                  <span className="text-xs text-slate-600 tabular-nums">ผล {k}</span>
+                  <input type="number" min={0} max={20} value={ptsMap[k] ?? defaultPts(k)} onChange={(e) => setPtsMap({ ...ptsMap, [k]: Math.max(0, Math.min(20, Number(e.target.value) || 0)) })} className="w-full min-h-[44px] px-2 rounded-xl border border-slate-200 text-sm tabular-nums bg-white" />
                 </label>
               ))}
             </div>

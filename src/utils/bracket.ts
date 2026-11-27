@@ -183,7 +183,9 @@ export function ruleForMatch(
   rules: RulePreset[],
 ): { best_of: number; points: number; deuce: boolean; cap: number; play_two: boolean } {
   const cat = categories.find((c) => c.id === match.category_id);
-  const ruleId = match.stage === 'group' || match.stage === 'swiss' ? cat?.rule_group : cat?.rule_ko;
+  // พบกันหมด/ลีก/แบ่งกลุ่ม/swiss ใช้ "กติการอบกลุ่ม" ทั้งรุ่น; น็อกเอาท์ใช้กติกาน็อกเอาท์
+  const groupLike = match.stage === 'group' || match.stage === 'swiss' || (match.stage === 'main' && (cat?.format === 'round_robin' || cat?.format === 'league' || cat?.format === 'group_stage'));
+  const ruleId = groupLike ? cat?.rule_group : cat?.rule_ko;
   const preset = ruleId ? rules.find((r) => r.id === ruleId) : undefined;
   return {
     best_of: preset?.best_of ?? cat?.best_of ?? 3,
@@ -197,8 +199,10 @@ export function ruleForMatch(
   };
 }
 
-export function ruleText(r: { best_of: number; points: number; deuce: boolean; cap: number; play_two?: boolean; win_pts?: number; draw_pts?: number; loss_pts?: number }): string {
-  const pt = ` · ชนะ ${r.win_pts ?? 2} เสมอ ${r.draw_pts ?? 1} แพ้ ${r.loss_pts ?? 0} คะแนน`;
+export function ruleText(r: { best_of: number; points: number; deuce: boolean; cap: number; play_two?: boolean; win_pts?: number; draw_pts?: number; loss_pts?: number; set_pts?: Record<string, number> | null }): string {
+  const pt = r.set_pts && Object.keys(r.set_pts).length
+    ? ` · คะแนน ${Object.entries(r.set_pts).map(([k, v]) => `${k}=${v}`).join(' ')}`
+    : ` · ชนะ ${r.win_pts ?? 2} เสมอ ${r.draw_pts ?? 1} แพ้ ${r.loss_pts ?? 0} คะแนน`;
   const setLabel = r.play_two
     ? '2 เซต (2-0 ชนะ · 1-1 เสมอ)'
     : r.best_of === 1
@@ -451,13 +455,13 @@ export interface StandingRow {
   pts: number;
 }
 
-export type StandingPts = { win: number; draw: number; loss: number };
+export type StandingPts = { win: number; draw: number; loss: number; bySets?: Record<string, number> | null };
 export const DEFAULT_PTS: StandingPts = { win: 2, draw: 1, loss: 0 };
 /** คะแนนชนะ/เสมอ/แพ้ ของรุ่น (จากชุดกติการอบแบ่งกลุ่มที่ผูกกับรุ่น) */
 export function standingPtsFor(categoryId: string, categories: Category[], rules: RulePreset[]): StandingPts {
   const cat = categories.find((c) => c.id === categoryId);
   const p = cat?.rule_group ? rules.find((r) => r.id === cat.rule_group) : undefined;
-  return { win: p?.win_pts ?? 2, draw: p?.draw_pts ?? 1, loss: p?.loss_pts ?? 0 };
+  return { win: p?.win_pts ?? 2, draw: p?.draw_pts ?? 1, loss: p?.loss_pts ?? 0, bySets: p?.set_pts || null };
 }
 
 export function computeStandings(teamIds: string[], matches: Match[], pts: StandingPts = DEFAULT_PTS): StandingRow[] {
@@ -472,16 +476,25 @@ export function computeStandings(teamIds: string[], matches: Match[], pts: Stand
     const rb = row[m.reg_b];
     ra.played++;
     rb.played++;
+    let wa = 0, wb = 0;
+    for (const [sa, sb] of m.sets || []) { if (sa > sb) wa++; else if (sb > sa) wb++; }
+    const base = (r: 'w' | 'd' | 'l') => (r === 'w' ? pts.win : r === 'd' ? pts.draw : pts.loss);
+    let outA: 'w' | 'd' | 'l' = 'd';
     if (!m.winner) {
       ra.drawn++;
       rb.drawn++;
     } else if (m.winner === m.reg_a) {
       ra.won++;
       rb.lost++;
+      outA = 'w';
     } else if (m.winner === m.reg_b) {
       rb.won++;
       ra.lost++;
+      outA = 'l';
     }
+    const outB = outA === 'w' ? 'l' : outA === 'l' ? 'w' : 'd';
+    ra.pts += pts.bySets?.[`${wa}-${wb}`] ?? base(outA);
+    rb.pts += pts.bySets?.[`${wb}-${wa}`] ?? base(outB);
     for (const [sa, sb] of m.sets || []) {
       ra.pf += sa;
       ra.pa += sb;
@@ -497,9 +510,6 @@ export function computeStandings(teamIds: string[], matches: Match[], pts: Stand
     }
   }
 
-  Object.values(row).forEach((r) => {
-    r.pts = r.won * pts.win + r.drawn * pts.draw + r.lost * pts.loss;
-  });
   return Object.values(row).sort((a, b) => {
     if (b.pts !== a.pts) return b.pts - a.pts;
     const pd = b.pf - b.pa - (a.pf - a.pa); // equal points: points scored minus conceded

@@ -962,7 +962,7 @@ export function TournamentsPage({ mode = 'list' }: { mode?: TournamentsMode } = 
             type="button"
             onClick={() => {
               if (!ruleCat) return;
-              saveCategory({ ...ruleCat, best_of: ruleForm.best_of, points: Number(ruleForm.points) || 21, cap: Number(ruleForm.cap) || 30, deuce: ruleForm.deuce });
+              saveCategory({ ...ruleCat, best_of: ruleForm.best_of, points: Number(ruleForm.points) || 21, cap: Number(ruleForm.cap) || 30, deuce: ruleForm.deuce, rule_group: null, rule_ko: null, play_two: false });
               setRuleCat(null);
             }}
             className="w-full min-h-[46px] rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold"

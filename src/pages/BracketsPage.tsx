@@ -28,6 +28,7 @@ export function BracketsPage() {
     toast,
   } = useMatchON();
 
+  const [rrOpen, setRrOpen] = useState<Record<string, boolean>>({});
   const [catId, setCatId] = useState<string>('');
   const [format, setFormat] = useState<BracketFormat>('knockout');
   const [gMode, setGMode] = useState<'groups' | 'perGroup'>('perGroup');
@@ -520,8 +521,30 @@ export function BracketsPage() {
                   </tbody>
                 </table>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {koMatches.map(renderMatchCard)}
+              {/* การ์ดจับคู่: พับได้ตามนัด และเลื่อนเฉพาะส่วนนี้ (ตารางคะแนนด้านบนอยู่กับที่) */}
+              <div className="max-h-[62vh] overflow-y-auto overscroll-contain -mx-1 px-1 space-y-2">
+                {(() => {
+                  const rounds = [...new Set(koMatches.map((m) => m.round))].sort((a, b) => a - b);
+                  const firstOpen = rounds.find((r) => koMatches.some((m) => m.round === r && m.status !== 'finished'));
+                  return rounds.map((r) => {
+                    const ms = koMatches.filter((m) => m.round === r);
+                    const done = ms.filter((m) => m.status === 'finished').length;
+                    const k = `${activeCat.id}:${r}`;
+                    const isOpen = rrOpen[k] ?? r === firstOpen;
+                    return (
+                      <div key={r} className="rounded-xl border border-slate-200 overflow-hidden">
+                        <button type="button" onClick={() => setRrOpen({ ...rrOpen, [k]: !isOpen })} aria-expanded={isOpen} className="w-full min-h-[44px] px-3.5 flex items-center justify-between gap-3 bg-slate-50 hover:bg-slate-100 text-left">
+                          <span className="font-semibold text-sm text-slate-900">{(ms[0].round_label || `นัดที่ ${r}`).replace(/^กลุ่ม .* · /, '')}</span>
+                          <span className="flex items-center gap-2 text-[11px] font-semibold tabular-nums text-slate-500">
+                            <span className={done === ms.length ? 'text-emerald-600' : ''}>{done}/{ms.length} แมตช์</span>
+                            <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                          </span>
+                        </button>
+                        {isOpen && <div className="p-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">{ms.map(renderMatchCard)}</div>}
+                      </div>
+                    );
+                  });
+                })()}
               </div>
             </div>
           )}

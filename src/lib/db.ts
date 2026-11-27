@@ -439,7 +439,7 @@ export async function loadAll(profile: Profile | null): Promise<Loaded> {
         locked: !!b.locked,
         has_lower: !!b.has_lower,
       })),
-      rules: rules.map((r: any) => ({ id: r.id, tournament_id: r.tournament_id, name: r.name, best_of: r.best_of, points: r.points, deuce: r.deuce, cap: r.cap, play_two: !!r.play_two, win_pts: r.win_pts ?? 2, draw_pts: r.draw_pts ?? 1, loss_pts: r.loss_pts ?? 0 })),
+      rules: rules.map((r: any) => ({ id: r.id, tournament_id: r.tournament_id, name: r.name, best_of: r.best_of, points: r.points, deuce: r.deuce, cap: r.cap, play_two: !!r.play_two, win_pts: r.win_pts ?? 2, draw_pts: r.draw_pts ?? 1, loss_pts: r.loss_pts ?? 0, set_pts: r.set_pts || null })),
       referees,
       notifications,
     },
@@ -503,7 +503,7 @@ export async function pushDiff(prev: Data, next: Data, uid: string, manageable: 
   // rules before categories (categories reference them)
   const rd = diff(prev.rules, next.rules);
   const rRows = [...rd.added, ...rd.changed].filter((r) => ok(r.tournament_id)).map((r) => ({
-    id: r.id, tournament_id: r.tournament_id, name: r.name, best_of: r.best_of, points: r.points, deuce: r.deuce, cap: r.cap, play_two: !!r.play_two, win_pts: r.win_pts ?? 2, draw_pts: r.draw_pts ?? 1, loss_pts: r.loss_pts ?? 0,
+    id: r.id, tournament_id: r.tournament_id, name: r.name, best_of: r.best_of, points: r.points, deuce: r.deuce, cap: r.cap, play_two: !!r.play_two, win_pts: r.win_pts ?? 2, draw_pts: r.draw_pts ?? 1, loss_pts: r.loss_pts ?? 0, set_pts: r.set_pts || null,
   }));
   if (rRows.length) await must(sb.from('tournament_rules').upsert(rRows, { onConflict: 'id' }));
 

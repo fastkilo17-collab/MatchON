@@ -176,6 +176,8 @@ export interface RulePreset {
   win_pts?: number;
   draw_pts?: number;
   loss_pts?: number;
+  /** คะแนนหลังจบแมตช์แยกตามผลเซต (คีย์ "เซตที่เราชนะ-เซตที่คู่แข่งชนะ" เช่น "2-1") */
+  set_pts?: Record<string, number> | null;
 }
 
 export interface Referee {

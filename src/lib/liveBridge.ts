@@ -298,7 +298,7 @@ export function useLiveBridge(a: Args) {
       for (const ct of courts) {
         const m = currentMatch(ct.no);
         const maint = ct.status === 'maintenance';
-        const sig = (m ? CODE(m) : 'none') + (maint ? '|maint' : '');
+        const sig = (m ? CODE(m) + JSON.stringify(ruleForMatch(m, latest.current.categories, latest.current.rules)) : 'none') + (maint ? '|maint' : '');
         if (lastSig.current[ct.no] === sig) continue;
         const existing = fb[ct.no];
         if (maint && existing && !existing.hidden) {
@@ -329,7 +329,7 @@ export function useLiveBridge(a: Args) {
         }
       }
     })();
-  }, [bridgeOn, fbLoaded, matches, courts, fb, payload]);
+  }, [bridgeOn, fbLoaded, matches, courts, fb, payload, rules, categories]);
 
   const refereeUrl = useCallback(
     async (no: number, umpire?: string, rotate?: boolean): Promise<string> => {
