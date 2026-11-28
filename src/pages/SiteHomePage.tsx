@@ -87,10 +87,10 @@ export function SiteHomePage() {
   };
 
   const stats: Array<[string, number, string]> = [
-    ['รายการแข่งขัน', ts.length, 'text-blue-700'],
-    ['ทีมที่สมัคร', regs.length, 'text-slate-900'],
-    ['แมตช์ทั้งหมด', matches.length, 'text-slate-900'],
-    ['กำลังแข่งตอนนี้', liveNow, 'text-red-600'],
+    ['รายการ', ts.length, 'text-white'],
+    ['ทีมสมัคร', regs.length, 'text-white'],
+    ['แมตช์', matches.length, 'text-white'],
+    ['กำลังแข่ง', liveNow, 'text-red-400'],
   ];
 
   return (
@@ -108,8 +108,8 @@ export function SiteHomePage() {
           <h2 className="font-display text-3xl sm:text-5xl font-extrabold leading-tight tracking-tight">
             จัดแข่ง สมัคร และดูคะแนนสด<br className="hidden sm:block" />จบในที่เดียว
           </h2>
-          <p className="text-sm sm:text-base text-white/80 leading-relaxed">
-            ตั้งแต่เปิดรับสมัคร จัดสาย จัดตารางแข่ง ไปจนถึงกรรมการนับคะแนนผ่านมือถือ — ใช้งานง่ายสำหรับทั้งผู้จัด นักกีฬา และผู้ชม
+          <p className="text-xs sm:text-base text-white/80 truncate">
+            เปิดรับสมัคร จัดสาย จัดตาราง นับคะแนนผ่านมือถือ
           </p>
           <div className="relative flex flex-wrap gap-2.5 pt-1">
             <button type="button" onClick={() => navigate('tournaments')} className="inline-flex items-center gap-2 min-h-[48px] px-5 rounded-xl bg-white text-blue-800 font-bold text-sm hover:bg-blue-50 transition-colors">
@@ -142,11 +142,11 @@ export function SiteHomePage() {
       </section>
 
       {/* Stats */}
-      <section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <section className="flex items-center justify-between gap-2 rounded-2xl bg-slate-900 text-white px-4 py-3 sm:px-8 overflow-hidden">
         {stats.map(([l, v, c]) => (
-          <div key={l} className="rounded-2xl bg-white border border-slate-200/80 px-4 py-4 text-center">
-            <div className={`font-display text-3xl font-extrabold tabular-nums ${c}`}>{v}</div>
-            <div className="text-xs text-slate-500 mt-1">{l}</div>
+          <div key={l} className="flex items-baseline gap-1.5 whitespace-nowrap">
+            <span className={`font-display text-lg sm:text-2xl font-extrabold tabular-nums ${c}`}>{v}</span>
+            <span className="text-[11px] sm:text-sm text-slate-300">{l}</span>
           </div>
         ))}
       </section>
